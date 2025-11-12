@@ -89,9 +89,9 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if line.batch_details or line.serial_details %}
+                                    {% if (line.batch_details|length > 0) or (line.serial_details|length > 0) %}
                                     <button class="btn btn-sm btn-info" 
-                                            onclick="showMultiGRNQRLabels({{ line.id }}, {{ line.item_code|tojson }}, {{ line.item_description|tojson }}, '{% if line.serial_details %}serial{% else %}batch{% endif %}')"
+                                            onclick="showMultiGRNQRLabels({{ line.id }}, {{ line.item_code|tojson }}, {{ line.item_description|tojson }}, '{% if line.serial_details|length > 0 %}serial{% else %}batch{% endif %}')"
                                             title="Print QR Labels">
                                         <i class="fas fa-print"></i> Print Batch Labels
                                     </button>

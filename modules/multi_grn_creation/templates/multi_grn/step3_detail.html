@@ -91,9 +91,9 @@
                                                     onclick='showAddItemModal({{ line.po_link_id }}, {{ line.id }}, {{ line.po_line_num }}, {{ po_link.po_doc_entry }}, {{ line.item_code|tojson }}, {{ line.item_description|tojson }}, {{ line.selected_quantity }}, {{ line.warehouse_code|tojson }})'>
                                                 <i data-feather="plus"></i> Add Item
                                             </button>
-                                            {% if line.batch_details or line.serial_details %}
+                                            {% if (line.batch_details|length > 0) or (line.serial_details|length > 0) %}
                                             <button type="button" class="btn btn-sm btn-info" 
-                                                    onclick="showMultiGRNQRLabels({{ line.id }}, {{ line.item_code|tojson }}, {{ line.item_description|tojson }}, '{% if line.serial_details %}serial{% else %}batch{% endif %}')"
+                                                    onclick="showMultiGRNQRLabels({{ line.id }}, {{ line.item_code|tojson }}, {{ line.item_description|tojson }}, '{% if line.serial_details|length > 0 %}serial{% else %}batch{% endif %}')"
                                                     title="Print QR Labels">
                                                 <i data-feather="printer"></i> Print Batch Labels
                                             </button>
