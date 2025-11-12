@@ -93,7 +93,7 @@
                                             </button>
                                             {% if line.batch_details or line.serial_details %}
                                             <button type="button" class="btn btn-sm btn-info" 
-                                                    onclick="showMultiGRNQRLabels({{ line.id }}, {{ line.item_code|tojson }}, {{ line.item_description|tojson }})"
+                                                    onclick="showMultiGRNQRLabels({{ line.id }}, {{ line.item_code|tojson }}, {{ line.item_description|tojson }}, '{% if line.serial_details %}serial{% else %}batch{% endif %}')"
                                                     title="Print QR Labels">
                                                 <i data-feather="printer"></i> Print Batch Labels
                                             </button>
@@ -473,13 +473,11 @@
     }
 
     // Show Multi GRN QR Labels for a line item
-    function showMultiGRNQRLabels(lineSelectionId, itemCode, itemDescription) {
+    function showMultiGRNQRLabels(lineSelectionId, itemCode, itemDescription, labelType) {
         // Get batch_id from the page (it's available in the breadcrumb)
         const batchId = {{ batch.id }};
         
-        // Determine label type based on item properties
-        // For now, we'll use 'batch' as default and let the backend determine the correct type
-        const labelType = 'batch';
+        // Use the provided label type (serial or batch) passed from the button
         
         fetch('/multi-grn/api/generate-barcode-labels', {
             method: 'POST',
