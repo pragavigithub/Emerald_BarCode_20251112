@@ -673,7 +673,7 @@ def update_line_item():
             except ValueError:
                 return jsonify({'success': False, 'error': 'Invalid expiration date format'}), 400
         
-        # Handle number of bags - create batch details for standard items
+        # Handle number of bags - create batch details for all items (batch-managed, standard, non-managed)
         if number_of_bags and int(number_of_bags) > 0:
             from modules.multi_grn_creation.models import MultiGRNBatchDetails
             from datetime import datetime
@@ -685,20 +685,36 @@ def update_line_item():
             bags_count = int(number_of_bags)
             qty_per_bag = line_selection.selected_quantity / bags_count if line_selection.selected_quantity else 0
             
-            # Auto-generate batch number using today's date (YYYYMMDD-{num})
+            # Get batch ID from the line's PO link for unique GRN numbering
+            # Handle both PO-based and manual items safely
+            if line_selection.po_link and hasattr(line_selection.po_link, 'batch_id'):
+                batch_id = line_selection.po_link.batch_id
+            else:
+                # Fallback: use line_selection_id as batch identifier for manual items
+                batch_id = line_selection_id
+            
+            # Auto-generate batch number using date and item code (YYYYMMDD-ITEMCODE-{num})
             today_str = datetime.now().strftime('%Y%m%d')
+            item_code_short = line_selection.item_code[:10] if line_selection.item_code else "ITEM"
             
             for bag_num in range(1, bags_count + 1):
-                batch_number = f"{today_str}-{bag_num}"
+                # Generate unique batch number for tracking
+                batch_number = f"{today_str}-{item_code_short}-{bag_num}"
+                
+                # Generate unique GRN number for each pack
+                grn_number = f"MGN-{batch_id}-{line_selection_id}-{bag_num}"
+                
                 batch_detail = MultiGRNBatchDetails(
                     line_selection_id=line_selection_id,
                     batch_number=batch_number,
                     quantity=qty_per_bag,
                     expiry_date=expiry_date_obj,
+                    grn_number=grn_number,
                     qty_per_pack=qty_per_bag,
                     no_of_packs=bags_count
                 )
                 db.session.add(batch_detail)
+                logging.info(f"✅ Created batch detail {bag_num}/{bags_count} for line {line_selection_id}: Batch={batch_number}, GRN={grn_number}, Qty={qty_per_bag}")
         
         db.session.commit()
         
@@ -1172,6 +1188,9 @@ def generate_barcode_labels_multi_grn():
         
         labels = []
         
+        # Check if item has batch_details (even if not batch-managed) for pack generation
+        has_batch_details = len(line_selection.batch_details) > 0
+        
         if label_type == 'serial':
             serial_details = line_selection.serial_details
             total_serials = len(serial_details)
@@ -1292,6 +1311,53 @@ def generate_barcode_labels_multi_grn():
                     labels.append(label)
                     label_counter += 1
         
+        # Handle standard items with batch_details (created via number_of_packs)
+        elif has_batch_details and label_type == 'regular':
+            batch_details = line_selection.batch_details
+            label_counter = 1
+            
+            for batch_detail in batch_details:
+                num_packs = batch_detail.no_of_packs or 1
+                pack_idx = label_counter
+                batch_grn = batch_detail.grn_number or doc_number
+                
+                qr_data = {
+                    'PO': po_number,
+                    'BatchNumber': batch_detail.batch_number,
+                    'Qty': float(batch_detail.qty_per_pack) if batch_detail.qty_per_pack else float(batch_detail.quantity),
+                    'Pack': f"{pack_idx} of {num_packs}",
+                    'GRN Date': grn_date,
+                    'Exp Date': batch_detail.expiry_date.strftime('%Y-%m-%d') if batch_detail.expiry_date else 'N/A',
+                    'ItemCode': line_selection.item_code,
+                    'ItemDesc': line_selection.item_description or '',
+                    'id': f"{batch_grn}"
+                }
+                
+                qr_text = '\n'.join([f"{k}: {v}" for k, v in qr_data.items()])
+                qr_code_image = generate_barcode_multi_grn(qr_text)
+                
+                label = {
+                    'sequence': label_counter,
+                    'total': num_packs,
+                    'pack_text': f"{pack_idx} of {num_packs}",
+                    'po_number': po_number,
+                    'batch_number': batch_detail.batch_number,
+                    'quantity': float(batch_detail.quantity),
+                    'qty_per_pack': float(batch_detail.qty_per_pack) if batch_detail.qty_per_pack else float(batch_detail.quantity),
+                    'no_of_packs': num_packs,
+                    'grn_date': grn_date,
+                    'grn_number': f"{batch_grn}",
+                    'expiration_date': batch_detail.expiry_date.strftime('%Y-%m-%d') if batch_detail.expiry_date else 'N/A',
+                    'item_code': line_selection.item_code,
+                    'item_name': line_selection.item_description or '',
+                    'doc_number': f"{batch_grn}",
+                    'qr_code_image': qr_code_image,
+                    'qr_data': qr_data
+                }
+                labels.append(label)
+                label_counter += 1
+        
+        # Handle regular items without batch_details (single label, no packs)
         else:
             qr_data = {
                 'PO': po_number,

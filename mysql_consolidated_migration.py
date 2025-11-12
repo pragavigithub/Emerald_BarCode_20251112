@@ -7,12 +7,23 @@ This is the ONLY migration file you need to run.
 INCLUDES:
 ✅ Core WMS tables (users, branches, sessions)
 ✅ GRPO module with serial/batch number support
-✅ Multi-GRN module with QR label generation and batch/serial tracking
+✅ Multi-GRN module with enhanced QR label generation:
+   - Pack/Bag numbering (e.g., "1 of 10, 2 of 10")
+   - Expiry date tracking on all labels
+   - Batch number tracking on all labels
+   - Automatic GRN number generation per pack
+   - Support for batch-managed, serial-managed, and standard items
 ✅ Inventory transfers and serial transfers
 ✅ Pick lists and QC workflows
 ✅ Serial item transfers
 ✅ Document number series
 ✅ Performance optimizations and indexing
+
+RECENT UPDATES (Nov 2025):
+- Enhanced Multi-GRN QR label generation to include expiry dates and batch numbers
+- Added automatic pack/bag numbering with qty_per_pack division
+- Improved batch number generation with item code prefix (YYYYMMDD-ITEMCODE-{num})
+- Added GRN number tracking per pack (MGN-{batch_id}-{line_id}-{pack_num})
 
 Run with: python mysql_consolidated_migration.py
 """
