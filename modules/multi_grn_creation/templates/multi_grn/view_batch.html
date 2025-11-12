@@ -66,6 +66,8 @@
                                 <th>Description</th>
                                 <th>Quantity</th>
                                 <th>Warehouse</th>
+                                <th>QC Status</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -75,6 +77,26 @@
                                 <td>{{ line.item_description }}</td>
                                 <td>{{ line.selected_quantity }}</td>
                                 <td>{{ line.warehouse_code }}</td>
+                                <td>
+                                    {% if line.line_status == 'pending' %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% elif line.line_status == 'approved' %}
+                                        <span class="badge bg-success">Approved</span>
+                                    {% elif line.line_status == 'rejected' %}
+                                        <span class="badge bg-danger">Rejected</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ line.line_status or 'N/A' }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if line.batch_details or line.serial_details %}
+                                    <button class="btn btn-sm btn-info" onclick="showMultiGRNQRLabels({{ line.id }}, '{{ line.item_code }}', '{{ line.item_description }}')">
+                                        <i class="fas fa-print"></i> Print Batch Labels
+                                    </button>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -89,4 +111,120 @@
         </div>
     </div>
 </div>
+
+<!-- QR Labels Modal -->
+<div class="modal fade" id="qrLabelsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-qrcode"></i> QR Code Labels</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="qrLabelsContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="window.print()">
+                    <i class="fas fa-print"></i> Print All Labels
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Show Multi GRN QR Labels for a line item
+    function showMultiGRNQRLabels(lineSelectionId, itemCode, itemDescription) {
+        // Get batch_id from the page
+        const batchId = {{ batch.id }};
+        
+        // Determine label type (let backend decide based on item properties)
+        const labelType = 'batch';
+        
+        fetch('/multi-grn/api/generate-barcode-labels', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                batch_id: batchId,
+                line_selection_id: lineSelectionId,
+                label_type: labelType
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayQRLabels(data.labels);
+            } else {
+                alert('Error generating QR labels: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error generating QR labels:', error);
+            alert('Network error generating QR labels');
+        });
+    }
+
+    // Display QR Labels in Modal (Compact format matching GRPO Module)
+    function displayQRLabels(labels) {
+        const content = document.getElementById('qrLabelsContent');
+        let html = '<div class="container-fluid"><div class="row">';
+
+        labels.forEach((label, index) => {
+            html += `
+                <div class="col-md-6 mb-3 d-flex">
+                    <div class="card border-dark flex-fill" style="max-width: 500px;">
+                        <div class="card-header bg-light text-center py-1">
+                            <small><strong>${label.batch_number ? 'BatchItem' : 'Item'}_${String(label.sequence).padStart(2, '0')}</strong></small>
+                        </div>
+                        <div class="card-body p-2">
+                            <div class="row g-2">
+                                <div class="col-5 text-center">
+                                    ${label.qr_code_image ? `<img src="${label.qr_code_image}" alt="QR Code" class="img-fluid" style="max-width: 150px;">` : '<p class="text-muted small">QR Code failed</p>'}
+                                    <div class="mt-1">
+                                        <small><strong>${label.grn_number}</strong></small>
+                                    </div>
+                                </div>
+                                <div class="col-7">
+                                    <table class="table table-sm table-borderless mb-0" style="font-size: 0.85rem;">
+                                        <tr>
+                                            <td class="fw-bold py-1">PO:</td>
+                                            <td class="py-1">${label.po_number}</td>
+                                        </tr>
+                                        ${label.batch_number ? `<tr><td class="fw-bold py-1">Batch:</td><td class="py-1">${label.batch_number}</td></tr>` : ''}
+                                        <tr>
+                                            <td class="fw-bold py-1">Qty per Pack:</td>
+                                            <td class="py-1">${label.qty_per_pack || label.quantity}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold py-1">Pack:</td>
+                                            <td class="py-1">${label.sequence} of ${label.total}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold py-1">GRN Date:</td>
+                                            <td class="py-1">${label.grn_date}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold py-1">Exp Date:</td>
+                                            <td class="py-1">${label.expiration_date || 'N/A'}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div></div>';
+        content.innerHTML = html;
+
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('qrLabelsModal'));
+        modal.show();
+    }
+</script>
 {% endblock %}
