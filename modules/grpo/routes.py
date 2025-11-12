@@ -10,6 +10,7 @@ from models import User
 from sap_integration import SAPIntegration
 import logging
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 import qrcode
 import io
 import base64
@@ -457,12 +458,14 @@ def add_grpo_item(grpo_id):
                     return redirect(url_for('grpo.detail', grpo_id=grpo_id))
                 
                 # Validate that serials can be evenly divided into bags (integer pack sizes only)
+                # For serial items, we still need even division since each serial is a discrete unit
                 if total_serials % number_of_bags != 0:
                     flash(f'Number of serials ({total_serials}) must be evenly divisible by number of bags ({number_of_bags}). Each bag must contain the same integer number of serials.', 'error')
                     db.session.rollback()
                     return redirect(url_for('grpo.detail', grpo_id=grpo_id))
                 
-                qty_per_pack = total_serials / number_of_bags
+                # Use Decimal for precise quantity distribution, round to 3 decimal places
+                qty_per_pack = (Decimal(str(total_serials)) / Decimal(str(number_of_bags))).quantize(Decimal('0.001'))
                 no_of_packs = number_of_bags
                 
                 # Create serial number records with automatic barcode generation
@@ -513,14 +516,11 @@ def add_grpo_item(grpo_id):
                 for idx, batch_data in enumerate(batch_numbers):
                     batch_qty = float(batch_data.get('quantity', 0))
                     
-                    # Validate that batch quantity can be evenly divided into bags
-                    if batch_qty % number_of_bags != 0:
-                        flash(f'Batch quantity ({batch_qty}) for batch {batch_data.get("batch_number")} must be evenly divisible by number of bags ({number_of_bags}). Each bag must contain the same integer quantity.', 'error')
-                        db.session.rollback()
-                        return redirect(url_for('grpo.detail', grpo_id=grpo_id))
-                    
-                    # Calculate qty per pack for this batch
-                    qty_per_pack = batch_qty / number_of_bags if number_of_bags > 0 else batch_qty
+                    # Calculate qty per pack for this batch using Decimal for precision, round to 3 decimal places
+                    if number_of_bags > 0:
+                        qty_per_pack = (Decimal(str(batch_qty)) / Decimal(str(number_of_bags))).quantize(Decimal('0.001'))
+                    else:
+                        qty_per_pack = Decimal(str(batch_qty))
                     no_of_packs = number_of_bags
                     
                     # Generate unique GRN number for this batch

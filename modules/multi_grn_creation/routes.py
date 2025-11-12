@@ -683,7 +683,11 @@ def update_line_item():
             
             # Create new batch details for each bag
             bags_count = int(number_of_bags)
-            qty_per_bag = line_selection.selected_quantity / bags_count if line_selection.selected_quantity else 0
+            # Use Decimal for precise quantity distribution, round to 3 decimal places
+            if line_selection.selected_quantity:
+                qty_per_bag = (Decimal(str(line_selection.selected_quantity)) / Decimal(str(bags_count))).quantize(Decimal('0.001'))
+            else:
+                qty_per_bag = Decimal('0')
             
             # Get batch ID from the line's PO link for unique GRN numbering
             # Handle both PO-based and manual items safely
@@ -971,7 +975,11 @@ def manage_batch_details(line_id):
                     return jsonify({'success': False, 'error': 'Invalid expiry date format'}), 400
             
             no_of_packs = int(data.get('no_of_packs', 1))
-            qty_per_pack = quantity / no_of_packs if no_of_packs > 0 else quantity
+            # Use Decimal for precise quantity distribution, round to 3 decimal places
+            if no_of_packs > 0:
+                qty_per_pack = (Decimal(str(quantity)) / Decimal(str(no_of_packs))).quantize(Decimal('0.001'))
+            else:
+                qty_per_pack = Decimal(str(quantity))
             
             barcode_data = f"BATCH:{batch_num}"
             try:
@@ -1580,12 +1588,11 @@ def add_item_to_batch(batch_id):
                     for idx, batch_data in enumerate(batch_numbers):
                         batch_qty = float(batch_data.get('quantity', 0))
                         
-                        # Validate bags can evenly divide batch quantity
-                        if number_of_bags > 1 and batch_qty % number_of_bags != 0:
-                            db.session.rollback()
-                            return jsonify({'success': False, 'error': f'Batch quantity must be evenly divisible by number of bags'}), 400
-                        
-                        qty_per_pack = batch_qty / number_of_bags if number_of_bags > 0 else batch_qty
+                        # Use Decimal for precise quantity distribution across bags, round to 3 decimal places
+                        if number_of_bags > 0:
+                            qty_per_pack = (Decimal(str(batch_qty)) / Decimal(str(number_of_bags))).quantize(Decimal('0.001'))
+                        else:
+                            qty_per_pack = Decimal(str(batch_qty))
                         grn_number = f"MGN-{batch.id}-{line_selection.id}-{idx+1}"
                         
                         batch_detail = MultiGRNBatchDetails(
@@ -1610,7 +1617,8 @@ def add_item_to_batch(batch_id):
         # Handle non-managed items with bags
         if not is_batch_managed and not is_serial_managed and number_of_bags > 1:
             # For non-managed items, create batch details to track packs
-            qty_per_pack = quantity / number_of_bags
+            # Use Decimal for precise quantity distribution, round to 3 decimal places
+            qty_per_pack = (Decimal(str(quantity)) / Decimal(str(number_of_bags))).quantize(Decimal('0.001'))
             
             for pack_idx in range(1, number_of_bags + 1):
                 grn_number = f"MGN-{batch.id}-{line_selection.id}-{pack_idx}"
