@@ -7,6 +7,26 @@ A Flask-based Warehouse Management System (WMS) designed to streamline inventory
 *   Keep MySQL migration files updated when database schema changes occur
 *   SQL query validation should only run on initial startup, not on every application restart
 
+## Recent Changes
+
+### November 12, 2025 - Multi GRN QR Labels Fix
+**Issue:** Print Batch Labels button in Multi GRN module was not displaying QR labels
+**Root Cause:** Users were attempting to print labels before adding item details (warehouse, bin location, batch/serial info)
+**Solution:** 
+- Added comprehensive logging to track label generation requests and identify missing data
+- Implemented explicit error handling that returns clear message: "No batch details found for this item. Please add item details first before printing labels."
+- Enhanced user workflow guidance in documentation
+
+**Correct Workflow:**
+1. Click "Add Item" button in Step 3: Line Item Details
+2. Enter warehouse, bin location, and number of packs
+3. Click "Generate QR Labels" and save
+4. Then "Print Batch Labels" will work correctly
+
+**Files Modified:**
+- `modules/multi_grn_creation/routes.py`: Enhanced logging and validation in generate_barcode_labels_multi_grn()
+- `MULTI_GRN_QR_LABELS_FIX.md`: Detailed documentation of the fix
+
 ## System Architecture
 The system is built on a Flask web application backend, utilizing Jinja2 for server-side rendering. A core architectural decision is the deep integration with the SAP B1 Service Layer API for all critical warehouse operations, ensuring data consistency and real-time updates. PostgreSQL is the primary database target for cloud deployments, with SQLite serving as a fallback. User authentication uses Flask-Login with robust role-based access control. The application is designed for production deployment using Gunicorn with autoscale capabilities.
 

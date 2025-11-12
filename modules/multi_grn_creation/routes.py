@@ -1167,7 +1167,10 @@ def generate_barcode_labels_multi_grn():
         line_selection_id = int(data.get('line_selection_id'))  # Convert to int
         label_type = data.get('label_type', 'batch')
         
+        logging.info(f"🏷️ Generate barcode labels request: batch_id={batch_id}, line_selection_id={line_selection_id}, label_type={label_type}")
+        
         if not all([batch_id, line_selection_id]):
+            logging.error("❌ Missing required parameters")
             return jsonify({
                 'success': False,
                 'error': 'Missing required parameters: batch_id, line_selection_id'
@@ -1198,12 +1201,17 @@ def generate_barcode_labels_multi_grn():
         
         # Check if item has batch_details (even if not batch-managed) for pack generation
         has_batch_details = len(line_selection.batch_details) > 0
+        has_serial_details = len(line_selection.serial_details) > 0
+        
+        logging.info(f"📊 Line selection data: item_code={line_selection.item_code}, has_batch_details={has_batch_details} (count={len(line_selection.batch_details)}), has_serial_details={has_serial_details} (count={len(line_selection.serial_details)})")
         
         if label_type == 'serial':
+            logging.info(f"🔖 Processing SERIAL labels")
             serial_details = line_selection.serial_details
             total_serials = len(serial_details)
             
             if total_serials == 0:
+                logging.warning(f"⚠️ No serial numbers found for line_selection_id={line_selection_id}")
                 return jsonify({
                     'success': False,
                     'error': 'No serial numbers found for this item'
@@ -1274,7 +1282,16 @@ def generate_barcode_labels_multi_grn():
                 labels.append(label)
         
         elif label_type == 'batch':
+            logging.info(f"🔖 Processing BATCH labels")
             batch_details = line_selection.batch_details
+            
+            if len(batch_details) == 0:
+                logging.warning(f"⚠️ No batch details found for line_selection_id={line_selection_id}, but label_type='batch' was requested")
+                return jsonify({
+                    'success': False,
+                    'error': 'No batch details found for this item. Please add item details first before printing labels.'
+                }), 400
+            
             label_counter = 1
             
             for batch_detail in batch_details:
@@ -1321,6 +1338,7 @@ def generate_barcode_labels_multi_grn():
         
         # Handle standard items with batch_details (created via number_of_packs)
         elif has_batch_details and label_type == 'regular':
+            logging.info(f"🔖 Processing REGULAR labels with batch_details")
             batch_details = line_selection.batch_details
             label_counter = 1
             
@@ -1367,6 +1385,7 @@ def generate_barcode_labels_multi_grn():
         
         # Handle regular items without batch_details (single label, no packs)
         else:
+            logging.info(f"🔖 Processing REGULAR labels without batch_details (single label)")
             qr_data = {
                 'PO': po_number,
                 'ItemCode': line_selection.item_code,
@@ -1398,6 +1417,8 @@ def generate_barcode_labels_multi_grn():
                 'qr_data': qr_data
             }
             labels.append(label)
+        
+        logging.info(f"✅ Successfully generated {len(labels)} label(s) for line_selection_id={line_selection_id}, label_type={label_type}")
         
         return jsonify({
             'success': True,
