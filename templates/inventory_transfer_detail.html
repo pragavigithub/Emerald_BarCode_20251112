@@ -410,22 +410,28 @@
                             <div class="mb-3">
                                 <label for="from_bin" class="form-label">From Bin Location <span class="text-danger">*</span></label>
                                 <div class="input-group">
-                                    <input type="text" class="form-control" id="from_bin" name="from_bin" required>
-                                    <!-- <button type="button" class="btn btn-outline-primary" onclick="scanBin('from')">
-                                        <i data-feather="camera"></i> Scan
-                                    </button> -->
+                                    <select class="form-select" id="from_bin" name="from_bin" required>
+                                        <option value="">Select warehouse first...</option>
+                                    </select>
+                                    <button type="button" class="btn btn-outline-primary" onclick="loadFromBinLocations()" id="from_bin_refresh_btn" style="display: none;">
+                                        <i data-feather="refresh-cw"></i>
+                                    </button>
                                 </div>
+                                <small class="text-muted" id="from_bin_status">Select from warehouse to load bin locations</small>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="to_bin" class="form-label">To Bin Location <span class="text-danger">*</span></label>
                                 <div class="input-group">
-                                    <input type="text" class="form-control" id="to_bin" name="to_bin" required>
-                                    <!-- <button type="button" class="btn btn-outline-primary" onclick="scanBin('to')">
-                                        <i data-feather="camera"></i> Scan
-                                    </button> -->
+                                    <select class="form-select" id="to_bin" name="to_bin" required>
+                                        <option value="">Select warehouse first...</option>
+                                    </select>
+                                    <button type="button" class="btn btn-outline-primary" onclick="loadToBinLocations()" id="to_bin_refresh_btn" style="display: none;">
+                                        <i data-feather="refresh-cw"></i>
+                                    </button>
                                 </div>
+                                <small class="text-muted" id="to_bin_status">Select to warehouse to load bin locations</small>
                             </div>
                         </div>
                     </div>
@@ -1813,6 +1819,124 @@ function showAlert(type, message) {
         }, 5000);
     }
 }
+
+// Bin Location Management
+const binLocationCache = {};
+
+// Load bin locations for from warehouse
+function loadFromBinLocations() {
+    const warehouseCode = document.getElementById('from_warehouse_code').value;
+    if (!warehouseCode) {
+        document.getElementById('from_bin_status').textContent = 'Select from warehouse first';
+        return;
+    }
+    
+    loadBinLocations(warehouseCode, 'from');
+}
+
+// Load bin locations for to warehouse
+function loadToBinLocations() {
+    const warehouseCode = document.getElementById('to_warehouse_code').value;
+    if (!warehouseCode) {
+        document.getElementById('to_bin_status').textContent = 'Select to warehouse first';
+        return;
+    }
+    
+    loadBinLocations(warehouseCode, 'to');
+}
+
+// Generic function to load bin locations from SAP B1
+function loadBinLocations(warehouseCode, type) {
+    const selectId = type === 'from' ? 'from_bin' : 'to_bin';
+    const statusId = type === 'from' ? 'from_bin_status' : 'to_bin_status';
+    const refreshBtnId = type === 'from' ? 'from_bin_refresh_btn' : 'to_bin_refresh_btn';
+    const select = document.getElementById(selectId);
+    const status = document.getElementById(statusId);
+    const refreshBtn = document.getElementById(refreshBtnId);
+    
+    // Check cache first
+    if (binLocationCache[warehouseCode]) {
+        populateBinDropdown(select, binLocationCache[warehouseCode], statusId, refreshBtnId);
+        return;
+    }
+    
+    // Show loading state
+    select.disabled = true;
+    status.textContent = 'Loading bin locations...';
+    status.className = 'text-muted';
+    
+    // Fetch from API
+    fetch(`/inventory_transfer/api/bin-locations?warehouse_code=${encodeURIComponent(warehouseCode)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Cache the results
+                binLocationCache[warehouseCode] = data.bins;
+                populateBinDropdown(select, data.bins, statusId, refreshBtnId);
+            } else {
+                select.disabled = false;
+                select.innerHTML = '<option value="">Error loading bins</option>';
+                status.textContent = data.error || 'Failed to load bin locations';
+                status.className = 'text-danger';
+                showAlert('danger', `Failed to load bin locations: ${data.error}`);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading bin locations:', error);
+            select.disabled = false;
+            select.innerHTML = '<option value="">Error loading bins</option>';
+            status.textContent = 'Error connecting to server';
+            status.className = 'text-danger';
+            showAlert('danger', `Error loading bin locations: ${error.message}`);
+        });
+}
+
+// Populate bin dropdown with fetched data
+function populateBinDropdown(select, bins, statusId, refreshBtnId) {
+    const status = document.getElementById(statusId);
+    const refreshBtn = document.getElementById(refreshBtnId);
+    
+    select.disabled = false;
+    select.innerHTML = '<option value="">Select bin location...</option>';
+    
+    if (bins && bins.length > 0) {
+        bins.forEach(bin => {
+            const option = document.createElement('option');
+            option.value = bin.BinCode;
+            option.textContent = bin.BinCode;
+            select.appendChild(option);
+        });
+        
+        status.textContent = `${bins.length} bin locations available`;
+        status.className = 'text-success';
+        refreshBtn.style.display = '';
+    } else {
+        select.innerHTML = '<option value="">No bin locations found</option>';
+        status.textContent = 'No bin locations available for this warehouse';
+        status.className = 'text-warning';
+    }
+}
+
+// Load bin locations when modal opens
+document.getElementById('addItemModal').addEventListener('shown.bs.modal', function() {
+    const fromWarehouse = document.getElementById('from_warehouse_code').value;
+    const toWarehouse = document.getElementById('to_warehouse_code').value;
+    
+    // Load bin locations if warehouses are set
+    if (fromWarehouse) {
+        loadBinLocations(fromWarehouse, 'from');
+    }
+    if (toWarehouse) {
+        loadBinLocations(toWarehouse, 'to');
+    }
+});
+
+// Initialize feather icons after bin dropdowns are loaded
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+});
 </script>
 
 <script src="{{ url_for('static', filename='js/inventory_transfer_item_validation.js') }}"></script>
