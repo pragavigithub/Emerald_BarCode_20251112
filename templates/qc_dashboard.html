@@ -344,7 +344,7 @@
                                     </td>
                                     <td>
                                         <div class="btn-group" role="group">
-                                            <a href="{{ url_for('sales_delivery.delivery_detail', delivery_id=delivery.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <a href="{{ url_for('sales_delivery.detail', delivery_id=delivery.id) }}" class="btn btn-sm btn-outline-primary">
                                                 <i data-feather="eye"></i> Review
                                             </a>
                                             <button class="btn btn-sm btn-success" onclick="showDeliveryApprovalModal({{ delivery.id }}, '{{ delivery.delivery_number }}')">
@@ -419,7 +419,7 @@
                                     </td>
                                     <td>
                                         <div class="btn-group" role="group">
-                                            <a href="{{ url_for('multi_grn.batch_detail', batch_id=batch.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <a href="{{ url_for('multi_grn.view_batch', batch_id=batch.id) }}" class="btn btn-sm btn-outline-primary">
                                                 <i data-feather="eye"></i> Review
                                             </a>
                                             <button class="btn btn-sm btn-success" onclick="showMultiGRNApprovalModal({{ batch.id }}, '{{ batch.batch_number }}')">
