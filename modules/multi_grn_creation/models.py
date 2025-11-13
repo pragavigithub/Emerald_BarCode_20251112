@@ -24,8 +24,13 @@ class MultiGRNBatch(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     posted_at = db.Column(db.DateTime)
     completed_at = db.Column(db.DateTime)
+    submitted_at = db.Column(db.DateTime)
+    qc_approver_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    qc_approved_at = db.Column(db.DateTime)
+    qc_notes = db.Column(db.Text)
     
-    user = db.relationship('User', backref='multi_grn_batches')
+    user = db.relationship('User', foreign_keys=[user_id], backref='multi_grn_batches')
+    qc_approver = db.relationship('User', foreign_keys=[qc_approver_id])
     po_links = db.relationship('MultiGRNPOLink', backref='batch', lazy=True, cascade='all, delete-orphan')
     
     def __repr__(self):

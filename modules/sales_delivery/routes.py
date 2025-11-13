@@ -316,6 +316,148 @@ def api_submit_delivery():
     })
 
 
+@sales_delivery_bp.route('/api/approve_delivery', methods=['POST'])
+@login_required
+def api_approve_delivery():
+    """QC approve delivery and post to SAP B1"""
+    try:
+        data = request.get_json()
+        delivery_id = data.get('delivery_id')
+        
+        if not delivery_id:
+            return jsonify({'success': False, 'error': 'Delivery ID is required'})
+        
+        delivery = DeliveryDocument.query.get(delivery_id)
+        
+        if not delivery:
+            return jsonify({'success': False, 'error': 'Delivery not found'})
+        
+        if not current_user.has_permission('qc_dashboard') and current_user.role not in ['admin', 'manager']:
+            return jsonify({'success': False, 'error': 'QC permissions required'}), 403
+        
+        if delivery.status != 'submitted':
+            return jsonify({'success': False, 'error': 'Only submitted deliveries can be approved'})
+        
+        qc_notes = data.get('qc_notes', '')
+        
+        delivery.status = 'qc_approved'
+        delivery.qc_approver_id = current_user.id
+        delivery.qc_approved_at = datetime.utcnow()
+        delivery.qc_notes = qc_notes
+        
+        for item in delivery.items:
+            item.qc_status = 'approved'
+        
+        sap = SAPIntegration()
+        
+        if not sap.ensure_logged_in():
+            db.session.rollback()
+            return jsonify({'success': False, 'error': 'SAP B1 authentication failed'}), 500
+        
+        document_lines = []
+        for item in delivery.items:
+            doc_line = {
+                'BaseType': 17,
+                'BaseEntry': delivery.so_doc_entry,
+                'BaseLine': item.base_line,
+                'ItemCode': item.item_code,
+                'Quantity': item.quantity,
+                'WarehouseCode': item.warehouse_code
+            }
+            
+            if item.batch_required and item.batch_number:
+                doc_line['BatchNumbers'] = [{
+                    'BatchNumber': item.batch_number,
+                    'Quantity': item.quantity
+                }]
+            
+            if item.serial_required and item.serial_number:
+                doc_line['SerialNumbers'] = [{
+                    'InternalSerialNumber': item.serial_number,
+                    'Quantity': 1.0
+                }]
+            
+            document_lines.append(doc_line)
+        
+        delivery_data = {
+            'CardCode': delivery.card_code,
+            'DocDate': datetime.now().strftime('%Y-%m-%d'),
+            'DocCurrency': delivery.doc_currency or 'INR',
+            'Comments': f'QC Approved - SO {delivery.so_doc_num}',
+            'DocumentLines': document_lines
+        }
+        
+        result = sap.post_sales_delivery(delivery_data)
+        
+        if not result.get('success'):
+            db.session.rollback()
+            error_msg = result.get('error', 'Unknown SAP error')
+            logging.error(f"❌ SAP B1 posting failed for delivery {delivery_id}: {error_msg}")
+            return jsonify({'success': False, 'error': f'SAP B1 posting failed: {error_msg}'}), 500
+        
+        delivery.sap_doc_entry = result.get('doc_entry')
+        delivery.sap_doc_num = result.get('doc_num')
+        delivery.status = 'posted'
+        
+        db.session.commit()
+        
+        logging.info(f"✅ Sales Delivery {delivery_id} approved and posted to SAP B1 as {delivery.sap_doc_num}")
+        return jsonify({
+            'success': True,
+            'message': f'Delivery approved and posted to SAP B1 as {delivery.sap_doc_num}',
+            'sap_doc_num': delivery.sap_doc_num
+        })
+        
+    except Exception as e:
+        logging.error(f"Error approving delivery: {str(e)}")
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@sales_delivery_bp.route('/api/reject_delivery', methods=['POST'])
+@login_required
+def api_reject_delivery():
+    """QC reject delivery"""
+    try:
+        data = request.get_json()
+        delivery_id = data.get('delivery_id')
+        
+        if not delivery_id:
+            return jsonify({'success': False, 'error': 'Delivery ID is required'})
+        
+        delivery = DeliveryDocument.query.get(delivery_id)
+        
+        if not delivery:
+            return jsonify({'success': False, 'error': 'Delivery not found'})
+        
+        if not current_user.has_permission('qc_dashboard') and current_user.role not in ['admin', 'manager']:
+            return jsonify({'success': False, 'error': 'QC permissions required'}), 403
+        
+        if delivery.status != 'submitted':
+            return jsonify({'success': False, 'error': 'Only submitted deliveries can be rejected'})
+        
+        qc_notes = data.get('qc_notes', '')
+        
+        if not qc_notes:
+            return jsonify({'success': False, 'error': 'Rejection reason is required'}), 400
+        
+        delivery.status = 'rejected'
+        delivery.qc_approver_id = current_user.id
+        delivery.qc_approved_at = datetime.utcnow()
+        delivery.qc_notes = qc_notes
+        
+        for item in delivery.items:
+            item.qc_status = 'rejected'
+        
+        db.session.commit()
+        
+        logging.info(f"❌ Sales Delivery {delivery_id} rejected by {current_user.username}")
+        return jsonify({'success': True, 'message': 'Delivery rejected by QC'})
+        
+    except Exception as e:
+        logging.error(f"Error rejecting delivery: {str(e)}")
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @sales_delivery_bp.route('/api/delete_item/<int:item_id>', methods=['DELETE'])
 @login_required
 def api_delete_item(item_id):

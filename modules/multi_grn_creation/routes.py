@@ -462,6 +462,227 @@ def view_batch(batch_id):
     
     return render_template('multi_grn/view_batch.html', batch=batch)
 
+@multi_grn_bp.route('/batch/<int:batch_id>/submit', methods=['POST'])
+@login_required
+def submit_batch(batch_id):
+    """Submit Multi GRN batch for QC approval"""
+    try:
+        batch = MultiGRNBatch.query.get_or_404(batch_id)
+        
+        if batch.user_id != current_user.id:
+            return jsonify({'success': False, 'error': 'Access denied'}), 403
+        
+        if batch.status != 'draft':
+            return jsonify({'success': False, 'error': 'Only draft batches can be submitted'}), 400
+        
+        if not batch.po_links:
+            return jsonify({'success': False, 'error': 'Cannot submit batch without purchase orders'}), 400
+        
+        has_lines = any(po_link.line_selections for po_link in batch.po_links)
+        if not has_lines:
+            return jsonify({'success': False, 'error': 'Cannot submit batch without line items'}), 400
+        
+        batch.status = 'submitted'
+        batch.submitted_at = datetime.utcnow()
+        db.session.commit()
+        
+        logging.info(f"📤 Multi GRN batch {batch_id} submitted for QC approval by {current_user.username}")
+        return jsonify({
+            'success': True,
+            'message': 'Batch submitted for QC approval',
+            'status': 'submitted'
+        })
+        
+    except Exception as e:
+        logging.error(f"Error submitting Multi GRN batch: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@multi_grn_bp.route('/batch/<int:batch_id>/approve', methods=['POST'])
+@login_required
+def approve_batch(batch_id):
+    """QC approve Multi GRN batch and post to SAP B1"""
+    try:
+        batch = MultiGRNBatch.query.get_or_404(batch_id)
+        
+        if not current_user.has_permission('qc_dashboard') and current_user.role not in ['admin', 'manager']:
+            return jsonify({'success': False, 'error': 'QC permissions required'}), 403
+        
+        if batch.status != 'submitted':
+            return jsonify({'success': False, 'error': 'Only submitted batches can be approved'}), 400
+        
+        qc_notes = ''
+        if request.form:
+            qc_notes = request.form.get('qc_notes', '')
+        elif request.json:
+            qc_notes = request.json.get('qc_notes', '')
+        
+        batch.status = 'qc_approved'
+        batch.qc_approver_id = current_user.id
+        batch.qc_approved_at = datetime.utcnow()
+        batch.qc_notes = qc_notes
+        
+        sap_service = SAPMultiGRNService()
+        results = []
+        success_count = 0
+        
+        for po_link in batch.po_links:
+            if not po_link.line_selections:
+                continue
+            
+            document_lines = []
+            line_number = 0
+            
+            for line in po_link.line_selections:
+                if line.line_status == 'manual' or line.po_line_num == -1:
+                    doc_line = {
+                        'ItemCode': line.item_code,
+                        'Quantity': float(line.selected_quantity),
+                        'WarehouseCode': line.warehouse_code or '7000-FG'
+                    }
+                else:
+                    doc_line = {
+                        'BaseType': 22,
+                        'BaseEntry': po_link.po_doc_entry,
+                        'BaseLine': line.po_line_num,
+                        'ItemCode': line.item_code,
+                        'Quantity': float(line.selected_quantity),
+                        'WarehouseCode': line.warehouse_code or '7000-FG'
+                    }
+                
+                if line.bin_location:
+                    doc_line['BinAllocations'] = [{
+                        'BinAbsEntry': line.bin_location,
+                        'Quantity': float(line.selected_quantity)
+                    }]
+                
+                if line.batch_details:
+                    batch_numbers = []
+                    for batch_detail in line.batch_details:
+                        batch_entry = {
+                            'BatchNumber': batch_detail.batch_number,
+                            'Quantity': float(batch_detail.quantity),
+                            'BaseLineNumber': line_number
+                        }
+                        if batch_detail.expiry_date:
+                            batch_entry['ExpiryDate'] = batch_detail.expiry_date.isoformat()
+                        if batch_detail.manufacturer_serial_number:
+                            batch_entry['ManufacturerSerialNumber'] = batch_detail.manufacturer_serial_number
+                        if batch_detail.internal_serial_number:
+                            batch_entry['InternalSerialNumber'] = batch_detail.internal_serial_number
+                        batch_numbers.append(batch_entry)
+                    
+                    if batch_numbers:
+                        doc_line['BatchNumbers'] = batch_numbers
+                
+                elif line.serial_details:
+                    serial_numbers = []
+                    for serial_detail in line.serial_details:
+                        serial_entry = {
+                            'InternalSerialNumber': serial_detail.serial_number,
+                            'Quantity': 1.0,
+                            'BaseLineNumber': line_number
+                        }
+                        if serial_detail.manufacturer_serial_number:
+                            serial_entry['ManufacturerSerialNumber'] = serial_detail.manufacturer_serial_number
+                        if serial_detail.expiry_date:
+                            serial_entry['ExpiryDate'] = serial_detail.expiry_date.isoformat()
+                        serial_numbers.append(serial_entry)
+                    
+                    if serial_numbers:
+                        doc_line['SerialNumbers'] = serial_numbers
+                
+                elif line.serial_numbers:
+                    serial_data = json.loads(line.serial_numbers) if isinstance(line.serial_numbers, str) else line.serial_numbers
+                    doc_line['SerialNumbers'] = serial_data
+                
+                elif line.batch_numbers:
+                    batch_data = json.loads(line.batch_numbers) if isinstance(line.batch_numbers, str) else line.batch_numbers
+                    doc_line['BatchNumbers'] = batch_data
+                
+                document_lines.append(doc_line)
+                line_number += 1
+            
+            grn_data = {
+                'CardCode': po_link.po_card_code,
+                'DocDate': date.today().isoformat(),
+                'DocDueDate': date.today().isoformat(),
+                'Comments': f'QC Approved - Batch {batch.id}',
+                'NumAtCard': f'BATCH-{batch.id}-PO-{po_link.po_doc_num}',
+                'BPL_IDAssignedToInvoice': 5,
+                'DocumentLines': document_lines
+            }
+            
+            result = sap_service.create_purchase_delivery_note(grn_data)
+            
+            if result['success']:
+                po_link.status = 'posted'
+                po_link.sap_grn_doc_num = result.get('doc_num')
+                po_link.sap_grn_doc_entry = result.get('doc_entry')
+                po_link.posted_at = datetime.utcnow()
+                success_count += 1
+                results.append({'po_num': po_link.po_doc_num, 'success': True, 'grn_num': result.get('doc_num')})
+            else:
+                po_link.status = 'failed'
+                po_link.error_message = result.get('error')
+                results.append({'po_num': po_link.po_doc_num, 'success': False, 'error': result.get('error')})
+        
+        batch.status = 'posted' if success_count > 0 else 'failed'
+        batch.total_grns_created = success_count
+        batch.completed_at = datetime.utcnow()
+        batch.posted_at = datetime.utcnow()
+        db.session.commit()
+        
+        logging.info(f"✅ Multi GRN batch {batch_id} approved and posted to SAP B1: {success_count} GRNs created")
+        return jsonify({
+            'success': True,
+            'message': f'Batch approved and {success_count} GRNs posted to SAP B1',
+            'results': results,
+            'total_success': success_count,
+            'total_failed': len(results) - success_count
+        })
+        
+    except Exception as e:
+        logging.error(f"❌ Error approving Multi GRN batch {batch_id}: {str(e)}")
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@multi_grn_bp.route('/batch/<int:batch_id>/reject', methods=['POST'])
+@login_required
+def reject_batch(batch_id):
+    """QC reject Multi GRN batch"""
+    try:
+        batch = MultiGRNBatch.query.get_or_404(batch_id)
+        
+        if not current_user.has_permission('qc_dashboard') and current_user.role not in ['admin', 'manager']:
+            return jsonify({'success': False, 'error': 'QC permissions required'}), 403
+        
+        if batch.status != 'submitted':
+            return jsonify({'success': False, 'error': 'Only submitted batches can be rejected'}), 400
+        
+        qc_notes = ''
+        if request.form:
+            qc_notes = request.form.get('qc_notes', '')
+        elif request.json:
+            qc_notes = request.json.get('qc_notes', '')
+        
+        if not qc_notes:
+            return jsonify({'success': False, 'error': 'Rejection reason is required'}), 400
+        
+        batch.status = 'rejected'
+        batch.qc_approver_id = current_user.id
+        batch.qc_approved_at = datetime.utcnow()
+        batch.qc_notes = qc_notes
+        
+        db.session.commit()
+        
+        logging.info(f"❌ Multi GRN batch {batch_id} rejected by {current_user.username}")
+        return jsonify({'success': True, 'message': 'Batch rejected by QC'})
+        
+    except Exception as e:
+        logging.error(f"Error rejecting Multi GRN batch: {str(e)}")
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @multi_grn_bp.route('/api/search-customers')
 @login_required
 def api_search_customers():
