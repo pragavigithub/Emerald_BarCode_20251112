@@ -2228,6 +2228,65 @@ def api_reset_scan_state():
         logging.error(f"Error resetting scan state: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@transfer_bp.route('/api/bin-locations', methods=['GET'])
+@login_required
+def api_get_bin_locations():
+    """
+    Get bin locations for a specific warehouse from SAP B1
+    Query parameters:
+        - warehouse_code: Warehouse code (required)
+    Returns: JSON with bins array or error
+    """
+    try:
+        warehouse_code = request.args.get('warehouse_code', '').strip()
+        
+        if not warehouse_code:
+            return jsonify({
+                'success': False,
+                'error': 'Warehouse code is required'
+            }), 400
+        
+        # Initialize SAP integration
+        from sap_integration import SAPIntegration
+        sap_b1 = SAPIntegration()
+        
+        # Ensure logged in
+        if not sap_b1.ensure_logged_in():
+            return jsonify({
+                'success': False,
+                'error': 'Failed to connect to SAP B1. Please check SAP connection.'
+            }), 502
+        
+        # Fetch bin locations using existing method
+        bins = sap_b1.get_bin_locations_list(warehouse_code)
+        
+        if bins is None:
+            return jsonify({
+                'success': False,
+                'error': f'Failed to fetch bin locations for warehouse {warehouse_code}'
+            }), 502
+        
+        # Filter only active bins (IsActive = 'N' means active in SAP)
+        active_bins = [bin for bin in bins if bin.get('IsActive') == 'N']
+        
+        logging.info(f"✅ Retrieved {len(active_bins)} active bin locations for warehouse {warehouse_code}")
+        
+        return jsonify({
+            'success': True,
+            'bins': active_bins,
+            'warehouse_code': warehouse_code,
+            'count': len(active_bins)
+        })
+        
+    except Exception as e:
+        logging.error(f"Error fetching bin locations: {str(e)}")
+        import traceback
+        logging.error(traceback.format_exc())
+        return jsonify({
+            'success': False,
+            'error': f'Error fetching bin locations: {str(e)}'
+        }), 500
+
     #     print(qr_data)
     #     # Parse QR data
     #     parsed_data = {}
