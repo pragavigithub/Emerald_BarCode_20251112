@@ -9,6 +9,28 @@ A Flask-based Warehouse Management System (WMS) designed to streamline inventory
 
 ## Recent Changes
 
+### November 13, 2025 - Inventory Transfer QR Scanning Enhancement
+**Feature:** Database-backed QR code scanning for Inventory Transfer module
+**Implementation:**
+- Created `TransferScanState` model for persistent pack tracking (replaces Flask session to avoid 4KB cookie limit)
+- Enhanced `api_scan_qr_label` endpoint to parse JSON QR labels with pack information (id, po, item, batch, qty, pack, grn_date, exp_date)
+- Implemented duplicate pack prevention using database unique constraints
+- Added quantity accumulation and overflow protection
+- Built frontend UI with real-time scan progress, accumulated quantities, and remaining quantity display
+
+**Key Features:**
+- Parses JSON QR format and extracts pack data
+- Tracks each pack uniquely (prevents scanning "1 of 5" twice)
+- Accumulates quantities from multiple scans
+- Validates against requested quantities
+- Manages batch numbers for SAP B1 integration
+- Database-backed state supports unlimited pack scans
+
+**Files Modified:**
+- `models.py`: Added TransferScanState model (lines 190-216)
+- `modules/inventory_transfer/routes.py`: Updated api_scan_qr_label and api_reset_scan_state endpoints
+- `templates/inventory_transfer_detail.html`: Enhanced frontend with scan tracking UI and JavaScript handlers
+
 ### November 12, 2025 - Multi GRN QR Labels Fix
 **Issue:** Print Batch Labels button in Multi GRN module was not displaying QR labels
 **Root Cause:** Users were attempting to print labels before adding item details (warehouse, bin location, batch/serial info)

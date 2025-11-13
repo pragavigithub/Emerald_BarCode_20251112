@@ -184,6 +184,35 @@ class InventoryTransferItem(db.Model):
                                       back_populates='items')
 
 
+class TransferScanState(db.Model):
+    """
+    Temporary table to store scanned pack data during inventory transfer item creation
+    Replaces session storage to avoid 4KB cookie limit
+    """
+    __tablename__ = 'transfer_scan_states'
+
+    id = db.Column(db.Integer, primary_key=True)
+    transfer_id = db.Column(db.Integer, db.ForeignKey('inventory_transfers.id'), nullable=False)
+    item_code = db.Column(db.String(50), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    requested_qty = db.Column(db.Float, nullable=False)
+    
+    pack_key = db.Column(db.String(200), nullable=False)
+    pack_label = db.Column(db.String(50), nullable=False)
+    batch_number = db.Column(db.String(50), nullable=True)
+    qty = db.Column(db.Float, nullable=False)
+    grn_id = db.Column(db.String(100), nullable=True)
+    grn_date = db.Column(db.String(20), nullable=True)
+    exp_date = db.Column(db.String(20), nullable=True)
+    po = db.Column(db.String(50), nullable=True)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    __table_args__ = (
+        db.UniqueConstraint('transfer_id', 'item_code', 'pack_key', name='uq_transfer_item_pack'),
+    )
+
+
 class PickList(db.Model):
     __tablename__ = 'pick_lists'
 

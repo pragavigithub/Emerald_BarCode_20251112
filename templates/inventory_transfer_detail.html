@@ -437,6 +437,35 @@
                         </div>
                         <small class="text-muted" id="batch_info">Select batch with available stock</small>
                     </div>
+                    
+                    <div id="scanned_packs_section" style="display: none;">
+                        <div class="alert alert-info">
+                            <h6><i data-feather="package"></i> Scanned Packs</h6>
+                            <div id="scan_summary" class="mb-2">
+                                <strong>Requested:</strong> <span id="requested_qty_display">0</span> |
+                                <strong>Scanned:</strong> <span id="scanned_qty_display">0</span> |
+                                <strong>Remaining:</strong> <span id="remaining_qty_display" class="text-primary">0</span>
+                            </div>
+                            <div id="scanned_packs_list" class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Pack</th>
+                                            <th>Batch</th>
+                                            <th>Qty</th>
+                                            <th>GRN</th>
+                                            <th>Exp Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="scanned_packs_tbody">
+                                    </tbody>
+                                </table>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-warning" onclick="resetScanState()">
+                                <i data-feather="x"></i> Clear All Scans
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -1542,13 +1571,13 @@ function startQRScannerForTransfer() {
 function processScannedQRLabel(qrData) {
     console.log('Processing scanned QR label:', qrData);
     
-    // Show loading indicator
     const loadingIndicator = document.getElementById('loading_indicator');
     if (loadingIndicator) {
         loadingIndicator.style.display = 'block';
     }
     
-    // Call API to parse QR data and fetch item details
+    const requestedQty = parseFloat(document.getElementById('quantity').value) || 0;
+    
     fetch('{{ url_for("inventory_transfer.api_scan_qr_label") }}', {
         method: 'POST',
         headers: {
@@ -1556,12 +1585,12 @@ function processScannedQRLabel(qrData) {
         },
         body: JSON.stringify({
             qr_data: qrData,
-            transfer_id: {{ transfer.id }}
+            transfer_id: {{ transfer.id }},
+            requested_qty: requestedQty
         })
     })
     .then(response => response.json())
-    .then(
-        data => {
+    .then(data => {
         if (loadingIndicator) {
             loadingIndicator.style.display = 'none';
         }
@@ -1569,11 +1598,13 @@ function processScannedQRLabel(qrData) {
         if (data.success) {
             console.log('✅ QR scan successful:', data);
             
-            // Auto-populate the add item modal with scanned data
             populateAddItemModalFromQR(data);
             
-            // Show success message
             showAlert('success', data.message || 'QR label scanned successfully!');
+            
+            if (data.is_complete) {
+                showAlert('success', `✅ All packs scanned! Total: ${data.total_scanned_qty}/${data.requested_qty}`);
+            }
         } else {
             console.error('❌ QR scan failed:', data.error);
             showAlert('danger', data.error || 'Failed to process QR label');
@@ -1589,90 +1620,123 @@ function processScannedQRLabel(qrData) {
 }
 
 function populateAddItemModalFromQR(scanData) {
-    const parsedData = scanData.parsed_data;
-    const itemType = scanData.item_type;
-    
-    // Fill item code and trigger validation
-    document.getElementById('item_code').value = parsedData.item_code || '';
-    document.getElementById('item_name').value = parsedData.item_name || '';
-    document.getElementById('unit_of_measure').value = parsedData.uom || 'EA';
-    
-    // Fill warehouses if available
-    if (parsedData.from_warehouse) {
-        document.getElementById('from_warehouse_code').value = parsedData.from_warehouse;
-    }
-    if (parsedData.to_warehouse) {
-        document.getElementById('to_warehouse_code').value = parsedData.to_warehouse;
-    }
-    
-    // Handle quantity based on item type
-    if (itemType === 'serial') {
-        // For serial items, quantity is based on number of serial numbers scanned
-        if (scanData.serial_numbers && scanData.serial_numbers.length > 0) {
-            document.getElementById('quantity').value = scanData.serial_numbers.length;
+    if (scanData.item_code) {
+        const itemCodeField = document.getElementById('item_code');
+        if (itemCodeField && !itemCodeField.value) {
+            itemCodeField.value = scanData.item_code;
             
-            // If serial number dropdown exists, populate it
-            const serialSelect = document.getElementById('serial_number');
-            if (serialSelect) {
-                serialSelect.innerHTML = '<option value="">Select Serial Number</option>';
-                scanData.serial_numbers.forEach(serial => {
-                    const option = document.createElement('option');
-                    option.value = serial.InternalSerialNumber || serial.serial_number;
-                    option.textContent = serial.InternalSerialNumber || serial.serial_number;
-                    serialSelect.appendChild(option);
-                });
-                serialSelect.parentElement.style.display = 'block';
-            }
-        } else {
-            document.getElementById('quantity').value = 1;
+            setTimeout(() => {
+                if (typeof validateItemCodeFromSAP === 'function') {
+                    validateItemCodeFromSAP();
+                }
+            }, 300);
         }
-    } else if (itemType === 'batch') {
-        // For batch items, use unit number if available, otherwise 1
-        const quantity = parsedData.unit_number || 1;
-        document.getElementById('quantity').value = quantity;
-        
-        // If batch number is in QR, set it
-        if (parsedData.batch_number) {
-            const batchInput = document.getElementById('batch_number');
-            if (batchInput) {
-                batchInput.value = parsedData.batch_number;
-            }
-        }
-        
-        // If batch dropdown exists, populate it
-        if (scanData.batch_numbers && scanData.batch_numbers.length > 0) {
-            const batchSelect = document.getElementById('batch_number');
-            if (batchSelect && batchSelect.tagName === 'SELECT') {
-                batchSelect.innerHTML = '<option value="">Select Batch Number</option>';
-                scanData.batch_numbers.forEach(batch => {
-                    const option = document.createElement('option');
-                    option.value = batch.BatchNumber || batch.batch_number;
-                    option.textContent = `${batch.BatchNumber || batch.batch_number} (Qty: ${batch.Quantity || batch.quantity})`;
-                    if (parsedData.batch_number && option.value === parsedData.batch_number) {
-                        option.selected = true;
-                    }
-                    batchSelect.appendChild(option);
-                });
-            }
-        }
-    } else {
-        // For non-managed items, use unit number or total units
-        const quantity = parsedData.unit_number || parsedData.total_units || 1;
-        document.getElementById('quantity').value = quantity;
     }
     
-    // Show the add item modal
-    const modal = new bootstrap.Modal(document.getElementById('addItemModal'));
-    modal.show();
-    
-    // Trigger item validation to load warehouses and bins
-    setTimeout(() => {
-        if (typeof validateItemCodeFromSAP === 'function') {
-            validateItemCodeFromSAP();
-        } else {
-            console.warn('validateItemCodeFromSAP function not found');
+    if (scanData.scanned_packs && scanData.scanned_packs.length > 0) {
+        renderScannedPacks(scanData);
+        
+        document.getElementById('quantity').value = scanData.total_scanned_qty || 0;
+        
+        if (scanData.scanned_packs.length > 0) {
+            const firstPack = scanData.scanned_packs[0];
+            if (firstPack.batch_number) {
+                const batchSelect = document.getElementById('batch_number');
+                if (batchSelect) {
+                    const existingOption = Array.from(batchSelect.options).find(opt => opt.value === firstPack.batch_number);
+                    if (existingOption) {
+                        batchSelect.value = firstPack.batch_number;
+                    } else {
+                        const option = document.createElement('option');
+                        option.value = firstPack.batch_number;
+                        option.textContent = firstPack.batch_number;
+                        option.selected = true;
+                        batchSelect.appendChild(option);
+                    }
+                    
+                    const batchGroup = document.getElementById('batch_number_group');
+                    if (batchGroup) {
+                        batchGroup.style.display = 'block';
+                    }
+                }
+            }
         }
-    }, 300);
+    }
+    
+    const modal = document.getElementById('addItemModal');
+    if (modal && !bootstrap.Modal.getInstance(modal)) {
+        const modalInstance = new bootstrap.Modal(modal);
+        modalInstance.show();
+    }
+}
+
+function renderScannedPacks(scanData) {
+    const scannedPacksSection = document.getElementById('scanned_packs_section');
+    const tbody = document.getElementById('scanned_packs_tbody');
+    
+    if (!scannedPacksSection || !tbody) {
+        console.warn('Scanned packs UI elements not found');
+        return;
+    }
+    
+    scannedPacksSection.style.display = 'block';
+    
+    document.getElementById('requested_qty_display').textContent = scanData.requested_qty || 0;
+    document.getElementById('scanned_qty_display').textContent = scanData.total_scanned_qty || 0;
+    document.getElementById('remaining_qty_display').textContent = scanData.remaining_qty || 0;
+    
+    tbody.innerHTML = '';
+    
+    if (scanData.scanned_packs && scanData.scanned_packs.length > 0) {
+        scanData.scanned_packs.forEach(pack => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${pack.pack_label || '-'}</td>
+                <td><span class="badge bg-primary">${pack.batch_number || '-'}</span></td>
+                <td><strong>${pack.qty || 0}</strong></td>
+                <td><small>${pack.grn_id || '-'}</small></td>
+                <td><small>${pack.exp_date || '-'}</small></td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+    
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+}
+
+function resetScanState() {
+    if (!confirm('Clear all scanned packs? This cannot be undone.')) {
+        return;
+    }
+    
+    fetch('{{ url_for("inventory_transfer.api_reset_scan_state") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            transfer_id: {{ transfer.id }},
+            item_code: document.getElementById('item_code').value || null
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('scanned_packs_section').style.display = 'none';
+            document.getElementById('scanned_packs_tbody').innerHTML = '';
+            document.getElementById('quantity').value = '';
+            
+            showAlert('success', 'Scan state cleared successfully');
+        } else {
+            showAlert('danger', 'Error clearing scan state: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error resetting scan state:', error);
+        showAlert('danger', 'Error clearing scan state: ' + error.message);
+    });
 }
 
 function showAlert(type, message) {
