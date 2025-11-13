@@ -834,6 +834,7 @@ class DirectInventoryTransfer(db.Model):
     qc_approver_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     qc_approved_at = db.Column(db.DateTime)
     qc_notes = db.Column(db.Text)
+    submitted_at = db.Column(db.DateTime)
     from_warehouse = db.Column(db.String(50))
     to_warehouse = db.Column(db.String(50))
     from_bin = db.Column(db.String(50))

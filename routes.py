@@ -2064,6 +2064,9 @@ def qc_dashboard():
     from modules.sales_delivery.models import DeliveryDocument
     pending_deliveries = DeliveryDocument.query.filter_by(status='submitted').order_by(DeliveryDocument.created_at.desc()).all()
     
+    # Get pending Multi GRN batches for QC approval
+    pending_multi_grn_batches = MultiGRNBatch.query.filter_by(status='submitted').order_by(MultiGRNBatch.created_at.desc()).all()
+    
     # Calculate metrics for today
     from datetime import datetime, date
     today = date.today()
@@ -2103,7 +2106,13 @@ def qc_dashboard():
         db.func.date(DeliveryDocument.qc_approved_at) == today
     ).count()
     
-    approved_today = approved_grpos_today + approved_transfers_today + approved_serial_transfers_today + approved_serial_item_transfers_today + approved_direct_transfers_today + approved_deliveries_today
+    # Count approved Multi GRN batches today
+    approved_multi_grn_today = MultiGRNBatch.query.filter(
+        MultiGRNBatch.status.in_(['qc_approved', 'posted']),
+        db.func.date(MultiGRNBatch.qc_approved_at) == today
+    ).count()
+    
+    approved_today = approved_grpos_today + approved_transfers_today + approved_serial_transfers_today + approved_serial_item_transfers_today + approved_direct_transfers_today + approved_deliveries_today + approved_multi_grn_today
     
     # Count rejected today
     rejected_grpos_today = GRPODocument.query.filter(
@@ -2140,7 +2149,13 @@ def qc_dashboard():
         db.func.date(DeliveryDocument.qc_approved_at) == today
     ).count()
     
-    rejected_today = rejected_grpos_today + rejected_transfers_today + rejected_serial_transfers_today + rejected_serial_item_transfers_today + rejected_direct_transfers_today + rejected_deliveries_today
+    # Count rejected Multi GRN batches today
+    rejected_multi_grn_today = MultiGRNBatch.query.filter(
+        MultiGRNBatch.status == 'rejected',
+        db.func.date(MultiGRNBatch.qc_approved_at) == today
+    ).count()
+    
+    rejected_today = rejected_grpos_today + rejected_transfers_today + rejected_serial_transfers_today + rejected_serial_item_transfers_today + rejected_direct_transfers_today + rejected_deliveries_today + rejected_multi_grn_today
     
     # Calculate average processing time
     from sqlalchemy import text
@@ -2236,8 +2251,6 @@ def qc_dashboard():
     else:
         avg_processing_time = "N/A"
     
-    rejected_today = rejected_grpos_today + rejected_transfers_today + rejected_serial_transfers_today + rejected_serial_item_transfers_today
-    
     return render_template('qc_dashboard.html', 
                          pending_transfers=pending_transfers,
                          pending_grpos=pending_grpos,
@@ -2245,8 +2258,9 @@ def qc_dashboard():
                          pending_serial_item_transfers=pending_serial_item_transfers,
                          pending_direct_transfers=pending_direct_transfers,
                          pending_deliveries=pending_deliveries,
+                         pending_multi_grn_batches=pending_multi_grn_batches,
                          qc_approved_serial_item_transfers=qc_approved_serial_item_transfers,
-                         pending_count=len(pending_transfers) + len(pending_grpos) + len(pending_serial_transfers) + len(pending_serial_item_transfers) + len(pending_direct_transfers) + len(pending_deliveries),
+                         pending_count=len(pending_transfers) + len(pending_grpos) + len(pending_serial_transfers) + len(pending_serial_item_transfers) + len(pending_direct_transfers) + len(pending_deliveries) + len(pending_multi_grn_batches),
                          approved_today=approved_today,
                          rejected_today=rejected_today,
                          avg_processing_time=avg_processing_time)
@@ -2557,6 +2571,189 @@ def reject_sales_delivery_qc(delivery_id):
         logging.error(f"Error rejecting sales delivery: {str(e)}")
         db.session.rollback()
         flash('Error rejecting delivery', 'error')
+        return redirect(url_for('qc_dashboard'))
+
+@app.route('/multi_grn/<int:batch_id>/qc_approve', methods=['POST'])
+@login_required
+def approve_multi_grn_qc(batch_id):
+    """Approve Multi GRN Batch from QC Dashboard and post to SAP B1"""
+    try:
+        batch = MultiGRNBatch.query.get_or_404(batch_id)
+        
+        if not current_user.has_permission('qc_dashboard') and current_user.role not in ['admin', 'manager']:
+            flash('Access denied - QC permissions required', 'error')
+            return redirect(url_for('qc_dashboard'))
+        
+        if batch.status != 'submitted':
+            flash('Only submitted batches can be approved', 'error')
+            return redirect(url_for('qc_dashboard'))
+        
+        qc_notes = request.form.get('qc_notes', '').strip()
+        
+        batch.status = 'qc_approved'
+        batch.qc_approver_id = current_user.id
+        batch.qc_approved_at = datetime.utcnow()
+        batch.qc_notes = qc_notes
+        
+        from modules.multi_grn_creation.services import SAPMultiGRNService
+        sap_service = SAPMultiGRNService()
+        results = []
+        success_count = 0
+        
+        for po_link in batch.po_links:
+            if not po_link.line_selections:
+                continue
+            
+            document_lines = []
+            line_number = 0
+            
+            for line in po_link.line_selections:
+                if line.line_status == 'manual' or line.po_line_num == -1:
+                    doc_line = {
+                        'ItemCode': line.item_code,
+                        'Quantity': float(line.selected_quantity),
+                        'WarehouseCode': line.warehouse_code or '7000-FG'
+                    }
+                else:
+                    doc_line = {
+                        'BaseType': 22,
+                        'BaseEntry': po_link.po_doc_entry,
+                        'BaseLine': line.po_line_num,
+                        'ItemCode': line.item_code,
+                        'Quantity': float(line.selected_quantity),
+                        'WarehouseCode': line.warehouse_code or '7000-FG'
+                    }
+                
+                if line.bin_location:
+                    doc_line['BinAllocations'] = [{
+                        'BinAbsEntry': line.bin_location,
+                        'Quantity': float(line.selected_quantity)
+                    }]
+                
+                if line.batch_details:
+                    batch_numbers = []
+                    for batch_detail in line.batch_details:
+                        batch_entry = {
+                            'BatchNumber': batch_detail.batch_number,
+                            'Quantity': float(batch_detail.quantity),
+                            'BaseLineNumber': line_number
+                        }
+                        if batch_detail.expiry_date:
+                            batch_entry['ExpiryDate'] = batch_detail.expiry_date.isoformat()
+                        if batch_detail.manufacturer_serial_number:
+                            batch_entry['ManufacturerSerialNumber'] = batch_detail.manufacturer_serial_number
+                        if batch_detail.internal_serial_number:
+                            batch_entry['InternalSerialNumber'] = batch_detail.internal_serial_number
+                        batch_numbers.append(batch_entry)
+                    if batch_numbers:
+                        doc_line['BatchNumbers'] = batch_numbers
+                
+                elif line.serial_details:
+                    serial_numbers = []
+                    for serial_detail in line.serial_details:
+                        serial_entry = {
+                            'InternalSerialNumber': serial_detail.serial_number,
+                            'Quantity': 1.0,
+                            'BaseLineNumber': line_number
+                        }
+                        if serial_detail.manufacturer_serial_number:
+                            serial_entry['ManufacturerSerialNumber'] = serial_detail.manufacturer_serial_number
+                        if serial_detail.expiry_date:
+                            serial_entry['ExpiryDate'] = serial_detail.expiry_date.isoformat()
+                        serial_numbers.append(serial_entry)
+                    if serial_numbers:
+                        doc_line['SerialNumbers'] = serial_numbers
+                
+                elif line.serial_numbers:
+                    import json
+                    serial_data = json.loads(line.serial_numbers) if isinstance(line.serial_numbers, str) else line.serial_numbers
+                    doc_line['SerialNumbers'] = serial_data
+                
+                elif line.batch_numbers:
+                    import json
+                    batch_data = json.loads(line.batch_numbers) if isinstance(line.batch_numbers, str) else line.batch_numbers
+                    doc_line['BatchNumbers'] = batch_data
+                
+                document_lines.append(doc_line)
+                line_number += 1
+            
+            from datetime import date
+            grn_data = {
+                'CardCode': po_link.po_card_code,
+                'DocDate': date.today().isoformat(),
+                'DocDueDate': date.today().isoformat(),
+                'Comments': f'QC Approved by {current_user.username} - Batch {batch.id}',
+                'NumAtCard': f'BATCH-{batch.id}-PO-{po_link.po_doc_num}',
+                'BPL_IDAssignedToInvoice': 5,
+                'DocumentLines': document_lines
+            }
+            
+            result = sap_service.create_purchase_delivery_note(grn_data)
+            
+            if result['success']:
+                po_link.status = 'posted'
+                po_link.sap_grn_doc_num = result.get('doc_num')
+                po_link.sap_grn_doc_entry = result.get('doc_entry')
+                po_link.posted_at = datetime.utcnow()
+                success_count += 1
+                results.append({'po_num': po_link.po_doc_num, 'success': True, 'grn_num': result.get('doc_num')})
+            else:
+                po_link.status = 'failed'
+                po_link.error_message = result.get('error')
+                results.append({'po_num': po_link.po_doc_num, 'success': False, 'error': result.get('error')})
+        
+        batch.status = 'posted' if success_count > 0 else 'failed'
+        batch.total_grns_created = success_count
+        batch.completed_at = datetime.utcnow()
+        batch.posted_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        logging.info(f"✅ Multi GRN batch {batch_id} approved and {success_count} GRNs posted to SAP B1 by {current_user.username}")
+        flash(f'Multi GRN Batch approved and {success_count} GRN(s) posted to SAP B1!', 'success')
+        return redirect(url_for('qc_dashboard'))
+        
+    except Exception as e:
+        logging.error(f"Error approving Multi GRN batch: {str(e)}")
+        db.session.rollback()
+        flash(f'Error approving batch: {str(e)}', 'error')
+        return redirect(url_for('qc_dashboard'))
+
+@app.route('/multi_grn/<int:batch_id>/qc_reject', methods=['POST'])
+@login_required
+def reject_multi_grn_qc(batch_id):
+    """Reject Multi GRN Batch from QC Dashboard"""
+    try:
+        batch = MultiGRNBatch.query.get_or_404(batch_id)
+        
+        if not current_user.has_permission('qc_dashboard') and current_user.role not in ['admin', 'manager']:
+            flash('Access denied - QC permissions required', 'error')
+            return redirect(url_for('qc_dashboard'))
+        
+        if batch.status != 'submitted':
+            flash('Only submitted batches can be rejected', 'error')
+            return redirect(url_for('qc_dashboard'))
+        
+        qc_notes = request.form.get('qc_notes', '').strip()
+        if not qc_notes:
+            flash('Rejection reason is required', 'error')
+            return redirect(url_for('qc_dashboard'))
+        
+        batch.status = 'rejected'
+        batch.qc_approver_id = current_user.id
+        batch.qc_approved_at = datetime.utcnow()
+        batch.qc_notes = qc_notes
+        
+        db.session.commit()
+        
+        logging.info(f"❌ Multi GRN batch {batch_id} rejected by {current_user.username}")
+        flash(f'Multi GRN Batch {batch.batch_number} rejected.', 'warning')
+        return redirect(url_for('qc_dashboard'))
+        
+    except Exception as e:
+        logging.error(f"Error rejecting Multi GRN batch: {str(e)}")
+        db.session.rollback()
+        flash('Error rejecting batch', 'error')
         return redirect(url_for('qc_dashboard'))
 
 @app.route('/serial_item_transfer/<int:transfer_id>/post_to_sap', methods=['POST'])

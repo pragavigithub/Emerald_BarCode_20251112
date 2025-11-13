@@ -214,6 +214,238 @@
         </div>
     </div>
 
+    <!-- Pending Direct Inventory Transfers -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i data-feather="arrow-right-circle"></i> 
+                            Pending Direct Inventory Transfer Approvals
+                        </h5>
+                        <div>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="refreshData()">
+                                <i data-feather="refresh-cw"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if pending_direct_transfers %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Transfer Number</th>
+                                    <th>From → To Warehouse</th>
+                                    <th>Created By</th>
+                                    <th>Items Count</th>
+                                    <th>Submitted</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transfer in pending_direct_transfers %}
+                                <tr>
+                                    <td><strong>{{ transfer.transfer_number }}</strong></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="badge bg-primary">{{ transfer.from_warehouse or 'N/A' }}</span>
+                                            <i data-feather="arrow-right" class="mx-2" style="width: 16px; height: 16px;"></i>
+                                            <span class="badge bg-success">{{ transfer.to_warehouse or 'N/A' }}</span>
+                                        </div>
+                                    </td>
+                                    <td>{{ transfer.user.first_name }} {{ transfer.user.last_name }}</td>
+                                    <td>
+                                        <span class="badge bg-info">{{ transfer.items|length }} items</span>
+                                    </td>
+                                    <td>
+                                        <small>{{ transfer.submitted_at.strftime('%Y-%m-%d %H:%M') if transfer.submitted_at else 'N/A' }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('direct_inventory_transfer.transfer_detail', transfer_id=transfer.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i data-feather="eye"></i> Review
+                                            </a>
+                                            <button class="btn btn-sm btn-success" onclick="showDirectTransferApprovalModal({{ transfer.id }}, '{{ transfer.transfer_number }}')">
+                                                <i data-feather="check"></i> Approve
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" onclick="showDirectTransferRejectionModal({{ transfer.id }}, '{{ transfer.transfer_number }}')">
+                                                <i data-feather="x"></i> Reject
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i data-feather="info"></i>
+                        No pending direct inventory transfers for approval at this time.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Sales Deliveries -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i data-feather="truck"></i> 
+                            Pending Sales Delivery Approvals
+                        </h5>
+                        <div>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="refreshData()">
+                                <i data-feather="refresh-cw"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if pending_deliveries %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Delivery Number</th>
+                                    <th>SO Number</th>
+                                    <th>Customer</th>
+                                    <th>Created By</th>
+                                    <th>Items Count</th>
+                                    <th>Submitted</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for delivery in pending_deliveries %}
+                                <tr>
+                                    <td><strong>{{ delivery.delivery_number }}</strong></td>
+                                    <td>{{ delivery.so_doc_num }}</td>
+                                    <td>
+                                        <div>
+                                            <strong>{{ delivery.card_code or 'N/A' }}</strong><br>
+                                            <small class="text-muted">{{ delivery.card_name or 'Unknown Customer' }}</small>
+                                        </div>
+                                    </td>
+                                    <td>{{ delivery.user.first_name }} {{ delivery.user.last_name }}</td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ delivery.items|length }} items</span>
+                                    </td>
+                                    <td>
+                                        <small>{{ delivery.submitted_at.strftime('%Y-%m-%d %H:%M') if delivery.submitted_at else 'N/A' }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('sales_delivery.delivery_detail', delivery_id=delivery.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i data-feather="eye"></i> Review
+                                            </a>
+                                            <button class="btn btn-sm btn-success" onclick="showDeliveryApprovalModal({{ delivery.id }}, '{{ delivery.delivery_number }}')">
+                                                <i data-feather="check"></i> Approve
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" onclick="showDeliveryRejectionModal({{ delivery.id }}, '{{ delivery.delivery_number }}')">
+                                                <i data-feather="x"></i> Reject
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i data-feather="info"></i>
+                        No pending sales deliveries for approval at this time.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Multi GRN Batches -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i data-feather="package"></i> 
+                            Pending Multi GRN Batch Approvals
+                        </h5>
+                        <div>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="refreshData()">
+                                <i data-feather="refresh-cw"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if pending_multi_grn_batches %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Batch Number</th>
+                                    <th>PO Count</th>
+                                    <th>Created By</th>
+                                    <th>Total Lines</th>
+                                    <th>Submitted</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for batch in pending_multi_grn_batches %}
+                                <tr>
+                                    <td><strong>{{ batch.batch_number }}</strong></td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ batch.po_links|length }} POs</span>
+                                    </td>
+                                    <td>{{ batch.user.first_name }} {{ batch.user.last_name }}</td>
+                                    <td>
+                                        {% set total_lines = batch.po_links|map(attribute='line_selections')|map('length')|sum %}
+                                        <span class="badge bg-info">{{ total_lines }} lines</span>
+                                    </td>
+                                    <td>
+                                        <small>{{ batch.submitted_at.strftime('%Y-%m-%d %H:%M') if batch.submitted_at else 'N/A' }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('multi_grn.batch_detail', batch_id=batch.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i data-feather="eye"></i> Review
+                                            </a>
+                                            <button class="btn btn-sm btn-success" onclick="showMultiGRNApprovalModal({{ batch.id }}, '{{ batch.batch_number }}')">
+                                                <i data-feather="check"></i> Approve
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" onclick="showMultiGRNRejectionModal({{ batch.id }}, '{{ batch.batch_number }}')">
+                                                <i data-feather="x"></i> Reject
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i data-feather="info"></i>
+                        No pending Multi GRN batches for approval at this time.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Pending Serial Number Transfers -->
 <!--    <div class="row mt-4">-->
 <!--        <div class="col-12">-->
@@ -898,6 +1130,93 @@ function showSerialItemTransferRejectionModal(transferId, transferNumber) {
             alert('Error rejecting serial item transfer');
         });
     }
+}
+
+// Direct Inventory Transfer approval functions
+function showDirectTransferApprovalModal(transferId, transferNumber) {
+    document.getElementById('approvalPONumber').textContent = transferNumber;
+    document.getElementById('approvalForm').action = `/direct_inventory_transfer/${transferId}/qc_approve`;
+    document.querySelector('#approvalModal .modal-title').textContent = 'Approve Direct Inventory Transfer';
+    const alertDiv = document.querySelector('#approvalModal .alert');
+    alertDiv.innerHTML = `
+        <i data-feather="check-circle"></i>
+        Are you sure you want to approve Direct Inventory Transfer <strong>${transferNumber}</strong>? This will post to SAP B1.
+    `;
+    feather.replace();
+    const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
+    modal.show();
+}
+
+function showDirectTransferRejectionModal(transferId, transferNumber) {
+    document.getElementById('rejectionPONumber').textContent = transferNumber;
+    document.getElementById('rejectionForm').action = `/direct_inventory_transfer/${transferId}/qc_reject`;
+    document.querySelector('#rejectionModal .modal-title').textContent = 'Reject Direct Inventory Transfer';
+    const alertDiv = document.querySelector('#rejectionModal .alert');
+    alertDiv.innerHTML = `
+        <i data-feather="alert-triangle"></i>
+        Are you sure you want to reject Direct Inventory Transfer <strong>${transferNumber}</strong>?
+    `;
+    feather.replace();
+    const modal = new bootstrap.Modal(document.getElementById('rejectionModal'));
+    modal.show();
+}
+
+// Sales Delivery approval functions
+function showDeliveryApprovalModal(deliveryId, deliveryNumber) {
+    document.getElementById('approvalPONumber').textContent = deliveryNumber;
+    document.getElementById('approvalForm').action = `/sales_delivery/${deliveryId}/qc_approve`;
+    document.querySelector('#approvalModal .modal-title').textContent = 'Approve Sales Delivery';
+    const alertDiv = document.querySelector('#approvalModal .alert');
+    alertDiv.innerHTML = `
+        <i data-feather="check-circle"></i>
+        Are you sure you want to approve Sales Delivery <strong>${deliveryNumber}</strong>? This will post to SAP B1.
+    `;
+    feather.replace();
+    const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
+    modal.show();
+}
+
+function showDeliveryRejectionModal(deliveryId, deliveryNumber) {
+    document.getElementById('rejectionPONumber').textContent = deliveryNumber;
+    document.getElementById('rejectionForm').action = `/sales_delivery/${deliveryId}/qc_reject`;
+    document.querySelector('#rejectionModal .modal-title').textContent = 'Reject Sales Delivery';
+    const alertDiv = document.querySelector('#rejectionModal .alert');
+    alertDiv.innerHTML = `
+        <i data-feather="alert-triangle"></i>
+        Are you sure you want to reject Sales Delivery <strong>${deliveryNumber}</strong>?
+    `;
+    feather.replace();
+    const modal = new bootstrap.Modal(document.getElementById('rejectionModal'));
+    modal.show();
+}
+
+// Multi GRN approval functions
+function showMultiGRNApprovalModal(batchId, batchNumber) {
+    document.getElementById('approvalPONumber').textContent = batchNumber;
+    document.getElementById('approvalForm').action = `/multi_grn/${batchId}/qc_approve`;
+    document.querySelector('#approvalModal .modal-title').textContent = 'Approve Multi GRN Batch';
+    const alertDiv = document.querySelector('#approvalModal .alert');
+    alertDiv.innerHTML = `
+        <i data-feather="check-circle"></i>
+        Are you sure you want to approve Multi GRN Batch <strong>${batchNumber}</strong>? This will post all GRNs to SAP B1.
+    `;
+    feather.replace();
+    const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
+    modal.show();
+}
+
+function showMultiGRNRejectionModal(batchId, batchNumber) {
+    document.getElementById('rejectionPONumber').textContent = batchNumber;
+    document.getElementById('rejectionForm').action = `/multi_grn/${batchId}/qc_reject`;
+    document.querySelector('#rejectionModal .modal-title').textContent = 'Reject Multi GRN Batch';
+    const alertDiv = document.querySelector('#rejectionModal .alert');
+    alertDiv.innerHTML = `
+        <i data-feather="alert-triangle"></i>
+        Are you sure you want to reject Multi GRN Batch <strong>${batchNumber}</strong>?
+    `;
+    feather.replace();
+    const modal = new bootstrap.Modal(document.getElementById('rejectionModal'));
+    modal.show();
 }
 
 function refreshData() {

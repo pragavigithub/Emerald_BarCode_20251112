@@ -9,6 +9,38 @@ A Flask-based Warehouse Management System (WMS) designed to streamline inventory
 
 ## Recent Changes
 
+### November 13, 2025 - QC Dashboard Implementation for Multi GRN, Direct Transfer, and Sales Delivery (Complete)
+**Feature:** Complete QC approval workflow and dashboard integration for three modules
+**Implementation:**
+- Added QC metadata fields to MultiGRNBatch model (qc_approver_id, qc_approved_at, qc_notes, submitted_at)
+- Added submitted_at field to DirectInventoryTransfer model
+- Created MySQL migrations for both Multi GRN and Direct Transfer QC fields
+- Updated QC Dashboard route to aggregate pending items from all modules
+- Created approve/reject routes for Multi GRN with SAP B1 posting integration
+- Added three new sections to QC Dashboard template (Direct Transfer, Sales Delivery, Multi GRN)
+- Implemented JavaScript modal functions for all three modules
+
+**Status Workflow:**
+All modules now follow: draft → submitted → qc_approved/rejected → posted
+
+**Key Features:**
+- ✅ Multi GRN batches appear in QC Dashboard when submitted
+- ✅ Direct Inventory Transfers appear in QC Dashboard when submitted  
+- ✅ Sales Deliveries appear in QC Dashboard when submitted
+- ✅ QC Dashboard shows unified view of all pending approvals across all modules
+- ✅ Approval posts documents to SAP B1 immediately
+- ✅ Rejection requires reason and returns document to draft state
+- ✅ Metrics include all three modules in approved/rejected counts
+- ✅ MySQL migrations created for dual database support
+
+**Files Modified:**
+- `routes.py`: Updated qc_dashboard route (lines 2034-2269), added approve_multi_grn_qc (lines 2579-2723) and reject_multi_grn_qc (lines 2725-2760)
+- `templates/qc_dashboard.html`: Added three module sections (lines 220-443) and JavaScript functions (lines 1138-1223)
+- `models.py`: Added submitted_at to DirectInventoryTransfer model (line 840)
+- `modules/multi_grn_creation/models.py`: Added QC fields to MultiGRNBatch
+- `migrations/mysql/changes/2025-11-13_multi_grn_qc_approval.sql`: MySQL migration for Multi GRN QC fields
+- `migrations/mysql/changes/2025-11-13_direct_inventory_transfer_qc_submitted_at.sql`: MySQL migration for Direct Transfer submitted_at
+
 ### November 13, 2025 - Inventory Transfer QR Scanning Enhancement (Complete)
 **Feature:** Production-ready database-backed QR code scanning for Inventory Transfer module
 **Implementation:**
