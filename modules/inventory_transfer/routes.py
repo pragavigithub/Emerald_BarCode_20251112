@@ -2258,13 +2258,16 @@ def api_get_bin_locations():
             }), 502
         
         # Fetch bin locations using existing method
-        bins = sap_b1.get_bin_locations_list(warehouse_code)
+        result = sap_b1.get_bin_locations_list(warehouse_code)
         
-        if bins is None:
+        if result is None or not result.get('success'):
             return jsonify({
                 'success': False,
                 'error': f'Failed to fetch bin locations for warehouse {warehouse_code}'
             }), 502
+        
+        # Extract bins list from result dictionary
+        bins = result.get('bins', [])
         
         # Filter only active bins (IsActive = 'N' means active in SAP)
         active_bins = [bin for bin in bins if bin.get('IsActive') == 'N']
