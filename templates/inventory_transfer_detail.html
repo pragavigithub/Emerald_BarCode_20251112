@@ -345,8 +345,8 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label for="from_warehouse_select" class="form-label">From Warehouse <span class="text-danger">*</span></label>
-                        <select class="form-select" id="from_warehouse_select" onchange="onWarehouseChange()" required>
+                        <label for="from_warehouse_select" class="form-label">From Warehouse</label>
+                        <select class="form-select" id="from_warehouse_select" onchange="onWarehouseChange()">
                             <option value="">Validate item code first</option>
                         </select>
                         <small class="text-muted">Warehouse list updates based on item type</small>
@@ -372,6 +372,9 @@
                                 <label for="availabe_quantity" class="form-label">Available Quantity <span class="text-danger">*</span></label>
                                 <input type="number" class="form-control" id="availabe_quantity" name="quantity" step="1" readonly required>
                                 <small class="text-muted">Scan QR labels to accumulate quantity</small>
+                                <button type="button" class="btn btn-outline-primary" onclick="showQRScannerForTransfer()">
+                                <i data-feather="camera"></i> Scan
+                            </button>
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -410,7 +413,7 @@
                             <div class="mb-3">
                                 <label for="from_bin" class="form-label">From Bin Location <span class="text-danger">*</span></label>
                                 <div class="input-group">
-                                    <select class="form-select" id="from_bin" name="from_bin" required>
+                                    <select class="form-select" id="from_bin" name="from_bin" >
                                         <option value="">Select warehouse first...</option>
                                     </select>
                                     <button type="button" class="btn btn-outline-primary" onclick="loadFromBinLocations()" id="from_bin_refresh_btn" style="display: none;">
@@ -424,7 +427,7 @@
                             <div class="mb-3">
                                 <label for="to_bin" class="form-label">To Bin Location <span class="text-danger">*</span></label>
                                 <div class="input-group">
-                                    <select class="form-select" id="to_bin" name="to_bin" required>
+                                    <select class="form-select" id="to_bin" name="to_bin" >
                                         <option value="">Select warehouse first...</option>
                                     </select>
                                     <button type="button" class="btn btn-outline-primary" onclick="loadToBinLocations()" id="to_bin_refresh_btn" style="display: none;">
