@@ -304,12 +304,12 @@
 </div>
 
 <!-- Add Item Modal -->
-<div class="modal fade" id="addItemModal" tabindex="-1">
+<div class="modal fade" id="addItemModal" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Add Item to Transfer</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="handleModalClose()"></button>
             </div>
             <form id="addItemForm" method="POST" action="{{ url_for('inventory_transfer_detail', transfer_id=transfer.id) }}" onsubmit="return handleFormSubmit(event);">
                 <div class="modal-body">
@@ -369,8 +369,9 @@
                         </div>
                          <div class="col-md-4">
                             <div class="mb-3">
-                                <label for="availabe_quantity" class="form-label">Availabe Quantity <span class="text-danger">*</span></label>
-                                <input type="number" class="form-control" id="availabe_quantity" name="quantity" step="1" required>
+                                <label for="availabe_quantity" class="form-label">Available Quantity <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="availabe_quantity" name="quantity" step="1" readonly required>
+                                <small class="text-muted">Scan QR labels to accumulate quantity</small>
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -474,7 +475,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="handleModalClose()">Cancel</button>
                     <button type="submit" class="btn btn-primary">Add Item</button>
                 </div>
             </form>
@@ -488,6 +489,42 @@
 function showAddItemModal() {
     const modal = new bootstrap.Modal(document.getElementById('addItemModal'));
     modal.show();
+}
+
+function handleModalClose() {
+    const itemCode = document.getElementById('item_code').value;
+    if (itemCode) {
+        resetScanStateForItem(itemCode);
+    }
+    
+    document.getElementById('scanned_packs_section').style.display = 'none';
+    document.getElementById('scanned_packs_tbody').innerHTML = '';
+    document.getElementById('availabe_quantity').value = '';
+    document.getElementById('item_code').value = '';
+    document.getElementById('item_name').value = '';
+    document.getElementById('batch_number_group').style.display = 'none';
+}
+
+function resetScanStateForItem(itemCode) {
+    fetch('{{ url_for("inventory_transfer.api_reset_scan_state") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            transfer_id: {{ transfer.id }},
+            item_code: itemCode
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('✅ Scan state cleared for item:', itemCode);
+        }
+    })
+    .catch(error => {
+        console.error('Error clearing scan state:', error);
+    });
 }
 
 function scanBatchNumber() {
@@ -1583,6 +1620,7 @@ function processScannedQRLabel(qrData) {
     }
     
     const requestedQty = parseFloat(document.getElementById('quantity').value) || 0;
+    const targetItemCode = document.getElementById('item_code').value || '';
     
     fetch('{{ url_for("inventory_transfer.api_scan_qr_label") }}', {
         method: 'POST',
@@ -1592,7 +1630,8 @@ function processScannedQRLabel(qrData) {
         body: JSON.stringify({
             qr_data: qrData,
             transfer_id: {{ transfer.id }},
-            requested_qty: requestedQty
+            requested_qty: requestedQty,
+            target_item_code: targetItemCode
         })
     })
     .then(response => response.json())
@@ -1642,28 +1681,34 @@ function populateAddItemModalFromQR(scanData) {
     if (scanData.scanned_packs && scanData.scanned_packs.length > 0) {
         renderScannedPacks(scanData);
         
-        document.getElementById('quantity').value = scanData.total_scanned_qty || 0;
+        const availableQtyField = document.getElementById('availabe_quantity');
+        if (availableQtyField) {
+            availableQtyField.value = scanData.total_scanned_qty || 0;
+        }
         
-        if (scanData.scanned_packs.length > 0) {
-            const firstPack = scanData.scanned_packs[0];
-            if (firstPack.batch_number) {
-                const batchSelect = document.getElementById('batch_number');
-                if (batchSelect) {
-                    const existingOption = Array.from(batchSelect.options).find(opt => opt.value === firstPack.batch_number);
-                    if (existingOption) {
-                        batchSelect.value = firstPack.batch_number;
-                    } else {
-                        const option = document.createElement('option');
-                        option.value = firstPack.batch_number;
-                        option.textContent = firstPack.batch_number;
+        const uniqueBatches = [...new Set(scanData.scanned_packs.map(p => p.batch_number).filter(b => b))];
+        
+        if (uniqueBatches.length > 0) {
+            const batchSelect = document.getElementById('batch_number');
+            if (batchSelect) {
+                batchSelect.innerHTML = '<option value="">Select batch</option>';
+                
+                uniqueBatches.forEach(batch => {
+                    const option = document.createElement('option');
+                    option.value = batch;
+                    const packInfo = scanData.scanned_packs.filter(p => p.batch_number === batch);
+                    const totalQty = packInfo.reduce((sum, p) => sum + (p.qty || 0), 0);
+                    const expDate = packInfo[0].exp_date || 'N/A';
+                    option.textContent = `${batch}, Qty: ${totalQty}, Exp: ${expDate}`;
+                    if (uniqueBatches.length === 1) {
                         option.selected = true;
-                        batchSelect.appendChild(option);
                     }
-                    
-                    const batchGroup = document.getElementById('batch_number_group');
-                    if (batchGroup) {
-                        batchGroup.style.display = 'block';
-                    }
+                    batchSelect.appendChild(option);
+                });
+                
+                const batchGroup = document.getElementById('batch_number_group');
+                if (batchGroup) {
+                    batchGroup.style.display = 'block';
                 }
             }
         }

@@ -2085,6 +2085,14 @@ def api_scan_qr_label():
         if not item_code:
             return jsonify({'success': False, 'error': 'Could not extract item code from QR data'}), 400
         
+        target_item_code = data.get('target_item_code', '').strip()
+        if target_item_code and item_code != target_item_code:
+            return jsonify({
+                'success': False,
+                'error': f'QR code is for item "{item_code}" but you are adding "{target_item_code}". Please scan the correct QR code.',
+                'item_mismatch': True
+            }), 400
+        
         grn_id = parsed_data.get('id', '')
         pack_label = parsed_data.get('pack', '1 of 1')
         pack_key = f"{grn_id}|{pack_label}"
