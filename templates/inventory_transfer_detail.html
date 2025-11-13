@@ -361,16 +361,22 @@
                     </div>
                     
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="mb-3">
-                                <label for="quantity" class="form-label">Quantity <span class="text-danger">*</span></label>
-                                <input type="number" class="form-control" id="quantity" name="quantity" step="1" required>
+                                <label for="quantity" class="form-label">Requested Quantity <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="quantity" name="quantity"  readonly>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                         <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="availabe_quantity" class="form-label">Availabe Quantity <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="availabe_quantity" name="quantity" step="1" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="unit_of_measure" class="form-label">UoM <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="unit_of_measure" name="unit_of_measure" >
+                                <input type="text" class="form-control" id="unit_of_measure" name="unit_of_measure" readonly>
                             </div>
                         </div>
                     </div>
