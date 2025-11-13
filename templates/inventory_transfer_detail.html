@@ -1560,7 +1560,8 @@ function processScannedQRLabel(qrData) {
         })
     })
     .then(response => response.json())
-    .then(data => {
+    .then(
+        data => {
         if (loadingIndicator) {
             loadingIndicator.style.display = 'none';
         }
