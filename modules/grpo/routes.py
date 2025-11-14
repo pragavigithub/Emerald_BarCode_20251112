@@ -513,35 +513,66 @@ def add_grpo_item(grpo_id):
                     return redirect(url_for('grpo.detail', grpo_id=grpo_id))
                 
                 # Create batch number records with automatic barcode generation
+                # NEW LOGIC: Create separate batch records for each pack with integer quantities
+                batch_record_counter = 0
                 for idx, batch_data in enumerate(batch_numbers):
-                    batch_qty = float(batch_data.get('quantity', 0))
+                    batch_qty = int(float(batch_data.get('quantity', 0)))  # Convert to integer
+                    batch_number_value = batch_data.get('batch_number')
+                    expiry_date_value = datetime.strptime(batch_data['expiry_date'], '%Y-%m-%d').date() if batch_data.get('expiry_date') else None
                     
-                    # Calculate qty per pack for this batch using Decimal for precision, round to 3 decimal places
+                    # Distribute quantity across packs as integers
+                    # First pack gets the highest quantity if not evenly divisible
                     if number_of_bags > 0:
-                        qty_per_pack = (Decimal(str(batch_qty)) / Decimal(str(number_of_bags))).quantize(Decimal('0.001'))
+                        base_qty_per_pack = batch_qty // number_of_bags  # Integer division
+                        remainder = batch_qty % number_of_bags  # Remaining quantity
+                        
+                        # Create separate batch record for each pack
+                        for pack_idx in range(number_of_bags):
+                            # First pack gets the extra quantity (base + remainder)
+                            if pack_idx == 0:
+                                pack_quantity = base_qty_per_pack + remainder
+                            else:
+                                pack_quantity = base_qty_per_pack
+                            
+                            # Generate unique GRN number for this pack
+                            grn_number = generate_unique_grn_number(grpo, batch_record_counter + 1)
+                            
+                            batch = GRPOBatchNumber(
+                                grpo_item_id=grpo_item.id,
+                                batch_number=batch_number_value,
+                                quantity=pack_quantity,  # Individual pack quantity (integer)
+                                manufacturer_serial_number=batch_data.get('manufacturer_serial_number', ''),
+                                internal_serial_number=batch_data.get('internal_serial_number', ''),
+                                expiry_date=expiry_date_value,
+                                base_line_number=batch_record_counter,
+                                grn_number=grn_number,
+                                qty_per_pack=pack_quantity,  # Same as quantity for individual packs
+                                no_of_packs=1  # Each record represents one pack
+                            )
+                            db.session.add(batch)
+                            batch_record_counter += 1
+                            logging.info(f"✅ Created batch pack {pack_idx + 1}/{number_of_bags} for {batch_number_value} with GRN {grn_number} (Qty: {pack_quantity})")
                     else:
-                        qty_per_pack = Decimal(str(batch_qty))
-                    no_of_packs = number_of_bags
-                    
-                    # Generate unique GRN number for this batch
-                    grn_number = generate_unique_grn_number(grpo, idx + 1)
-                    
-                    batch = GRPOBatchNumber(
-                        grpo_item_id=grpo_item.id,
-                        batch_number=batch_data.get('batch_number'),
-                        quantity=batch_qty,
-                        manufacturer_serial_number=batch_data.get('manufacturer_serial_number', ''),
-                        internal_serial_number=batch_data.get('internal_serial_number', ''),
-                        expiry_date=datetime.strptime(batch_data['expiry_date'], '%Y-%m-%d').date() if batch_data.get('expiry_date') else None,
-                        base_line_number=idx,
-                        grn_number=grn_number,
-                        qty_per_pack=qty_per_pack,
-                        no_of_packs=no_of_packs
-                    )
-                    db.session.add(batch)
-                    logging.info(f"✅ Created batch {batch_data.get('batch_number')} with GRN {grn_number} (Qty per pack: {qty_per_pack}, No of packs: {no_of_packs})")
+                        # No bags specified, create single batch record
+                        grn_number = generate_unique_grn_number(grpo, batch_record_counter + 1)
+                        
+                        batch = GRPOBatchNumber(
+                            grpo_item_id=grpo_item.id,
+                            batch_number=batch_number_value,
+                            quantity=batch_qty,
+                            manufacturer_serial_number=batch_data.get('manufacturer_serial_number', ''),
+                            internal_serial_number=batch_data.get('internal_serial_number', ''),
+                            expiry_date=expiry_date_value,
+                            base_line_number=batch_record_counter,
+                            grn_number=grn_number,
+                            qty_per_pack=batch_qty,
+                            no_of_packs=1
+                        )
+                        db.session.add(batch)
+                        batch_record_counter += 1
+                        logging.info(f"✅ Created batch {batch_number_value} with GRN {grn_number} (Qty: {batch_qty})")
                 
-                logging.info(f"✅ Added {len(batch_numbers)} batch numbers for item {item_code}")
+                logging.info(f"✅ Added {batch_record_counter} batch pack records for item {item_code}")
                 
             except json.JSONDecodeError:
                 flash('Invalid batch numbers data format', 'error')
@@ -578,27 +609,54 @@ def add_grpo_item(grpo_id):
                 return redirect(url_for('grpo.detail', grpo_id=grpo_id))
             
             try:
-                qty_per_pack = quantity / number_of_bags if number_of_bags > 0 else quantity
-                no_of_packs = number_of_bags
+                # NEW LOGIC: Distribute quantity as integers with first pack getting highest quantity
+                total_qty = int(quantity)  # Convert to integer
                 
-                for idx in range(number_of_bags):
-                    grn_number = generate_unique_grn_number(grpo, idx + 1)
+                if number_of_bags > 0:
+                    base_qty_per_pack = total_qty // number_of_bags  # Integer division
+                    remainder = total_qty % number_of_bags  # Remaining quantity
+                    
+                    for idx in range(number_of_bags):
+                        # First pack gets the extra quantity (base + remainder)
+                        if idx == 0:
+                            pack_quantity = base_qty_per_pack + remainder
+                        else:
+                            pack_quantity = base_qty_per_pack
+                        
+                        grn_number = generate_unique_grn_number(grpo, idx + 1)
+                        
+                        non_managed_item = GRPONonManagedItem(
+                            grpo_item_id=grpo_item.id,
+                            quantity=pack_quantity,  # Individual pack quantity (integer)
+                            base_line_number=idx,
+                            expiry_date=expiry_date_obj,
+                            admin_date=datetime.now().date(),
+                            grn_number=grn_number,
+                            qty_per_pack=pack_quantity,  # Same as quantity
+                            no_of_packs=1,  # Each record represents one pack
+                            pack_number=idx + 1
+                        )
+                        db.session.add(non_managed_item)
+                        logging.info(f"✅ Created non-managed item pack {idx + 1}/{number_of_bags} with GRN {grn_number} (Qty: {pack_quantity})")
+                    
+                    logging.info(f"✅ Added non-managed item {item_code} with {number_of_bags} packs (Integer distribution)")
+                else:
+                    # No bags specified, create single record
+                    grn_number = generate_unique_grn_number(grpo, 1)
                     
                     non_managed_item = GRPONonManagedItem(
                         grpo_item_id=grpo_item.id,
-                        quantity=qty_per_pack,
-                        base_line_number=idx,
+                        quantity=total_qty,
+                        base_line_number=0,
                         expiry_date=expiry_date_obj,
                         admin_date=datetime.now().date(),
                         grn_number=grn_number,
-                        qty_per_pack=qty_per_pack,
-                        no_of_packs=no_of_packs,
-                        pack_number=idx + 1
+                        qty_per_pack=total_qty,
+                        no_of_packs=1,
+                        pack_number=1
                     )
                     db.session.add(non_managed_item)
-                    logging.info(f"✅ Created non-managed item pack {idx + 1} of {no_of_packs} with GRN {grn_number} (Qty per pack: {qty_per_pack})")
-                
-                logging.info(f"✅ Added non-managed item {item_code} with {no_of_packs} packs (Qty per pack: {qty_per_pack})")
+                    logging.info(f"✅ Created non-managed item with GRN {grn_number} (Qty: {total_qty})")
                 
             except Exception as e:
                 flash(f'Error processing non-managed item: {str(e)}', 'error')
@@ -1271,25 +1329,38 @@ def generate_barcode_labels_api():
         
         elif label_type == 'batch':
             # Generate labels for batch-managed items
+            # NEW LOGIC: Each batch record now represents a single pack with integer quantity
             batch_numbers = item.batch_numbers
-            label_counter = 1
             
+            # Group batches by batch_number to determine pack sequence
+            from collections import defaultdict
+            batch_groups = defaultdict(list)
             for batch in batch_numbers:
-                num_packs = batch.no_of_packs or 1
+                batch_groups[batch.batch_number].append(batch)
+            
+            label_counter = 1
+            for batch_number_key, batch_group in batch_groups.items():
+                total_packs = len(batch_group)
                 
-                for pack_idx in range(1, num_packs + 1):
+                # Sort by base_line_number to ensure correct order (first pack has highest qty)
+                batch_group_sorted = sorted(batch_group, key=lambda b: b.base_line_number)
+                
+                for pack_idx, batch in enumerate(batch_group_sorted, start=1):
                     batch_grn = batch.grn_number or doc_number
+                    
+                    # Use integer quantity (no decimals)
+                    qty_value = int(batch.quantity) if batch.quantity else 0
                     
                     qr_data = {
                         'PO': po_number,
                         'BatchNumber': batch.batch_number,
-                        'Qty': float(batch.qty_per_pack) if batch.qty_per_pack else float(batch.quantity),
-                        'Pack': f"{pack_idx} of {num_packs}",
+                        'Qty': qty_value,  # Integer quantity
+                        'Pack': f"{pack_idx} of {total_packs}",
                         'GRN Date': grn_date,
                         'Exp Date': batch.expiry_date.strftime('%Y-%m-%d') if batch.expiry_date else 'N/A',
                         'ItemCode': item.item_code,
                         'ItemDesc': item.item_name or '',
-                        'id': f"{batch_grn}-{pack_idx}"
+                        'id': batch_grn
                     }
                     
                     # Convert to QR code friendly format
@@ -1298,19 +1369,19 @@ def generate_barcode_labels_api():
                     
                     label = {
                         'sequence': label_counter,
-                        'total': num_packs,
-                        'pack_text': f"{pack_idx} of {num_packs}",
+                        'total': total_packs,
+                        'pack_text': f"{pack_idx} of {total_packs}",
                         'po_number': po_number,
                         'batch_number': batch.batch_number,
-                        'quantity': float(batch.quantity),
-                        'qty_per_pack': float(batch.qty_per_pack) if batch.qty_per_pack else float(batch.quantity),
-                        'no_of_packs': num_packs,
+                        'quantity': qty_value,  # Integer quantity
+                        'qty_per_pack': qty_value,  # Same as quantity for individual packs
+                        'no_of_packs': total_packs,
                         'grn_date': grn_date,
-                        'grn_number': f"{batch_grn}-{pack_idx}",
+                        'grn_number': batch_grn,
                         'expiration_date': batch.expiry_date.strftime('%Y-%m-%d') if batch.expiry_date else 'N/A',
                         'item_code': item.item_code,
                         'item_name': item.item_name or '',
-                        'doc_number': f"{batch_grn}-{pack_idx}",
+                        'doc_number': batch_grn,
                         'qr_code_image': qr_code_image,
                         'qr_data': qr_data
                     }
@@ -1323,20 +1394,27 @@ def generate_barcode_labels_api():
             
             if non_managed_items and len(non_managed_items) > 0:
                 # Generate labels for each bag/pack
+                # NEW LOGIC: Each record now represents one pack with integer quantity
                 total_packs = len(non_managed_items)
                 
-                for idx, non_managed in enumerate(non_managed_items, start=1):
+                # Sort by pack_number to ensure correct order
+                non_managed_sorted = sorted(non_managed_items, key=lambda nm: nm.pack_number or 0)
+                
+                for idx, non_managed in enumerate(non_managed_sorted, start=1):
                     # Use the unique GRN number for this pack
                     pack_grn = non_managed.grn_number or doc_number
                     
                     # Use non_managed expiry_date if available, otherwise fallback to parent item's expiry_date
                     expiry_date_to_use = non_managed.expiry_date or item.expiry_date
                     
+                    # Use integer quantity (no decimals)
+                    qty_value = int(non_managed.quantity) if non_managed.quantity else 0
+                    
                     qr_data = {
                         'PO': po_number,
                         'ItemCode': item.item_code,
-                        'Qty per Pack': float(non_managed.qty_per_pack) if non_managed.qty_per_pack else float(non_managed.quantity),
-                        'Pack': f"{idx} of {non_managed.no_of_packs or total_packs}",
+                        'Qty per Pack': qty_value,  # Integer quantity
+                        'Pack': f"{idx} of {total_packs}",
                         'GRN': pack_grn,
                         'GRN Date': grn_date,
                         'Exp Date': expiry_date_to_use.strftime('%Y-%m-%d') if expiry_date_to_use else 'N/A',
@@ -1350,12 +1428,12 @@ def generate_barcode_labels_api():
                     
                     label = {
                         'sequence': idx,
-                        'total': non_managed.no_of_packs or total_packs,
-                        'pack_text': f"{idx} of {non_managed.no_of_packs or total_packs}",
+                        'total': total_packs,
+                        'pack_text': f"{idx} of {total_packs}",
                         'po_number': po_number,
-                        'quantity': float(non_managed.quantity),
-                        'qty_per_pack': float(non_managed.qty_per_pack) if non_managed.qty_per_pack else float(non_managed.quantity),
-                        'no_of_packs': non_managed.no_of_packs or total_packs,
+                        'quantity': qty_value,  # Integer quantity
+                        'qty_per_pack': qty_value,  # Same as quantity
+                        'no_of_packs': total_packs,
                         'grn_date': grn_date,
                         'grn_number': pack_grn,
                         'expiration_date': expiry_date_to_use.strftime('%Y-%m-%d') if expiry_date_to_use else 'N/A',

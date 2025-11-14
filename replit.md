@@ -9,6 +9,31 @@ A Flask-based Warehouse Management System (WMS) designed to streamline inventory
 
 ## Recent Changes
 
+### November 14, 2025 - GRPO Integer Quantity Distribution (Complete)
+**Feature:** Quantity per pack now uses integer values with intelligent distribution when not evenly divisible
+**Implementation:**
+- Modified batch number creation logic to create individual batch records per pack
+- First pack receives highest quantity (base + remainder) when quantity is not evenly divisible
+- Updated QR label generation to handle new batch structure with integer quantities
+- Applied same logic to non-managed items for consistency
+- Created comprehensive documentation (GRPO_INTEGER_QUANTITY_DISTRIBUTION.md)
+
+**Example Distribution:**
+- 11 units / 3 packs = Pack 1: 4 units, Pack 2: 3 units, Pack 3: 3 units
+- 12 units / 3 packs = Pack 1: 4 units, Pack 2: 4 units, Pack 3: 4 units
+
+**Key Features:**
+- ✅ No decimal quantities on QR labels (always integers)
+- ✅ First pack clearly identified with highest quantity
+- ✅ Each pack has its own database record (GRPOBatchNumber or GRPONonManagedItem)
+- ✅ Backwards compatible with existing QR labels
+- ✅ No database schema changes required
+- ✅ Works with MySQL, PostgreSQL, and SQLite
+
+**Files Modified:**
+- `modules/grpo/routes.py`: Updated batch number creation (lines 506-578), non-managed items (lines 614-662), and QR label generation (lines 1306-1365)
+- `GRPO_INTEGER_QUANTITY_DISTRIBUTION.md`: Complete documentation of changes and examples
+
 ### November 13, 2025 - QC Dashboard Implementation for Multi GRN, Direct Transfer, and Sales Delivery (Complete)
 **Feature:** Complete QC approval workflow and dashboard integration for three modules
 **Implementation:**
