@@ -93,9 +93,13 @@
                                             </button>
                                             {% if (line.batch_details|length > 0) or (line.serial_details|length > 0) %}
                                             <button type="button" class="btn btn-sm btn-info" 
-                                                    onclick="showMultiGRNQRLabels({{ line.id }}, {{ line.item_code|tojson }}, {{ line.item_description|tojson }}, '{% if line.serial_details|length > 0 %}serial{% else %}batch{% endif %}')"
+                                                    data-line-id="{{ line.id }}"
+                                                    data-item-code="{{ line.item_code }}"
+                                                    data-item-description="{{ line.item_description }}"
+                                                    data-label-type="{% if line.serial_details|length > 0 %}serial{% else %}batch{% endif %}"
+                                                    onclick="showMultiGRNQRLabels(this)"
                                                     title="Print QR Labels">
-                                                <i data-feather="printer"></i> Print Batch Labels
+                                                <i data-feather="printer"></i> Print {% if line.serial_details|length > 0 %}Serial{% else %}Batch{% endif %} Labels
                                             </button>
                                             {% endif %}
                                         </div>
@@ -269,8 +273,16 @@
                 <h5 class="modal-title"><i data-feather="printer"></i> QR Code Labels</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body" id="qrLabelsContent">
-                <!-- QR Labels will be generated here -->
+            <div class="modal-body">
+                <div id="qrLabelsLoading" class="text-center" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Generating labels...</p>
+                </div>
+                <div id="qrLabelsContent">
+                    <!-- QR Labels will be generated here -->
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -446,6 +458,10 @@
             labelType = 'batch';
         }
 
+        // Show loading indicator
+        const qrLabelsContent = document.getElementById('qrLabelsContent');
+        qrLabelsContent.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Generating labels...</p></div>';
+
         // Call API to generate barcode labels
         fetch('/multi-grn/api/generate-barcode-labels', {
             method: 'POST',
@@ -453,101 +469,177 @@
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                batch_id: batchId,
-                line_selection_id: lineSelectionId,
+                batch_id: parseInt(batchId),
+                line_selection_id: parseInt(lineSelectionId),
                 label_type: labelType
             })
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
-            if (data.success) {
+            if (data.success && data.labels && data.labels.length > 0) {
                 displayQRLabels(data.labels);
             } else {
-                alert('Error generating QR labels: ' + (data.error || 'Unknown error'));
+                qrLabelsContent.innerHTML = `<div class="alert alert-warning">${data.error || 'No labels generated'}</div>`;
             }
         })
         .catch(error => {
             console.error('Error generating QR labels:', error);
-            alert('Network error generating QR labels');
+            qrLabelsContent.innerHTML = `<div class="alert alert-danger">Network error: ${error.message}</div>`;
         });
     }
 
-    // Show Multi GRN QR Labels for a line item
-    function showMultiGRNQRLabels(lineSelectionId, itemCode, itemDescription, labelType) {
-        console.log('showMultiGRNQRLabels called:', {lineSelectionId, itemCode, itemDescription, labelType});
+    // Show Multi GRN QR Labels for a line item (FIXED VERSION)
+    function showMultiGRNQRLabels(buttonElement) {
+        console.log('🔍 showMultiGRNQRLabels called with button:', buttonElement);
         
-        // Get batch_id from the page (it's available in the breadcrumb)
+        // Get data from button attributes
+        const lineSelectionId = buttonElement.getAttribute('data-line-id');
+        const itemCode = buttonElement.getAttribute('data-item-code');
+        const itemDescription = buttonElement.getAttribute('data-item-description');
+        const labelType = buttonElement.getAttribute('data-label-type');
         const batchId = {{ batch.id }};
         
-        console.log('Fetching QR labels for batch_id:', batchId, 'line_selection_id:', lineSelectionId, 'label_type:', labelType);
+        console.log('📊 Data extracted:', {
+            lineSelectionId,
+            itemCode,
+            itemDescription,
+            labelType,
+            batchId
+        });
         
+        // Show modal with loading state
+        const modal = new bootstrap.Modal(document.getElementById('qrLabelsModal'));
+        modal.show();
+        
+        const loadingDiv = document.getElementById('qrLabelsLoading');
+        const contentDiv = document.getElementById('qrLabelsContent');
+        
+        loadingDiv.style.display = 'block';
+        contentDiv.innerHTML = '';
+        
+        console.log('🌐 Making API call to /multi-grn/api/generate-barcode-labels');
+        
+        // Make API call
         fetch('/multi-grn/api/generate-barcode-labels', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                batch_id: batchId,
-                line_selection_id: lineSelectionId,
-                label_type: labelType
+                batch_id: parseInt(batchId),
+                line_selection_id: parseInt(lineSelectionId),
+                label_type: labelType,
+                item_code: itemCode,
+                item_description: itemDescription
             })
         })
         .then(response => {
-            console.log('Response status:', response.status);
+            console.log('📥 Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
             return response.json();
         })
         .then(data => {
-            console.log('Response data:', data);
-            if (data.success) {
+            console.log('✅ Response data:', data);
+            loadingDiv.style.display = 'none';
+            
+            if (data.success && data.labels && data.labels.length > 0) {
+                console.log(`📦 Displaying ${data.labels.length} labels`);
                 displayQRLabels(data.labels);
             } else {
-                alert('Error generating QR labels: ' + (data.error || 'Unknown error'));
+                console.warn('⚠️ No labels returned or error:', data.error);
+                contentDiv.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i data-feather="alert-triangle"></i> 
+                        ${data.error || 'No labels available to generate'}
+                    </div>
+                `;
+                feather.replace();
             }
         })
         .catch(error => {
-            console.error('Error generating QR labels:', error);
-            alert('Network error generating QR labels: ' + error.message);
+            console.error('❌ Error generating QR labels:', error);
+            loadingDiv.style.display = 'none';
+            contentDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <i data-feather="alert-circle"></i> 
+                    Network error generating QR labels: ${error.message}
+                </div>
+            `;
+            feather.replace();
         });
     }
 
     // Display QR Labels in Modal (Compact format matching GRPO Module)
     function displayQRLabels(labels) {
+        console.log('🎨 Displaying labels:', labels);
+        
         const content = document.getElementById('qrLabelsContent');
+        
+        if (!labels || labels.length === 0) {
+            content.innerHTML = '<div class="alert alert-info">No labels to display</div>';
+            return;
+        }
+        
+        // Group labels by batch_number to avoid duplicates
+        const uniqueLabels = [];
+        const seenBatches = new Set();
+        
+        labels.forEach(label => {
+            const batchKey = `${label.batch_number || label.serial_number || 'standard'}_${label.sequence}`;
+            if (!seenBatches.has(batchKey)) {
+                seenBatches.add(batchKey);
+                uniqueLabels.push(label);
+            }
+        });
+        
+        console.log(`📊 Original labels: ${labels.length}, Unique labels: ${uniqueLabels.length}`);
+        
         let html = '<div class="container-fluid"><div class="row">';
 
-        labels.forEach((label, index) => {
+        uniqueLabels.forEach((label, index) => {
+            // Extract just the batch number without the item code prefix
+            const batchDisplay = label.batch_number || label.serial_number || '';
+            
             html += `
-                <div class="col-md-6 mb-3 d-flex">
+                <div class="col-md-6 mb-3 d-flex print-page-break">
                     <div class="card border-dark flex-fill" style="max-width: 500px;">
-                        <div class="card-header bg-light text-center py-1">
-                            <small><strong>${label.batch_number ? 'BatchItem' : 'Item'}_${String(label.sequence).padStart(2, '0')}</strong></small>
+                        <div class="card-header bg-dark text-white text-center py-2">
+                            <strong>${batchDisplay || `Item ${label.sequence || index + 1}`}</strong>
                         </div>
-                        <div class="card-body p-2">
+                        <div class="card-body p-3">
                             <div class="row g-2">
                                 <div class="col-5 text-center">
-                                    ${label.qr_code_image ? `<img src="${label.qr_code_image}" alt="QR Code" class="img-fluid" style="max-width: 150px;">` : '<p class="text-muted small">QR Code failed</p>'}
-                                    <div class="mt-1">
-                                        <small><strong>${label.grn_number}</strong></small>
+                                    ${label.qr_code_image ? `<img src="${label.qr_code_image}" alt="QR Code" class="img-fluid" style="max-width: 150px;">` : '<p class="text-muted small">QR Code unavailable</p>'}
+                                    <div class="mt-2">
+                                        <small><strong>${label.grn_number || 'N/A'}</strong></small>
                                     </div>
                                 </div>
                                 <div class="col-7">
-                                    <table class="table table-sm table-borderless mb-0" style="font-size: 0.85rem;">
+                                    <table class="table table-sm table-borderless mb-0" style="font-size: 0.9rem;">
                                         <tr>
                                             <td class="fw-bold py-1">PO:</td>
-                                            <td class="py-1">${label.po_number}</td>
+                                            <td class="py-1">${label.po_number || 'N/A'}</td>
                                         </tr>
                                         ${label.batch_number ? `<tr><td class="fw-bold py-1">Batch:</td><td class="py-1">${label.batch_number}</td></tr>` : ''}
+                                        ${label.serial_number ? `<tr><td class="fw-bold py-1">Serial:</td><td class="py-1">${label.serial_number}</td></tr>` : ''}
                                         <tr>
                                             <td class="fw-bold py-1">Qty per Pack:</td>
-                                            <td class="py-1">${label.qty_per_pack || label.quantity}</td>
+                                            <td class="py-1">${label.qty_per_pack || label.quantity || 'N/A'}</td>
                                         </tr>
                                         <tr>
                                             <td class="fw-bold py-1">Pack:</td>
-                                            <td class="py-1">${label.sequence} of ${label.total}</td>
+                                            <td class="py-1">${label.sequence || index + 1} of ${label.total || uniqueLabels.length}</td>
                                         </tr>
                                         <tr>
                                             <td class="fw-bold py-1">GRN Date:</td>
-                                            <td class="py-1">${label.grn_date}</td>
+                                            <td class="py-1">${label.grn_date || 'N/A'}</td>
                                         </tr>
                                         <tr>
                                             <td class="fw-bold py-1">Exp Date:</td>
@@ -564,10 +656,8 @@
 
         html += '</div></div>';
         content.innerHTML = html;
-
-        // Show modal
-        const modal = new bootstrap.Modal(document.getElementById('qrLabelsModal'));
-        modal.show();
+        
+        console.log('✅ Labels displayed successfully');
     }
 
     // Handle form submission
@@ -624,7 +714,8 @@
     // Initialize Feather icons
     document.addEventListener('DOMContentLoaded', function() {
         feather.replace();
-        console.log('Feather icons initialized');
+        console.log('✅ Feather icons initialized');
+        console.log('✅ Page loaded - batch_id:', {{ batch.id }});
     });
     
     // Re-initialize feather icons when modal is shown
@@ -634,4 +725,59 @@
         });
     });
 </script>
+
+<style>
+    @media print {
+        /* Hide everything except the labels */
+        body * {
+            visibility: hidden;
+        }
+        #qrLabelsContent, #qrLabelsContent * {
+            visibility: visible;
+        }
+        #qrLabelsContent {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+        }
+        .modal-header, .modal-footer {
+            display: none !important;
+        }
+        
+        /* Each label on separate page */
+        .print-page-break {
+            page-break-after: always;
+            page-break-inside: avoid;
+        }
+        
+        /* Make labels full width when printing */
+        .print-page-break {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+        
+        .print-page-break .card {
+            max-width: 100% !important;
+            margin: 0 auto;
+            border: 2px solid #000 !important;
+        }
+        
+        /* Hide the row/col structure for printing */
+        .row {
+            display: block !important;
+        }
+        
+        .col-md-6 {
+            width: 100% !important;
+            float: none !important;
+        }
+    }
+    
+    @media screen {
+        .print-page-break {
+            page-break-after: auto;
+        }
+    }
+</style>
 {% endblock %}
