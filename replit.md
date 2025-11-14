@@ -1,144 +1,11 @@
 # Warehouse Management System (WMS)
 
 ## Overview
-A Flask-based Warehouse Management System (WMS) designed to streamline inventory operations by integrating seamlessly with SAP for functionalities such as barcode scanning, goods receipt, pick list generation, and inventory transfers. The system aims to enhance efficiency, accuracy, and control over warehouse logistics, ultimately minimizing manual errors and maximizing throughput for small to medium-sized enterprises.
+A Flask-based Warehouse Management System (WMS) designed to streamline inventory operations by integrating seamlessly with SAP. The system focuses on enhancing efficiency, accuracy, and control over warehouse logistics through functionalities such as barcode scanning, goods receipt, pick list generation, and inventory transfers. It aims to minimize manual errors and maximize throughput for small to medium-sized enterprises by providing real-time data synchronization with SAP.
 
 ## User Preferences
 *   Keep MySQL migration files updated when database schema changes occur
 *   SQL query validation should only run on initial startup, not on every application restart
-
-## Recent Changes
-
-### November 14, 2025 - Multi GRN Conditional Batch/Serial Numbers in SAP JSON (Complete)
-**Feature:** BatchNumbers section now conditionally excluded from SAP JSON when item is not batch-managed and not serial-managed
-**Implementation:**
-- Added conditional checks for `batch_required='Y'` before including BatchNumbers section
-- Added conditional checks for `serial_required='Y'` before including SerialNumbers section
-- Applied to both post_grns and approve_multi_grn_qc endpoints for consistency
-- Prevents SAP B1 API errors when posting standard items (NonBatch_NonSerialMethod='A')
-
-**SAP Item Management Logic:**
-- BatchNum='Y' → Include BatchNumbers section
-- SerialNum='Y' → Include SerialNumbers section
-- Both='N', manage_method='A' (Standard items) → Exclude both sections entirely
-- Both='N', manage_method='R' (Quantity-managed) → Include BatchNumbers for lot consolidation
-
-**Key Features:**
-- ✅ Standard items (BatchNum='N', SerialNum='N', method='A') no longer include BatchNumbers
-- ✅ Batch-managed items (BatchNum='Y') continue to include BatchNumbers section
-- ✅ Serial-managed items (SerialNum='Y') continue to include SerialNumbers section
-- ✅ Quantity-managed items (method='R') include BatchNumbers for lot consolidation
-- ✅ Backwards compatible with existing data and workflows
-- ✅ No database schema changes required
-- ✅ Aligns with SAP B1 Service Layer API validation requirements
-
-**Files Modified:**
-- `modules/multi_grn_creation/routes.py`: Added conditional checks in post_grns (lines 363-410) and approve_multi_grn_qc (lines 565-610)
-- `MULTI_GRN_CONDITIONAL_BATCH_NUMBERS.md`: Complete documentation with examples and test cases
-
-### November 14, 2025 - GRPO Integer Quantity Distribution (Complete)
-**Feature:** Quantity per pack now uses integer values with intelligent distribution when not evenly divisible
-**Implementation:**
-- Modified batch number creation logic to create individual batch records per pack
-- First pack receives highest quantity (base + remainder) when quantity is not evenly divisible
-- Updated QR label generation to handle new batch structure with integer quantities
-- Applied same logic to non-managed items for consistency
-- Created comprehensive documentation (GRPO_INTEGER_QUANTITY_DISTRIBUTION.md)
-
-**Example Distribution:**
-- 11 units / 3 packs = Pack 1: 4 units, Pack 2: 3 units, Pack 3: 3 units
-- 12 units / 3 packs = Pack 1: 4 units, Pack 2: 4 units, Pack 3: 4 units
-
-**Key Features:**
-- ✅ No decimal quantities on QR labels (always integers)
-- ✅ First pack clearly identified with highest quantity
-- ✅ Each pack has its own database record (GRPOBatchNumber or GRPONonManagedItem)
-- ✅ Backwards compatible with existing QR labels
-- ✅ No database schema changes required
-- ✅ Works with MySQL, PostgreSQL, and SQLite
-
-**Files Modified:**
-- `modules/grpo/routes.py`: Updated batch number creation (lines 506-578), non-managed items (lines 614-662), and QR label generation (lines 1306-1365)
-- `GRPO_INTEGER_QUANTITY_DISTRIBUTION.md`: Complete documentation of changes and examples
-
-### November 13, 2025 - QC Dashboard Implementation for Multi GRN, Direct Transfer, and Sales Delivery (Complete)
-**Feature:** Complete QC approval workflow and dashboard integration for three modules
-**Implementation:**
-- Added QC metadata fields to MultiGRNBatch model (qc_approver_id, qc_approved_at, qc_notes, submitted_at)
-- Added submitted_at field to DirectInventoryTransfer model
-- Created MySQL migrations for both Multi GRN and Direct Transfer QC fields
-- Updated QC Dashboard route to aggregate pending items from all modules
-- Created approve/reject routes for Multi GRN with SAP B1 posting integration
-- Added three new sections to QC Dashboard template (Direct Transfer, Sales Delivery, Multi GRN)
-- Implemented JavaScript modal functions for all three modules
-
-**Status Workflow:**
-All modules now follow: draft → submitted → qc_approved/rejected → posted
-
-**Key Features:**
-- ✅ Multi GRN batches appear in QC Dashboard when submitted
-- ✅ Direct Inventory Transfers appear in QC Dashboard when submitted  
-- ✅ Sales Deliveries appear in QC Dashboard when submitted
-- ✅ QC Dashboard shows unified view of all pending approvals across all modules
-- ✅ Approval posts documents to SAP B1 immediately
-- ✅ Rejection requires reason and returns document to draft state
-- ✅ Metrics include all three modules in approved/rejected counts
-- ✅ MySQL migrations created for dual database support
-
-**Files Modified:**
-- `routes.py`: Updated qc_dashboard route (lines 2034-2269), added approve_multi_grn_qc (lines 2579-2723) and reject_multi_grn_qc (lines 2725-2760)
-- `templates/qc_dashboard.html`: Added three module sections (lines 220-443) and JavaScript functions (lines 1138-1223)
-- `models.py`: Added submitted_at to DirectInventoryTransfer model (line 840)
-- `modules/multi_grn_creation/models.py`: Added QC fields to MultiGRNBatch
-- `migrations/mysql/changes/2025-11-13_multi_grn_qc_approval.sql`: MySQL migration for Multi GRN QC fields
-- `migrations/mysql/changes/2025-11-13_direct_inventory_transfer_qc_submitted_at.sql`: MySQL migration for Direct Transfer submitted_at
-
-### November 13, 2025 - Inventory Transfer QR Scanning Enhancement (Complete)
-**Feature:** Production-ready database-backed QR code scanning for Inventory Transfer module
-**Implementation:**
-- Created `TransferScanState` model for persistent pack tracking (replaces Flask session to avoid 4KB cookie limit)
-- Enhanced `api_scan_qr_label` endpoint to parse JSON QR labels with pack information (id, po, item, batch, qty, pack, grn_date, exp_date)
-- Implemented duplicate pack prevention using database unique constraints
-- Added quantity accumulation and overflow protection
-- Built frontend UI with real-time scan progress, accumulated quantities, and remaining quantity display
-- Added item code validation to prevent scanning QR codes for wrong items
-- Made Available Quantity field readonly to preserve scan integrity
-- Implemented modal reset functionality to clear scan state when closing
-
-**Key Features:**
-- ✅ Parses JSON QR format: `{"id":"GRN/xxx","po":"xxx","item":"xxx","batch":"xxx","qty":10,"pack":"1 of 5","grn_date":"xxx","exp_date":"xxx"}`
-- ✅ Batch Number field populated with unique batches including quantity and expiry date
-- ✅ Available Quantity field populated with accumulated quantities (readonly)
-- ✅ Tracks each pack uniquely (prevents scanning "1 of 5" twice via database constraint)
-- ✅ Accumulates quantities from multiple scans until equals requested quantity
-- ✅ Validates against requested quantities with overflow protection
-- ✅ Item code mismatch validation prevents scanning wrong QR codes
-- ✅ Manages batch numbers for SAP B1 integration
-- ✅ Database-backed state supports unlimited pack scans
-- ✅ Modal auto-resets scan state when closed
-
-**Files Modified:**
-- `models.py`: Added TransferScanState model (lines 190-216)
-- `modules/inventory_transfer/routes.py`: Enhanced api_scan_qr_label with item validation and api_reset_scan_state endpoints
-- `templates/inventory_transfer_detail.html`: Complete frontend implementation with scan tracking, validation, and modal management
-
-### November 12, 2025 - Multi GRN QR Labels Fix
-**Issue:** Print Batch Labels button in Multi GRN module was not displaying QR labels
-**Root Cause:** Users were attempting to print labels before adding item details (warehouse, bin location, batch/serial info)
-**Solution:** 
-- Added comprehensive logging to track label generation requests and identify missing data
-- Implemented explicit error handling that returns clear message: "No batch details found for this item. Please add item details first before printing labels."
-- Enhanced user workflow guidance in documentation
-
-**Correct Workflow:**
-1. Click "Add Item" button in Step 3: Line Item Details
-2. Enter warehouse, bin location, and number of packs
-3. Click "Generate QR Labels" and save
-4. Then "Print Batch Labels" will work correctly
-
-**Files Modified:**
-- `modules/multi_grn_creation/routes.py`: Enhanced logging and validation in generate_barcode_labels_multi_grn()
-- `MULTI_GRN_QR_LABELS_FIX.md`: Detailed documentation of the fix
 
 ## System Architecture
 The system is built on a Flask web application backend, utilizing Jinja2 for server-side rendering. A core architectural decision is the deep integration with the SAP B1 Service Layer API for all critical warehouse operations, ensuring data consistency and real-time updates. PostgreSQL is the primary database target for cloud deployments, with SQLite serving as a fallback. User authentication uses Flask-Login with robust role-based access control. The application is designed for production deployment using Gunicorn with autoscale capabilities.
@@ -150,24 +17,26 @@ The system is built on a Flask web application backend, utilizing Jinja2 for ser
 *   Comprehensive pagination, filtering, and search functionalities across key modules (GRPO Details, Sales Order Against Delivery Details, Inventory Counting History, Inventory Transfer).
 
 **Technical Implementations:**
-*   **SAP B1 Integration:** Utilizes a dedicated `SAPMultiGRNService` class for secure and robust communication with the SAP B1 Service Layer, including SSL/TLS verification and optimized OData filtering.
+*   **SAP B1 Integration:** Utilizes a dedicated `SAPMultiGRNService` class for secure and robust communication with the SAP B1 Service Layer, including SSL/TLS verification and optimized OData filtering. Conditional handling of batch/serial numbers in SAP JSON prevents API errors.
 *   **Modular Design:** New features are implemented as modular blueprints with their own templates and services.
 *   **Frontend:** Jinja2 templating with JavaScript libraries like Select2 for enhanced UI components.
 *   **Error Handling:** Comprehensive validation and error logging for API communications and user inputs.
-*   **Optimized SAP SQL Query Validation:** SQL query validation runs only on initial startup using a flag-based system to prevent repeated attempts.
+*   **Optimized SAP SQL Query Validation:** SQL query validation runs only on initial startup using a flag-based system.
 *   **Database Migrations:** A comprehensive MySQL migration tracking system is in place for schema changes, complementing the primary PostgreSQL strategy.
+*   **GRPO Integer Quantity Distribution:** Implements intelligent integer quantity distribution per pack, ensuring no decimal quantities on QR labels.
+*   **Persistent QR Scan State:** Uses a database-backed `TransferScanState` model for persistent pack tracking during inventory transfers, avoiding session limitations.
 
 **Feature Specifications:**
 *   **User Management:** Comprehensive authentication, role-based access, and self-service profile management.
-*   **GRPO Management:** Standard Goods Receipt PO processing, intelligent batch/serial field management, and a multi-GRN module for batch creation from multiple Purchase Orders via a 5-step workflow with SAP B1 integration and QR label generation.
-*   **Inventory Transfer:** Enhanced module for creating inventory transfer requests with document series selection, SAP B1 validation, and QR label scanning.
-*   **Direct Inventory Transfer:** Barcode-based inventory transfer module with automatic serial/batch detection, real-time SAP B1 validation, warehouse and bin selection, QC approval workflow, and direct posting to SAP B1 as StockTransfers. Includes QR code scanning with automatic item validation and camera-based scanning functionality using the integrated barcode scanner library.
+*   **GRPO Management:** Standard Goods Receipt PO processing, intelligent batch/serial field management, and a multi-GRN module for batch creation from multiple Purchase Orders via a 5-step workflow with SAP B1 integration and QR label generation. Includes dynamic SAP bin location lookup.
+*   **Inventory Transfer:** Enhanced module for creating inventory transfer requests with document series selection, SAP B1 validation, and robust QR label scanning with duplicate prevention and quantity accumulation.
+*   **Direct Inventory Transfer:** Barcode-based inventory transfer module with automatic serial/batch detection, real-time SAP B1 validation, warehouse and bin selection, QC approval workflow, and direct posting to SAP B1 as StockTransfers. Includes camera-based scanning.
 *   **Sales Order Against Delivery:** Module for creating Delivery Notes against Sales Orders with SAP B1 integration, including SO series selection, cascading dropdown for open SO document numbers, item picking with batch/serial validation, and individual QR code label generation.
 *   **Pick List Management:** Generation and processing of pick lists.
 *   **Barcode Scanning:** Integrated camera-based scanning for various modules (GRPO, Bin Scanning, Pick List, Inventory Transfer, Barcode Reprint).
-*   **Inventory Counting:** SAP B1 integrated inventory counting with local database storage for tracking, audit trails, user tracking, and timestamps. Includes a comprehensive history view.
+*   **Inventory Counting:** SAP B1 integrated inventory counting with local database storage for tracking, audit trails, user tracking, and timestamps, including a comprehensive history view.
 *   **Branch Management:** Functionality for managing different warehouse branches.
-*   **Quality Control Dashboard:** Provides oversight for quality processes.
+*   **Quality Control Dashboard:** Provides a unified oversight for quality approval workflows across Multi GRN, Direct Transfer, and Sales Delivery modules, with SAP B1 posting integration upon approval.
 
 ## External Dependencies
 *   **SAP B1 Service Layer API**: For all core inventory and document management functionalities (GRPO, pick lists, inventory transfers, serial numbers, business partners, inventory counts).

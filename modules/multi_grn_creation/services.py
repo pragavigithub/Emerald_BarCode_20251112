@@ -463,6 +463,60 @@ class SAPMultiGRNService:
             logging.error(f"❌ Error fetching CardCodes for series {series_id}: {str(e)}")
             return {'success': False, 'error': str(e)}
     
+    def get_bin_abs_entry(self, bin_code):
+        """
+        Get BinAbsEntry (AbsEntry) for a given bin code
+        URL: GET /b1s/v1/BinLocations?$filter=BinCode eq 'BIN_CODE'
+        Example: BinCode='7000-FG-A101' returns AbsEntry=251
+        """
+        if not self.ensure_logged_in():
+            logging.warning(f"⚠️ SAP login failed - cannot get bin location for {bin_code}")
+            return {'success': False, 'error': 'SAP login failed'}
+        
+        try:
+            url = f"{self.base_url}/b1s/v1/BinLocations"
+            params = {
+                '$filter': f"BinCode eq '{bin_code}'",
+                '$select': 'AbsEntry,Warehouse,BinCode,Sublevel1,Sublevel2,Sublevel3,Sublevel4'
+            }
+            
+            logging.info(f"🔍 Fetching BinAbsEntry for bin code: {bin_code}")
+            response = self.session.get(url, params=params, timeout=30)
+            
+            if response.status_code == 200:
+                data = response.json()
+                bins = data.get('value', [])
+                
+                if not bins:
+                    logging.warning(f"⚠️ Bin code {bin_code} not found in SAP")
+                    return {'success': False, 'error': f'Bin code {bin_code} not found'}
+                
+                bin_data = bins[0]
+                abs_entry = bin_data.get('AbsEntry')
+                warehouse = bin_data.get('Warehouse')
+                
+                logging.info(f"✅ Found bin {bin_code}: AbsEntry={abs_entry}, Warehouse={warehouse}")
+                return {
+                    'success': True,
+                    'abs_entry': abs_entry,
+                    'warehouse': warehouse,
+                    'bin_code': bin_code,
+                    'bin_data': bin_data
+                }
+            elif response.status_code == 401:
+                self.session_id = None
+                if self.login():
+                    return self.get_bin_abs_entry(bin_code)
+                return {'success': False, 'error': 'Authentication failed'}
+            else:
+                error_msg = response.text
+                logging.error(f"❌ Failed to get bin location {bin_code}: {error_msg}")
+                return {'success': False, 'error': error_msg}
+                
+        except Exception as e:
+            logging.error(f"❌ Error getting bin location {bin_code}: {str(e)}")
+            return {'success': False, 'error': str(e)}
+    
     def fetch_purchase_orders_by_series_and_card(self, series_id, card_code):
         """
         Fetch open Purchase Orders filtered by Series and CardCode
