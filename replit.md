@@ -20,12 +20,14 @@ A Flask-based Warehouse Management System (WMS) designed to streamline inventory
 **SAP Item Management Logic:**
 - BatchNum='Y' → Include BatchNumbers section
 - SerialNum='Y' → Include SerialNumbers section
-- Both='N' (Standard items) → Exclude both sections entirely
+- Both='N', manage_method='A' (Standard items) → Exclude both sections entirely
+- Both='N', manage_method='R' (Quantity-managed) → Include BatchNumbers for lot consolidation
 
 **Key Features:**
-- ✅ Standard items (BatchNum='N', SerialNum='N') no longer include BatchNumbers
-- ✅ Batch-managed items continue to include BatchNumbers section
-- ✅ Serial-managed items continue to include SerialNumbers section
+- ✅ Standard items (BatchNum='N', SerialNum='N', method='A') no longer include BatchNumbers
+- ✅ Batch-managed items (BatchNum='Y') continue to include BatchNumbers section
+- ✅ Serial-managed items (SerialNum='Y') continue to include SerialNumbers section
+- ✅ Quantity-managed items (method='R') include BatchNumbers for lot consolidation
 - ✅ Backwards compatible with existing data and workflows
 - ✅ No database schema changes required
 - ✅ Aligns with SAP B1 Service Layer API validation requirements
