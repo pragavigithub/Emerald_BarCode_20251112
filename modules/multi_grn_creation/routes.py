@@ -332,7 +332,7 @@ def create_step4_review(batch_id):
 @multi_grn_bp.route('/create/step5/<int:batch_id>', methods=['POST'])
 @login_required
 def create_step5_post(batch_id):
-    """Step 5: Post GRNs to SAP B1"""
+    """Step 5: Post consolidated GRN to SAP B1 (all POs into single GRN)"""
     batch = MultiGRNBatch.query.get_or_404(batch_id)
     
     if batch.user_id != current_user.id:
@@ -340,137 +340,216 @@ def create_step5_post(batch_id):
     
     try:
         sap_service = SAPMultiGRNService()
-        results = []
-        success_count = 0
         
+        # Validate batch has PO links
+        if not batch.po_links:
+            return jsonify({'success': False, 'error': 'No purchase orders in this batch'}), 400
+        
+        # CRITICAL VALIDATION: Ensure all POs have the same CardCode (vendor)
+        # SAP requires all lines in a Purchase Delivery Note to be from the same vendor
+        # NOTE: The workflow design ensures consistency by:
+        # 1. Step 1 - User selects customer/vendor
+        # 2. Step 2 - System fetches only POs for that customer
+        # 3. Step 3 - User selects lines from those POs
+        # However, we still validate here as a safety check
+        first_po_link = batch.po_links[0]
+        card_code = first_po_link.po_card_code
+        
+        for po_link in batch.po_links:
+            if po_link.po_card_code != card_code:
+                error_msg = f'Cannot consolidate POs with different vendors. Found {card_code} and {po_link.po_card_code}. All POs must be from the same vendor.'
+                logging.error(f"❌ {error_msg}")
+                return jsonify({'success': False, 'error': error_msg}), 400
+        
+        # LIMITATION: The current database schema doesn't store all PO header fields
+        # (Series, BPL, DocCurrency, Tax, Payment Terms) so we cannot validate them here.
+        # The workflow ensures consistency through series filtering in Step 1-2.
+        # Future enhancement: Store and validate Series, BPL, DocCurrency in MultiGRNPOLink model
+        
+        # Consolidate all line items from all POs into a single DocumentLines array
+        consolidated_document_lines = []
+        line_number = 0  # 0-indexed counter for LineNum and BaseLineNumber references
+        all_line_selections = []
+        
+        # Collect all line selections from all POs in this batch
         for po_link in batch.po_links:
             if not po_link.line_selections:
                 continue
             
-            document_lines = []
-            line_number = 0  # 0-indexed counter for BaseLineNumber in serial/batch arrays
-            
             for line in po_link.line_selections:
-                # Check if this is a manual item (not from PO line)
-                if line.line_status == 'manual' or line.po_line_num == -1:
-                    # Manual item - no base reference to PO
-                    doc_line = {
-                        'ItemCode': line.item_code,
-                        'Quantity': float(line.selected_quantity),
-                        'WarehouseCode': line.warehouse_code or '7000-FG'
-                    }
-                else:
-                    # PO-based item - include base reference
-                    doc_line = {
-                        'BaseType': 22,
-                        'BaseEntry': po_link.po_doc_entry,
-                        'BaseLine': line.po_line_num,
-                        'ItemCode': line.item_code,
-                        'Quantity': float(line.selected_quantity),
-                        'WarehouseCode': line.warehouse_code or '7000-FG'
-                    }
+                all_line_selections.append({
+                    'line': line,
+                    'po_link': po_link
+                })
+        
+        # Build consolidated DocumentLines array with sequential LineNum
+        for item in all_line_selections:
+            line = item['line']
+            po_link = item['po_link']
+            
+            # Check if this is a manual item (not from PO line)
+            if line.line_status == 'manual' or line.po_line_num == -1:
+                # Manual item - no base reference to PO
+                doc_line = {
+                    'LineNum': line_number,
+                    'ItemCode': line.item_code,
+                    'Quantity': float(line.selected_quantity),
+                    'WarehouseCode': line.warehouse_code or '7000-FG'
+                }
+            else:
+                # PO-based item - include base reference
+                doc_line = {
+                    'LineNum': line_number,
+                    'BaseType': 22,
+                    'BaseEntry': po_link.po_doc_entry,
+                    'BaseLine': line.po_line_num,
+                    'ItemCode': line.item_code,
+                    'Quantity': float(line.selected_quantity),
+                    'WarehouseCode': line.warehouse_code or '7000-FG'
+                }
+            
+            # Fetch BinAbsEntry from SAP if bin_location is provided
+            if line.bin_location:
+                # Check if bin_location is already a numeric AbsEntry or a BinCode string
+                try:
+                    bin_abs_entry = int(line.bin_location)
+                    logging.info(f"✅ Using numeric BinAbsEntry: {bin_abs_entry}")
+                except (ValueError, TypeError):
+                    # bin_location is a BinCode string like '7000-FG-A101', fetch AbsEntry from SAP
+                    bin_result = sap_service.get_bin_abs_entry(line.bin_location)
+                    if bin_result.get('success'):
+                        bin_abs_entry = bin_result.get('abs_entry')
+                        logging.info(f"✅ Fetched BinAbsEntry {bin_abs_entry} for BinCode {line.bin_location}")
+                    else:
+                        logging.warning(f"⚠️ Failed to fetch BinAbsEntry for {line.bin_location}: {bin_result.get('error')}")
+                        bin_abs_entry = None
                 
-                # Add bin location if present
-                if line.bin_location:
-                    doc_line['BinAllocations'] = [{
-                        'BinAbsEntry': line.bin_location,
+                if bin_abs_entry:
+                    doc_line['DocumentLinesBinAllocations'] = [{
+                        'BinAbsEntry': bin_abs_entry,
                         'Quantity': float(line.selected_quantity)
                     }]
-                
-                # Build batch numbers array from MultiGRNBatchDetails
-                # BaseLineNumber must be the 0-indexed position in DocumentLines array
-                # Only include BatchNumbers if item is batch-managed (batch_required='Y') OR quantity-managed (manage_method='R')
-                if line.batch_details and (line.batch_required == 'Y' or line.manage_method == 'R'):
-                    batch_numbers = []
-                    for batch_detail in line.batch_details:
-                        batch_entry = {
-                            'BatchNumber': batch_detail.batch_number,
-                            'Quantity': float(batch_detail.quantity),
-                            'BaseLineNumber': line_number  # 0-indexed position in DocumentLines
-                        }
-                        if batch_detail.expiry_date:
-                            batch_entry['ExpiryDate'] = batch_detail.expiry_date.isoformat()
-                        if batch_detail.manufacturer_serial_number:
-                            batch_entry['ManufacturerSerialNumber'] = batch_detail.manufacturer_serial_number
-                        if batch_detail.internal_serial_number:
-                            batch_entry['InternalSerialNumber'] = batch_detail.internal_serial_number
-                        batch_numbers.append(batch_entry)
-                    
-                    if batch_numbers:
-                        doc_line['BatchNumbers'] = batch_numbers
-                
-                # Build serial numbers array from MultiGRNSerialDetails
-                # BaseLineNumber must be the 0-indexed position in DocumentLines array
-                # Only include SerialNumbers if item is serial-managed (serial_required='Y')
-                elif line.serial_details and line.serial_required == 'Y':
-                    serial_numbers = []
-                    for serial_detail in line.serial_details:
-                        serial_entry = {
-                            'InternalSerialNumber': serial_detail.serial_number,
-                            'Quantity': 1.0,  # Each serial is always quantity 1
-                            'BaseLineNumber': line_number  # 0-indexed position in DocumentLines
-                        }
-                        if serial_detail.manufacturer_serial_number:
-                            serial_entry['ManufacturerSerialNumber'] = serial_detail.manufacturer_serial_number
-                        if serial_detail.expiry_date:
-                            serial_entry['ExpiryDate'] = serial_detail.expiry_date.isoformat()
-                        serial_numbers.append(serial_entry)
-                    
-                    if serial_numbers:
-                        doc_line['SerialNumbers'] = serial_numbers
-                
-                # Fallback: Use old JSON fields if new detail models are empty (backward compatibility)
-                # Only include if item is actually serial/batch/quantity managed
-                elif line.serial_numbers and line.serial_required == 'Y':
-                    serial_data = json.loads(line.serial_numbers) if isinstance(line.serial_numbers, str) else line.serial_numbers
-                    doc_line['SerialNumbers'] = serial_data
-                
-                elif line.batch_numbers and (line.batch_required == 'Y' or line.manage_method == 'R'):
-                    batch_data = json.loads(line.batch_numbers) if isinstance(line.batch_numbers, str) else line.batch_numbers
-                    doc_line['BatchNumbers'] = batch_data
-                
-                document_lines.append(doc_line)
-                line_number += 1  # Increment for next line
             
-            grn_data = {
-                'CardCode': po_link.po_card_code,
-                'DocDate': date.today().isoformat(),
-                'DocDueDate': date.today().isoformat(),
-                'Comments': f'Auto-created from batch {batch.id}',
-                'NumAtCard': f'BATCH-{batch.id}-PO-{po_link.po_doc_num}',
-                'BPL_IDAssignedToInvoice': 5,
-                'DocumentLines': document_lines
-            }
+            # Build batch numbers array from MultiGRNBatchDetails
+            # Only include BatchNumbers if item is batch-managed (batch_required='Y') OR quantity-managed (manage_method='R')
+            if line.batch_details and (line.batch_required == 'Y' or line.manage_method == 'R'):
+                batch_numbers = []
+                for batch_detail in line.batch_details:
+                    batch_entry = {
+                        'BatchNumber': batch_detail.batch_number,
+                        'Quantity': float(batch_detail.quantity)
+                    }
+                    if batch_detail.expiry_date:
+                        batch_entry['ExpiryDate'] = batch_detail.expiry_date.isoformat()
+                    if batch_detail.manufacturer_serial_number:
+                        batch_entry['ManufacturerSerialNumber'] = batch_detail.manufacturer_serial_number
+                    if batch_detail.internal_serial_number:
+                        batch_entry['InternalSerialNumber'] = batch_detail.internal_serial_number
+                    batch_numbers.append(batch_entry)
+                
+                if batch_numbers:
+                    doc_line['BatchNumbers'] = batch_numbers
             
-            result = sap_service.create_purchase_delivery_note(grn_data)
+            # Build serial numbers array from MultiGRNSerialDetails
+            # Only include SerialNumbers if item is serial-managed (serial_required='Y')
+            elif line.serial_details and line.serial_required == 'Y':
+                serial_numbers = []
+                for serial_detail in line.serial_details:
+                    serial_entry = {
+                        'InternalSerialNumber': serial_detail.serial_number,
+                        'Quantity': 1.0
+                    }
+                    if serial_detail.manufacturer_serial_number:
+                        serial_entry['ManufacturerSerialNumber'] = serial_detail.manufacturer_serial_number
+                    if serial_detail.expiry_date:
+                        serial_entry['ExpiryDate'] = serial_detail.expiry_date.isoformat()
+                    serial_numbers.append(serial_entry)
+                
+                if serial_numbers:
+                    doc_line['SerialNumbers'] = serial_numbers
             
-            if result['success']:
+            # Fallback: Use old JSON fields if new detail models are empty (backward compatibility)
+            elif line.serial_numbers and line.serial_required == 'Y':
+                serial_data = json.loads(line.serial_numbers) if isinstance(line.serial_numbers, str) else line.serial_numbers
+                doc_line['SerialNumbers'] = serial_data
+            
+            elif line.batch_numbers and (line.batch_required == 'Y' or line.manage_method == 'R'):
+                batch_data = json.loads(line.batch_numbers) if isinstance(line.batch_numbers, str) else line.batch_numbers
+                doc_line['BatchNumbers'] = batch_data
+            
+            consolidated_document_lines.append(doc_line)
+            line_number += 1  # Increment for next line
+        
+        # Validate we have at least one line to post
+        if not consolidated_document_lines:
+            error_msg = 'No line items selected for posting. Please select at least one item from the purchase orders.'
+            logging.error(f"❌ {error_msg}")
+            return jsonify({'success': False, 'error': error_msg}), 400
+        
+        # Build single consolidated GRN payload with per-PO metadata preserved
+        po_nums = ', '.join([po_link.po_doc_num for po_link in batch.po_links])
+        
+        # NOTE: BPL_IDAssignedToInvoice is hard-coded to 5 as per business requirement
+        # All POs in the batch should belong to the same branch (ensured by series filtering)
+        # Future enhancement: Store BPL in batch.series metadata and validate all POs match
+        grn_data = {
+            'CardCode': card_code,
+            'DocDate': date.today().isoformat(),
+            'DocDueDate': date.today().isoformat(),
+            'Comments': f'Auto-created from batch {batch.batch_number}. POs: {po_nums}',
+            'NumAtCard': f'{batch.batch_number}',
+            'BPL_IDAssignedToInvoice': 5,  # Hard-coded per business requirement
+            'DocumentLines': consolidated_document_lines
+        }
+        
+        # Log the consolidated payload for debugging
+        logging.info(f"📦 Consolidated GRN payload: {len(consolidated_document_lines)} lines from {len(batch.po_links)} POs")
+        logging.debug(f"   GRN JSON: {json.dumps(grn_data, indent=2)}")
+        
+        # Post single consolidated GRN to SAP
+        result = sap_service.create_purchase_delivery_note(grn_data)
+        
+        if result['success']:
+            # Update all PO links with the same GRN document number
+            grn_doc_num = result.get('doc_num')
+            grn_doc_entry = result.get('doc_entry')
+            
+            for po_link in batch.po_links:
                 po_link.status = 'posted'
-                po_link.sap_grn_doc_num = result.get('doc_num')
-                po_link.sap_grn_doc_entry = result.get('doc_entry')
+                po_link.sap_grn_doc_num = grn_doc_num
+                po_link.sap_grn_doc_entry = grn_doc_entry
                 po_link.posted_at = datetime.utcnow()
-                success_count += 1
-                results.append({'po_num': po_link.po_doc_num, 'success': True, 'grn_num': result.get('doc_num')})
-            else:
+            
+            batch.status = 'completed'
+            batch.total_grns_created = 1  # Single consolidated GRN
+            batch.completed_at = datetime.utcnow()
+            db.session.commit()
+            
+            logging.info(f"✅ Batch {batch.batch_number} completed: 1 consolidated GRN created (DocNum={grn_doc_num})")
+            return jsonify({
+                'success': True,
+                'grn_doc_num': grn_doc_num,
+                'grn_doc_entry': grn_doc_entry,
+                'po_count': len(batch.po_links),
+                'line_count': len(consolidated_document_lines),
+                'message': f'Successfully created GRN #{grn_doc_num} with {len(consolidated_document_lines)} lines from {len(batch.po_links)} purchase orders'
+            })
+        else:
+            # Posting failed - mark all PO links as failed
+            error_msg = result.get('error', 'Unknown error')
+            for po_link in batch.po_links:
                 po_link.status = 'failed'
-                po_link.error_message = result.get('error')
-                results.append({'po_num': po_link.po_doc_num, 'success': False, 'error': result.get('error')})
-        
-        batch.status = 'completed' if success_count > 0 else 'failed'
-        batch.total_grns_created = success_count
-        batch.completed_at = datetime.utcnow()
-        db.session.commit()
-        
-        logging.info(f"✅ Batch {batch_id} completed: {success_count} GRNs created")
-        return jsonify({
-            'success': True,
-            'results': results,
-            'total_success': success_count,
-            'total_failed': len(results) - success_count
-        })
+                po_link.error_message = error_msg
+            
+            batch.status = 'failed'
+            batch.error_log = error_msg
+            db.session.commit()
+            
+            logging.error(f"❌ Failed to create consolidated GRN for batch {batch.batch_number}: {error_msg}")
+            return jsonify({'success': False, 'error': error_msg}), 500
         
     except Exception as e:
-        logging.error(f"❌ Error posting GRNs for batch {batch_id}: {str(e)}")
+        logging.error(f"❌ Error posting consolidated GRN for batch {batch_id}: {str(e)}")
         batch.status = 'failed'
         batch.error_log = str(e)
         db.session.commit()
