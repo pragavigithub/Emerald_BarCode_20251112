@@ -20,7 +20,9 @@ According to SAP B1 API validation endpoint (`SQLQueries('ItemCode_Batch_Serial_
 | Y | N | N | Batch-managed | BatchNumbers ✓ |
 | N | Y | N | Serial-managed | SerialNumbers ✓ |
 | N | N | A | Standard (non-managed) | None ✗ |
-| N | N | R | Quantity-based | BatchNumbers ✓ (for consolidation) |
+| N | N | R | Quantity-managed | BatchNumbers ✓ (for lot consolidation) |
+
+**Important:** Quantity-managed items (manage_method='R') require BatchNumbers even though batch_required='N'.
 
 ### Implementation Details
 
@@ -30,13 +32,15 @@ According to SAP B1 API validation endpoint (`SQLQueries('ItemCode_Batch_Serial_
 **Changes Made:**
 
 1. **post_grns Endpoint (Lines 363-410)**
-   - Added `and line.batch_required == 'Y'` condition when processing `batch_details`
+   - Added `and (line.batch_required == 'Y' or line.manage_method == 'R')` condition when processing `batch_details`
    - Added `and line.serial_required == 'Y'` condition when processing `serial_details`
    - Added same conditions for fallback JSON fields (`batch_numbers`, `serial_numbers`)
+   - Ensures quantity-managed items (method='R') include BatchNumbers
 
 2. **approve_multi_grn_qc Endpoint (Lines 565-610)**
    - Applied identical conditional checks for QC approval flow
    - Ensures consistency between draft posting and QC-approved posting
+   - Supports all item management types (batch, serial, quantity, standard)
 
 ### Example JSON Output
 

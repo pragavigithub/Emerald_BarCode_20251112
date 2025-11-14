@@ -9,6 +9,31 @@ A Flask-based Warehouse Management System (WMS) designed to streamline inventory
 
 ## Recent Changes
 
+### November 14, 2025 - Multi GRN Conditional Batch/Serial Numbers in SAP JSON (Complete)
+**Feature:** BatchNumbers section now conditionally excluded from SAP JSON when item is not batch-managed and not serial-managed
+**Implementation:**
+- Added conditional checks for `batch_required='Y'` before including BatchNumbers section
+- Added conditional checks for `serial_required='Y'` before including SerialNumbers section
+- Applied to both post_grns and approve_multi_grn_qc endpoints for consistency
+- Prevents SAP B1 API errors when posting standard items (NonBatch_NonSerialMethod='A')
+
+**SAP Item Management Logic:**
+- BatchNum='Y' → Include BatchNumbers section
+- SerialNum='Y' → Include SerialNumbers section
+- Both='N' (Standard items) → Exclude both sections entirely
+
+**Key Features:**
+- ✅ Standard items (BatchNum='N', SerialNum='N') no longer include BatchNumbers
+- ✅ Batch-managed items continue to include BatchNumbers section
+- ✅ Serial-managed items continue to include SerialNumbers section
+- ✅ Backwards compatible with existing data and workflows
+- ✅ No database schema changes required
+- ✅ Aligns with SAP B1 Service Layer API validation requirements
+
+**Files Modified:**
+- `modules/multi_grn_creation/routes.py`: Added conditional checks in post_grns (lines 363-410) and approve_multi_grn_qc (lines 565-610)
+- `MULTI_GRN_CONDITIONAL_BATCH_NUMBERS.md`: Complete documentation with examples and test cases
+
 ### November 14, 2025 - GRPO Integer Quantity Distribution (Complete)
 **Feature:** Quantity per pack now uses integer values with intelligent distribution when not evenly divisible
 **Implementation:**
