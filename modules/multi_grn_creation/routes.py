@@ -559,12 +559,23 @@ def create_step5_post(batch_id):
 @multi_grn_bp.route('/batch/<int:batch_id>')
 @login_required
 def view_batch(batch_id):
-    """View batch details"""
-    batch = MultiGRNBatch.query.get_or_404(batch_id)
+    """View batch details with eagerly loaded relationships for QR label generation"""
+    from sqlalchemy.orm import joinedload
+    
+    # Eagerly load all relationships needed for the view
+    batch = MultiGRNBatch.query.options(
+        joinedload(MultiGRNBatch.po_links).joinedload(MultiGRNPOLink.line_selections).joinedload(MultiGRNLineSelection.batch_details),
+        joinedload(MultiGRNBatch.po_links).joinedload(MultiGRNPOLink.line_selections).joinedload(MultiGRNLineSelection.serial_details)
+    ).get_or_404(batch_id)
     
     if batch.user_id != current_user.id and current_user.role not in ['admin', 'manager']:
         flash('Access denied', 'error')
         return redirect(url_for('multi_grn.index'))
+    
+    logging.info(f"📋 Viewing batch {batch_id}: {len(batch.po_links)} POs")
+    for po_link in batch.po_links:
+        for line in po_link.line_selections:
+            logging.debug(f"   Line {line.id}: {line.item_code}, batch_details={len(line.batch_details)}, serial_details={len(line.serial_details)}")
     
     return render_template('multi_grn/view_batch.html', batch=batch)
 
@@ -1636,8 +1647,13 @@ def generate_barcode_labels_multi_grn():
             logging.info(f"🔖 Processing BATCH labels")
             batch_details = line_selection.batch_details
             
+            logging.debug(f"   Found {len(batch_details)} batch detail records for line_selection_id={line_selection_id}")
+            for bd in batch_details:
+                logging.debug(f"      Batch: {bd.batch_number}, Qty: {bd.quantity}, Packs: {bd.no_of_packs}, GRN: {bd.grn_number}")
+            
             if len(batch_details) == 0:
                 logging.warning(f"⚠️ No batch details found for line_selection_id={line_selection_id}, but label_type='batch' was requested")
+                logging.warning(f"   Item: {line_selection.item_code}, Batch Required: {line_selection.batch_required}, Manage Method: {line_selection.manage_method}")
                 return jsonify({
                     'success': False,
                     'error': 'No batch details found for this item. Please add item details first before printing labels.'
