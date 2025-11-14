@@ -356,7 +356,8 @@ def create_step5_post(batch_id):
                 
                 # Build batch numbers array from MultiGRNBatchDetails
                 # BaseLineNumber must be the 0-indexed position in DocumentLines array
-                if line.batch_details:
+                # Only include BatchNumbers if item is batch-managed (batch_required='Y')
+                if line.batch_details and line.batch_required == 'Y':
                     batch_numbers = []
                     for batch_detail in line.batch_details:
                         batch_entry = {
@@ -377,7 +378,8 @@ def create_step5_post(batch_id):
                 
                 # Build serial numbers array from MultiGRNSerialDetails
                 # BaseLineNumber must be the 0-indexed position in DocumentLines array
-                elif line.serial_details:
+                # Only include SerialNumbers if item is serial-managed (serial_required='Y')
+                elif line.serial_details and line.serial_required == 'Y':
                     serial_numbers = []
                     for serial_detail in line.serial_details:
                         serial_entry = {
@@ -395,11 +397,12 @@ def create_step5_post(batch_id):
                         doc_line['SerialNumbers'] = serial_numbers
                 
                 # Fallback: Use old JSON fields if new detail models are empty (backward compatibility)
-                elif line.serial_numbers:
+                # Only include if item is actually serial/batch managed
+                elif line.serial_numbers and line.serial_required == 'Y':
                     serial_data = json.loads(line.serial_numbers) if isinstance(line.serial_numbers, str) else line.serial_numbers
                     doc_line['SerialNumbers'] = serial_data
                 
-                elif line.batch_numbers:
+                elif line.batch_numbers and line.batch_required == 'Y':
                     batch_data = json.loads(line.batch_numbers) if isinstance(line.batch_numbers, str) else line.batch_numbers
                     doc_line['BatchNumbers'] = batch_data
                 
