@@ -427,7 +427,8 @@ def create_step5_post(batch_id):
                 if bin_abs_entry:
                     doc_line['DocumentLinesBinAllocations'] = [{
                         'BinAbsEntry': bin_abs_entry,
-                        'Quantity': float(line.selected_quantity)
+                        'Quantity': float(line.selected_quantity),
+                        'SerialAndBatchNumbersBaseLine':0
                     }]
             
             # Build batch numbers array from MultiGRNBatchDetails
