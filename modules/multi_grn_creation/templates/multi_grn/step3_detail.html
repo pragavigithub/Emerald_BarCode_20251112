@@ -228,14 +228,14 @@
                                 <label for="number_of_packs" class="form-label">Number of Packs/Bags</label>
                                 <div class="input-group">
                                     <input type="number" class="form-control" id="number_of_packs" name="number_of_packs" 
-                                           min="1" max="1000" value="1">
+                                           min="1" max="1000" value="1" step="1">
                                     <button class="btn btn-success" type="button" onclick="generateQRLabels()" 
                                             title="Generate QR labels">
                                         <i data-feather="printer"></i> Generate QR Labels
                                     </button>
                                 </div>
                                 <small class="form-text text-muted">
-                                    Enter number of packs for QR label generation
+                                    Enter number of packs for QR label generation (integers only)
                                 </small>
                             </div>
                         </div>
@@ -474,10 +474,12 @@
 
     // Show Multi GRN QR Labels for a line item
     function showMultiGRNQRLabels(lineSelectionId, itemCode, itemDescription, labelType) {
+        console.log('showMultiGRNQRLabels called:', {lineSelectionId, itemCode, itemDescription, labelType});
+        
         // Get batch_id from the page (it's available in the breadcrumb)
         const batchId = {{ batch.id }};
         
-        // Use the provided label type (serial or batch) passed from the button
+        console.log('Fetching QR labels for batch_id:', batchId, 'line_selection_id:', lineSelectionId, 'label_type:', labelType);
         
         fetch('/multi-grn/api/generate-barcode-labels', {
             method: 'POST',
@@ -490,8 +492,12 @@
                 label_type: labelType
             })
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
         .then(data => {
+            console.log('Response data:', data);
             if (data.success) {
                 displayQRLabels(data.labels);
             } else {
@@ -500,7 +506,7 @@
         })
         .catch(error => {
             console.error('Error generating QR labels:', error);
-            alert('Network error generating QR labels');
+            alert('Network error generating QR labels: ' + error.message);
         });
     }
 
@@ -618,6 +624,14 @@
     // Initialize Feather icons
     document.addEventListener('DOMContentLoaded', function() {
         feather.replace();
+        console.log('Feather icons initialized');
+    });
+    
+    // Re-initialize feather icons when modal is shown
+    document.querySelectorAll('.modal').forEach(function(modal) {
+        modal.addEventListener('shown.bs.modal', function() {
+            feather.replace();
+        });
     });
 </script>
 {% endblock %}

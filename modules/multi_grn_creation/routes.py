@@ -904,11 +904,16 @@ def update_line_item():
             
             # Create new batch details for each bag
             bags_count = int(number_of_bags)
-            # Use Decimal for precise quantity distribution, round to 3 decimal places
+            
+            # Calculate base quantity and remainder for integer distribution
+            # Distribute remainder one unit at a time to first N packs
             if line_selection.selected_quantity:
-                qty_per_bag = (Decimal(str(line_selection.selected_quantity)) / Decimal(str(bags_count))).quantize(Decimal('0.001'))
+                total_qty = Decimal(str(line_selection.selected_quantity))
+                base_qty = int(total_qty // bags_count)
+                remainder = int(total_qty % bags_count)
             else:
-                qty_per_bag = Decimal('0')
+                base_qty = 0
+                remainder = 0
             
             # Get batch ID from the line's PO link for unique GRN numbering
             # Handle both PO-based and manual items safely
@@ -923,6 +928,14 @@ def update_line_item():
             item_code_short = line_selection.item_code[:10] if line_selection.item_code else "ITEM"
             
             for bag_num in range(1, bags_count + 1):
+                # First pack gets base + ALL remainder, others get base only
+                # Example: 10 items / 3 packs = base 3, remainder 1
+                # Pack 1: 3 + 1 = 4 (highest), Pack 2: 3, Pack 3: 3
+                if bag_num == 1:
+                    qty_per_bag = Decimal(base_qty + remainder)
+                else:
+                    qty_per_bag = Decimal(base_qty)
+                
                 # Generate unique batch number for tracking
                 batch_number = f"{today_str}-{item_code_short}-{bag_num}"
                 
@@ -1196,9 +1209,13 @@ def manage_batch_details(line_id):
                     return jsonify({'success': False, 'error': 'Invalid expiry date format'}), 400
             
             no_of_packs = int(data.get('no_of_packs', 1))
-            # Use Decimal for precise quantity distribution, round to 3 decimal places
+            # Calculate base quantity per pack (integer division)
+            # For batch detail entry, use the total quantity divided by packs
+            # When multiple pack records are created, each will get distributed qty
             if no_of_packs > 0:
-                qty_per_pack = (Decimal(str(quantity)) / Decimal(str(no_of_packs))).quantize(Decimal('0.001'))
+                base_qty = int(quantity // no_of_packs)
+                # For this single batch detail, use base quantity
+                qty_per_pack = Decimal(base_qty)
             else:
                 qty_per_pack = Decimal(str(quantity))
             
@@ -1467,19 +1484,18 @@ def generate_barcode_labels_multi_grn():
                 serial_list = ', '.join([s.serial_number for s in pack_serials])
                 
                 qr_data = {
-                    'PO': po_number,
-                    'SerialNumber': serial_list,
-                    'MFG': pack_serials[0].manufacturer_serial_number if pack_serials[0].manufacturer_serial_number else serial_list,
-                    'Qty per Pack': int(qty_per_pack),
-                    'Pack': f"{pack_idx} of {num_packs}",
-                    'GRN Date': grn_date,
-                    'Exp Date': ref_serial.expiry_date.strftime('%Y-%m-%d') if ref_serial.expiry_date else 'N/A',
-                    'ItemCode': line_selection.item_code,
-                    'ItemDesc': line_selection.item_description or '',
-                    'id': serial_grn
+                    'id': serial_grn,
+                    'po': str(po_number),
+                    'item': line_selection.item_code,
+                    'serial': serial_list,
+                    'qty': int(qty_per_pack),
+                    'pack': f"{pack_idx} of {num_packs}",
+                    'grn_date': grn_date,
+                    'exp_date': ref_serial.expiry_date.strftime('%Y-%m-%d') if ref_serial.expiry_date else 'N/A'
                 }
                 
-                qr_text = '\n'.join([f"{k}: {v}" for k, v in qr_data.items()])
+                import json
+                qr_text = json.dumps(qr_data)
                 qr_code_image = generate_barcode_multi_grn(qr_text)
                 
                 label = {
@@ -1522,18 +1538,18 @@ def generate_barcode_labels_multi_grn():
                     batch_grn = batch_detail.grn_number or doc_number
                     
                     qr_data = {
-                        'PO': po_number,
-                        'BatchNumber': batch_detail.batch_number,
-                        'Qty': float(batch_detail.qty_per_pack) if batch_detail.qty_per_pack else float(batch_detail.quantity),
-                        'Pack': f"{pack_idx} of {num_packs}",
-                        'GRN Date': grn_date,
-                        'Exp Date': batch_detail.expiry_date.strftime('%Y-%m-%d') if batch_detail.expiry_date else 'N/A',
-                        'ItemCode': line_selection.item_code,
-                        'ItemDesc': line_selection.item_description or '',
-                        'id': f"{batch_grn}-{pack_idx}"
+                        'id': f"{batch_grn}-{pack_idx}",
+                        'po': str(po_number),
+                        'item': line_selection.item_code,
+                        'batch': batch_detail.batch_number,
+                        'qty': int(batch_detail.qty_per_pack) if batch_detail.qty_per_pack else int(batch_detail.quantity),
+                        'pack': f"{pack_idx} of {num_packs}",
+                        'grn_date': grn_date,
+                        'exp_date': batch_detail.expiry_date.strftime('%Y-%m-%d') if batch_detail.expiry_date else 'N/A'
                     }
                     
-                    qr_text = '\n'.join([f"{k}: {v}" for k, v in qr_data.items()])
+                    import json
+                    qr_text = json.dumps(qr_data)
                     qr_code_image = generate_barcode_multi_grn(qr_text)
                     
                     label = {
@@ -1569,18 +1585,18 @@ def generate_barcode_labels_multi_grn():
                 batch_grn = batch_detail.grn_number or doc_number
                 
                 qr_data = {
-                    'PO': po_number,
-                    'BatchNumber': batch_detail.batch_number,
-                    'Qty': float(batch_detail.qty_per_pack) if batch_detail.qty_per_pack else float(batch_detail.quantity),
-                    'Pack': f"{pack_idx} of {num_packs}",
-                    'GRN Date': grn_date,
-                    'Exp Date': batch_detail.expiry_date.strftime('%Y-%m-%d') if batch_detail.expiry_date else 'N/A',
-                    'ItemCode': line_selection.item_code,
-                    'ItemDesc': line_selection.item_description or '',
-                    'id': f"{batch_grn}"
+                    'id': batch_grn,
+                    'po': str(po_number),
+                    'item': line_selection.item_code,
+                    'batch': batch_detail.batch_number,
+                    'qty': int(batch_detail.qty_per_pack) if batch_detail.qty_per_pack else int(batch_detail.quantity),
+                    'pack': f"{pack_idx} of {num_packs}",
+                    'grn_date': grn_date,
+                    'exp_date': batch_detail.expiry_date.strftime('%Y-%m-%d') if batch_detail.expiry_date else 'N/A'
                 }
                 
-                qr_text = '\n'.join([f"{k}: {v}" for k, v in qr_data.items()])
+                import json
+                qr_text = json.dumps(qr_data)
                 qr_code_image = generate_barcode_multi_grn(qr_text)
                 
                 label = {
