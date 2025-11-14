@@ -227,6 +227,8 @@ def create_step3_select_lines(batch_id):
     
     if request.method == 'POST':
         # Process line selection from Step 2 (initial selection)
+        sap_service = SAPMultiGRNService()
+        
         for po_link in batch.po_links:
             selected_lines = request.form.getlist(f'lines_po_{po_link.id}[]')
             
@@ -245,10 +247,28 @@ def create_step3_select_lines(batch_id):
                     ).first()
                     
                     if not existing_line:
+                        # CRITICAL FIX: Validate item with SAP to get correct batch/serial/management flags
+                        item_code = line_data['ItemCode']
+                        validation_result = sap_service.validate_item_code(item_code)
+                        
+                        # Extract validation data or use safe defaults
+                        if validation_result.get('success'):
+                            batch_required = 'Y' if validation_result.get('batch_managed', False) else 'N'
+                            serial_required = 'Y' if validation_result.get('serial_managed', False) else 'N'
+                            manage_method = validation_result.get('management_method', 'A')
+                            inventory_type = validation_result.get('inventory_type', 'standard')
+                        else:
+                            # Validation failed - use safe defaults (standard item)
+                            logging.warning(f"⚠️ SAP validation failed for {item_code}: {validation_result.get('error')}")
+                            batch_required = 'N'
+                            serial_required = 'N'
+                            manage_method = 'A'
+                            inventory_type = 'standard'
+                        
                         line_selection = MultiGRNLineSelection(
                             po_link_id=po_link.id,
                             po_line_num=line_data['LineNum'],
-                            item_code=line_data['ItemCode'],
+                            item_code=item_code,
                             item_description=line_data.get('ItemDescription', ''),
                             ordered_quantity=Decimal(str(line_data.get('Quantity', 0))),
                             open_quantity=Decimal(str(line_data.get('OpenQuantity', line_data.get('Quantity', 0)))),
@@ -256,7 +276,10 @@ def create_step3_select_lines(batch_id):
                             warehouse_code=line_data.get('WarehouseCode', ''),
                             unit_price=Decimal(str(line_data.get('UnitPrice', 0))),
                             line_status=line_data.get('LineStatus', ''),
-                            inventory_type=line_data.get('ManageSerialNumbers') or line_data.get('ManageBatchNumbers') or 'standard'
+                            inventory_type=inventory_type,
+                            batch_required=batch_required,
+                            serial_required=serial_required,
+                            manage_method=manage_method
                         )
                         db.session.add(line_selection)
                     else:
@@ -1039,8 +1062,9 @@ def add_manual_item():
         inventory_type = validation_result['inventory_type']
         batch_managed = validation_result['batch_managed']
         serial_managed = validation_result['serial_managed']
+        management_method = validation_result.get('management_method', 'A')
         
-        # Create new line selection
+        # Create new line selection with complete SAP validation fields
         line_selection = MultiGRNLineSelection(
             po_link_id=po_link_id,
             po_line_num=-1,  # Manual item, not from PO line
@@ -1053,7 +1077,10 @@ def add_manual_item():
             bin_location=bin_location,
             unit_price=Decimal('0'),
             line_status='manual',
-            inventory_type=inventory_type
+            inventory_type=inventory_type,
+            batch_required='Y' if batch_managed else 'N',
+            serial_required='Y' if serial_managed else 'N',
+            manage_method=management_method
         )
         
         # SERVER-SIDE VALIDATION: Handle batch/serial numbers based on server-validated type
@@ -1749,10 +1776,12 @@ def add_item_to_batch(batch_id):
         sap = SAPIntegration()
         validation_result = sap.validate_item_code(item_code)
         
-        is_batch_managed = validation_result.get('batch_required', False)
-        is_serial_managed = validation_result.get('serial_required', False)
+        # FIX: Use correct field names from SAP validation response
+        is_batch_managed = validation_result.get('batch_managed', False)
+        is_serial_managed = validation_result.get('serial_managed', False)
+        management_method = validation_result.get('management_method', 'A')
         
-        logging.info(f"🔍 Item {item_code} validation: Batch={is_batch_managed}, Serial={is_serial_managed}")
+        logging.info(f"🔍 Item {item_code} validation: Batch={is_batch_managed}, Serial={is_serial_managed}, Method={management_method}")
         
         # Block serial-managed items (UI not implemented yet)
         if is_serial_managed:
@@ -1769,7 +1798,7 @@ def add_item_to_batch(batch_id):
             except ValueError:
                 return jsonify({'success': False, 'error': 'Invalid expiry date format. Use YYYY-MM-DD'}), 400
         
-        # Create line selection
+        # Create line selection with correct SAP-validated management fields
         line_selection = MultiGRNLineSelection(
             po_link_id=int(po_link_id) if po_link_id else batch.po_links[0].id,
             po_line_num=int(po_line_num),
@@ -1784,7 +1813,7 @@ def add_item_to_batch(batch_id):
             line_status='manual' if int(po_line_num) == -1 else 'po_based',
             batch_required='Y' if is_batch_managed else 'N',
             serial_required='Y' if is_serial_managed else 'N',
-            manage_method='B' if is_batch_managed else ('S' if is_serial_managed else 'N')
+            manage_method=management_method  # Use actual SAP management method ('A' or 'R')
         )
         
         db.session.add(line_selection)

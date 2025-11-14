@@ -4,6 +4,27 @@
 Enhanced Multi GRN Module with dynamic SAP item validation and bin location lookup to ensure correct JSON structure when posting to SAP B1 Service Layer.
 
 ## Date: November 14, 2025
+## Status: ✅ FIXED - Critical bugs resolved
+
+## Bug Fixes Applied
+
+### Critical Bug #1: Wrong Field Names in Manual Item Addition (FIXED ✅)
+**Location:** `modules/multi_grn_creation/routes.py` lines 1752-1753
+**Problem:** Code was looking for `batch_required` and `serial_required` in SAP validation response, but the actual response contains `batch_managed` and `serial_managed`.
+**Impact:** All manually added items were incorrectly classified as standard items (batch_required='N', serial_required='N').
+**Fix:** Changed to use correct field names: `batch_managed`, `serial_managed`, and `management_method`.
+
+### Critical Bug #2: Missing SAP Validation for PO Line Items (FIXED ✅)
+**Location:** `modules/multi_grn_creation/routes.py` lines 248-260
+**Problem:** When selecting items from PO lines, no SAP validation was performed. Fields `batch_required`, `serial_required`, and `manage_method` were never set.
+**Impact:** All PO line items lacked proper batch/serial management flags, causing incorrect JSON generation.
+**Fix:** Added SAP item validation for every item selected from PO lines, with proper field population.
+
+### Critical Bug #3: Incorrect manage_method Value (FIXED ✅)
+**Location:** `modules/multi_grn_creation/routes.py` line 1787
+**Problem:** `manage_method` was being set to 'B', 'S', or 'N' instead of SAP's actual values ('A' for standard, 'R' for quantity-managed).
+**Impact:** Quantity-managed items (NonBatch_NonSerialMethod='R') were not generating BatchNumbers section.
+**Fix:** Changed to use actual SAP `management_method` value from validation response.
 
 ## SAP Item Management Types
 

@@ -7,6 +7,29 @@ A Flask-based Warehouse Management System (WMS) designed to streamline inventory
 *   Keep MySQL migration files updated when database schema changes occur
 *   SQL query validation should only run on initial startup, not on every application restart
 
+## Recent Updates
+
+### November 14, 2025 - Multi GRN Critical Bug Fixes (Complete)
+**Issue:** Standard items were incorrectly including BatchNumbers section in SAP JSON, causing API errors
+
+**Root Cause:** Three critical bugs preventing proper SAP item validation:
+1. **Wrong field names** - Code looked for `batch_required`/`serial_required` but SAP returns `batch_managed`/`serial_managed`
+2. **Missing validation** - PO line items never validated with SAP, missing batch/serial flags
+3. **Wrong values** - manage_method used 'B'/'S'/'N' instead of SAP's 'A'/'R'
+
+**Fixes:**
+- ✅ Fixed all 3 item addition paths to use correct SAP field names
+- ✅ Added SAP validation when selecting PO line items
+- ✅ Changed manage_method to use SAP's actual values
+
+**Result:**
+- Standard items → No BatchNumbers (correct)
+- Batch items → Include BatchNumbers (correct)
+- Serial items → Include SerialNumbers (correct)
+- Quantity-managed → Include BatchNumbers for lot consolidation (correct)
+
+**Files:** `modules/multi_grn_creation/routes.py` (lines 253-285, 1061-1063, 1756-1792)
+
 ## System Architecture
 The system is built on a Flask web application backend, utilizing Jinja2 for server-side rendering. A core architectural decision is the deep integration with the SAP B1 Service Layer API for all critical warehouse operations, ensuring data consistency and real-time updates. PostgreSQL is the primary database target for cloud deployments, with SQLite serving as a fallback. User authentication uses Flask-Login with robust role-based access control. The application is designed for production deployment using Gunicorn with autoscale capabilities.
 
