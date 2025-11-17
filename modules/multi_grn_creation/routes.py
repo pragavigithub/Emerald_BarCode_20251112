@@ -2011,23 +2011,22 @@ def add_item_to_batch(batch_id):
         
         # Handle non-managed items with bags
         if not is_batch_managed and not is_serial_managed and number_of_bags > 1:
-            # For non-managed items, create batch details to track packs
-            # Use Decimal for precise quantity distribution, round to 3 decimal places
+            # Create SINGLE batch detail with full quantity
+            # Number of bags is used for QR label generation only, NOT for splitting batches in JSON
             qty_per_pack = (Decimal(str(quantity)) / Decimal(str(number_of_bags))).quantize(Decimal('0.001'))
+            grn_number = f"MGN-{batch.id}-{line_selection.id}-1"
             
-            for pack_idx in range(1, number_of_bags + 1):
-                grn_number = f"MGN-{batch.id}-{line_selection.id}-{pack_idx}"
-                
-                batch_detail = MultiGRNBatchDetails(
-                    line_selection_id=line_selection.id,
-                    batch_number=batch_number or f"PACK-{pack_idx}",
-                    quantity=qty_per_pack,
-                    expiry_date=expiry_date_obj,
-                    grn_number=grn_number,
-                    qty_per_pack=qty_per_pack,
-                    no_of_packs=number_of_bags
-                )
-                db.session.add(batch_detail)
+            batch_detail = MultiGRNBatchDetails(
+                line_selection_id=line_selection.id,
+                batch_number=batch_number or f"PACK-1",
+                quantity=Decimal(str(quantity)),  # FULL quantity, not split
+                expiry_date=expiry_date_obj,
+                grn_number=grn_number,
+                qty_per_pack=qty_per_pack,  # For QR label display only
+                no_of_packs=number_of_bags  # For QR label generation only
+            )
+            db.session.add(batch_detail)
+            logging.info(f"✅ Created single batch detail for non-managed item {item_code}: Total Qty={quantity}, Packs={number_of_bags}, Qty/Pack={qty_per_pack}")
         
         db.session.commit()
         
