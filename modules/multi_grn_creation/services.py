@@ -425,43 +425,91 @@ class SAPMultiGRNService:
         except Exception as e:
             logging.error(f"❌ Error fetching PO series: {str(e)}")
             return {'success': False, 'error': str(e)}
-    
+
     def fetch_cardcode_by_series(self, series_id):
         """
-        Fetch CardCode by Series ID from SAP B1 using SQL Query
-        URL: /b1s/v1/SQLQueries('Get_CarCode_BySeriesID')/List
+        Fetch CardCode by Series ID from SAP B1 Purchase Orders
+        Example URL:
+        /b1s/v1/PurchaseOrders?$filter=Series eq 987&$select=CardCode,CardName
         """
         if not self.ensure_logged_in():
             logging.warning(f"⚠️ SAP login failed - cannot fetch CardCode for series {series_id}")
             return {'success': False, 'error': 'SAP login failed'}
-        
+
         try:
-            url = f"{self.base_url}/b1s/v1/SQLQueries('Get_CarCode_BySeriesID')/List"
-            payload = {
-                "ParamList": f"SeriesID='{series_id}'"
-            }
-            
+            # Build OData GET URL (no post required)
+            url = (
+                f"{self.base_url}/b1s/v1/PurchaseOrders"
+                f"?$filter=Series eq {series_id}"
+                f"&$select=CardCode,CardName"
+            )
+
+            headers = {"Prefer": "odata.maxpagesize=0"}
+
             logging.info(f"🔍 Fetching CardCodes for series: {series_id}")
-            response = self.session.post(url, json=payload, timeout=30)
-            
+
+            # 🚀 MUST BE GET
+            response = self.session.get(url, headers=headers, timeout=30)
+
             if response.status_code == 200:
                 data = response.json()
                 cardcodes = data.get('value', [])
                 logging.info(f"✅ Fetched {len(cardcodes)} CardCodes for series {series_id}")
                 return {'success': True, 'cardcodes': cardcodes}
+
             elif response.status_code == 401:
                 self.session_id = None
                 if self.login():
                     return self.fetch_cardcode_by_series(series_id)
                 return {'success': False, 'error': 'Authentication failed'}
+
             else:
                 error_msg = response.text
                 logging.error(f"❌ Failed to fetch CardCodes for series {series_id}: {error_msg}")
                 return {'success': False, 'error': error_msg}
-                
+
         except Exception as e:
             logging.error(f"❌ Error fetching CardCodes for series {series_id}: {str(e)}")
             return {'success': False, 'error': str(e)}
+
+    # def fetch_cardcode_by_series(self, series_id):
+    #     """
+    #     Fetch CardCode by Series ID from SAP B1 using SQL Query
+    #     URL: /b1s/v1/SQLQueries('Get_CarCode_BySeriesID')/List
+    #     """
+    #     if not self.ensure_logged_in():
+    #         logging.warning(f"⚠️ SAP login failed - cannot fetch CardCode for series {series_id}")
+    #         return {'success': False, 'error': 'SAP login failed'}
+    #
+    #     try:
+    #         #url = f"{self.base_url}/b1s/v1/SQLQueries('Get_CarCode_BySeriesID')/List"
+    #         url = f"{self.base_url}/b1s/v1/PurchaseOrders?$filter=Series eq  {series_id} &$select=CardCode,CardName"
+    #         # payload = {
+    #         #     "ParamList": f"SeriesID='{series_id}'"
+    #         # }
+    #         headers = {"Prefer": "odata.maxpagesize=0"}
+    #         logging.info(f"🔍 Fetching CardCodes for series: {series_id}")
+    #         response = self.session.post(url,headers=headers, timeout=30)
+    #
+    #         if response.status_code == 200:
+    #             data = response.json()
+    #             print(data)
+    #             cardcodes = data.get('value', [])
+    #             logging.info(f"✅ Fetched {len(cardcodes)} CardCodes for series {series_id}")
+    #             return {'success': True, 'cardcodes': cardcodes}
+    #         elif response.status_code == 401:
+    #             self.session_id = None
+    #             if self.login():
+    #                 return self.fetch_cardcode_by_series(series_id)
+    #             return {'success': False, 'error': 'Authentication failed'}
+    #         else:
+    #             error_msg = response.text
+    #             logging.error(f"❌ Failed to fetch CardCodes for series {series_id}: {error_msg}")
+    #             return {'success': False, 'error': error_msg}
+    #
+    #     except Exception as e:
+    #         logging.error(f"❌ Error fetching CardCodes for series {series_id}: {str(e)}")
+    #         return {'success': False, 'error': str(e)}
     
     def get_bin_abs_entry(self, bin_code):
         """
