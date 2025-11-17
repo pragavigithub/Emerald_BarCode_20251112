@@ -384,15 +384,23 @@ def create_step3_select_lines(batch_id):
         
         for po_link in batch.po_links:
             result = sap_service.fetch_open_purchase_orders_by_name(batch.customer_name)
-            logging.info(f"📊 Step 3 - Fetched PO details for {batch.customer_name}: {result.get('success')}")
-            if result['success']:
-                for po in result['purchase_orders']:
+            logging.info(f"📊 Step 3 - Fetched PO details for {batch.customer_name}: Success={result.get('success')}")
+            
+            # Handle both success/failure cases safely
+            if result.get('success'):
+                for po in result.get('purchase_orders', []):
                     if po['DocEntry'] == po_link.po_doc_entry:
                         po_details.append({
                             'po_link': po_link,
                             'lines': po.get('OpenLines', [])
                         })
                         break
+            else:
+                # SAP login failed - show error to user
+                error_msg = result.get('error', 'Failed to fetch Purchase Order details from SAP')
+                logging.error(f"❌ Step 3 error for batch {batch_id}: {error_msg}")
+                flash(f'Error loading PO details: {error_msg}', 'error')
+                return redirect(url_for('multi_grn.index'))
         
         return render_template('multi_grn/step3_select_lines.html', batch=batch, po_details=po_details)
 
