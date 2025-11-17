@@ -211,12 +211,25 @@ def create_step2_select_pos(batch_id):
             flash('Please select at least one Purchase Order', 'error')
             return redirect(url_for('multi_grn.create_step2_select_pos', batch_id=batch_id))
         
+        # Get existing PO entries in this batch to avoid duplicates
+        existing_po_entries = {po_link.po_doc_entry for po_link in batch.po_links}
+        
+        added_count = 0
+        skipped_count = 0
+        
         for po_data_json in selected_pos:
             po_data = json.loads(po_data_json)
+            po_doc_entry = po_data['DocEntry']
+            
+            # Check if this PO is already in the batch
+            if po_doc_entry in existing_po_entries:
+                logging.warning(f"⚠️ PO {po_data['DocNum']} (DocEntry={po_doc_entry}) already exists in batch {batch_id}, skipping")
+                skipped_count += 1
+                continue
             
             po_link = MultiGRNPOLink(
                 batch_id=batch.id,
-                po_doc_entry=po_data['DocEntry'],
+                po_doc_entry=po_doc_entry,
                 po_doc_num=po_data['DocNum'],
                 po_card_code=po_data['CardCode'],
                 po_card_name=po_data['CardName'],
@@ -225,12 +238,24 @@ def create_step2_select_pos(batch_id):
                 status='selected'
             )
             db.session.add(po_link)
+            existing_po_entries.add(po_doc_entry)
+            added_count += 1
         
-        batch.total_pos = len(selected_pos)
-        db.session.commit()
+        if added_count > 0:
+            batch.total_pos = len(batch.po_links) + added_count
+            db.session.commit()
+            logging.info(f"✅ Added {added_count} new POs to batch {batch_id}")
+            
+            if skipped_count > 0:
+                flash(f'Added {added_count} Purchase Orders. Skipped {skipped_count} duplicate(s).', 'success')
+            else:
+                flash(f'Selected {added_count} Purchase Orders', 'success')
+        else:
+            if skipped_count > 0:
+                flash(f'All {skipped_count} selected PO(s) are already in this batch', 'warning')
+            else:
+                flash('No Purchase Orders were added', 'warning')
         
-        logging.info(f"✅ Added {len(selected_pos)} POs to batch {batch_id}")
-        flash(f'Selected {len(selected_pos)} Purchase Orders', 'success')
         return redirect(url_for('multi_grn.create_step3_select_lines', batch_id=batch_id))
     
     sap_service = SAPMultiGRNService()

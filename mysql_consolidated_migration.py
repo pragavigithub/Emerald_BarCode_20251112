@@ -26,6 +26,7 @@ RECENT UPDATES (Nov 2025):
 - Added GRN number tracking per pack (MGN-{batch_id}-{line_id}-{pack_num})
 - Fixed Multi-GRN posting response handling (JavaScript forEach error) - Nov 17, 2025
 - Fixed CardCode/CardName dropdown population in Multi-GRN Step 1 - Nov 17, 2025
+- Fixed duplicate PO entry error with graceful handling - Nov 17, 2025
 
 Run with: python mysql_consolidated_migration.py
 """
