@@ -627,6 +627,7 @@
                                             <td class="fw-bold py-1">PO:</td>
                                             <td class="py-1">${label.po_number || 'N/A'}</td>
                                         </tr>
+                                        ${label.item_code ? `<tr><td class="fw-bold py-1">Item Code:</td><td class="py-1">${label.item_code}</td></tr>` : ''}
                                         ${label.batch_number ? `<tr><td class="fw-bold py-1">Batch:</td><td class="py-1">${label.batch_number}</td></tr>` : ''}
                                         ${label.serial_number ? `<tr><td class="fw-bold py-1">Serial:</td><td class="py-1">${label.serial_number}</td></tr>` : ''}
                                         <tr>

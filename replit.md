@@ -9,6 +9,28 @@ A Flask-based Warehouse Management System (WMS) designed to streamline inventory
 
 ## Recent Updates
 
+### November 17, 2025 - Multi GRN Single Batch Generation Fix (Complete)
+
+**Issue:** When entering "Number of Packs/Bags = 2", the system created 2 separate batch entries in the SAP JSON with split quantities, instead of using packs for QR label identification only.
+
+**Root Cause:** Batch generation logic created multiple `MultiGRNBatchDetails` records (one per pack), causing the JSON builder to generate multiple batch entries.
+
+**Fix:**
+- ✅ Modified batch generation to create SINGLE batch_detail record with full quantity
+- ✅ Stored `no_of_packs` and `qty_per_pack` fields for QR label generation only
+- ✅ Updated QR label generation to create multiple labels from single batch record
+- ✅ Added ItemCode field to QR label display
+
+**Result:**
+- **Before:** Number of Packs = 2 → JSON has 2 BatchNumbers entries (qty 3, qty 2)
+- **After:** Number of Packs = 2 → JSON has 1 BatchNumbers entry (qty 5)
+- QR labels still generate correctly: 2 labels showing "1 of 2" and "2 of 2"
+- All QR labels now display the ItemCode
+
+**Files:** `modules/multi_grn_creation/routes.py` (lines 1038-1086, 1656-1759), `modules/multi_grn_creation/templates/multi_grn/step3_detail.html` (line 633), `migrations/mysql/changes/2025-11-17_multi_grn_single_batch_generation.md`
+
+---
+
 ### November 17, 2025 - Multi GRN Bug Fixes (Complete)
 
 #### 1. QR Label Duplication Fix
