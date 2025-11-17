@@ -37,6 +37,34 @@ This file tracks all database schema changes chronologically. Each migration rep
 ## Future Migrations
 Add new migrations below in reverse chronological order (newest first).
 
+### 2025-11-17 - Multi GRN QR Label Duplication Fix
+- **File**: `mysql/changes/2025-11-17_multi_grn_qr_label_duplication_fix.md`
+- **Description**: Fixed QR label duplication bug where batch-managed items generated incorrect number of labels (4 labels instead of 2 when Number of Bags = 2)
+- **Type**: Bug Fix (No Schema Changes)
+- **Status**: ✅ Applied
+- **Applied By**: Replit Agent
+- **Changes**:
+  - **Code Fix** in `modules/multi_grn_creation/routes.py`:
+    - Removed nested loop that created multiple labels per batch_detail
+    - Each batch_detail now generates exactly ONE QR label
+    - Corrected pack numbering (e.g., "1 of 2", "2 of 2")
+    - `total_packs` now based on `len(batch_details)` instead of `no_of_packs`
+  - **Print Layout**: Confirmed existing CSS ensures each label prints on separate page
+- **Impact**:
+  - Batch-managed items now generate correct number of labels
+  - No database migration required (code-only fix)
+  - Fully backward compatible with existing data
+  - Improved performance (fewer labels = faster generation)
+- **Testing**:
+  - Number of Bags = 2 → generates 2 labels (not 4)
+  - Each label shows correct sequence: "1 of 2", "2 of 2"
+  - Print layout: one label per page
+- **Notes**: 
+  - Aligns batch label generation with regular/standard item logic
+  - Serial-managed and non-managed items were not affected
+
+---
+
 ### 2025-11-03 - GRPO Non-Managed Items Support
 - **File**: `mysql/changes/2025-11-03_grpo_non_managed_items.sql`
 - **Description**: Added support for non-batch, non-serial managed items in GRPO module with number of bags and QR label generation

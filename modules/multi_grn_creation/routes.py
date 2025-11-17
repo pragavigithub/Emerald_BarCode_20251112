@@ -1660,48 +1660,46 @@ def generate_barcode_labels_multi_grn():
                 }), 400
             
             label_counter = 1
+            total_packs = len(batch_details)
             
             for batch_detail in batch_details:
-                num_packs = batch_detail.no_of_packs or 1
+                batch_grn = batch_detail.grn_number or doc_number
                 
-                for pack_idx in range(1, num_packs + 1):
-                    batch_grn = batch_detail.grn_number or doc_number
-                    
-                    qr_data = {
-                        'id': f"{batch_grn}-{pack_idx}",
-                        'po': str(po_number),
-                        'item': line_selection.item_code,
-                        'batch': batch_detail.batch_number,
-                        'qty': int(batch_detail.qty_per_pack) if batch_detail.qty_per_pack else int(batch_detail.quantity),
-                        'pack': f"{pack_idx} of {num_packs}",
-                        'grn_date': grn_date,
-                        'exp_date': batch_detail.expiry_date.strftime('%Y-%m-%d') if batch_detail.expiry_date else 'N/A'
-                    }
-                    
-                    import json
-                    qr_text = json.dumps(qr_data)
-                    qr_code_image = generate_barcode_multi_grn(qr_text)
-                    
-                    label = {
-                        'sequence': label_counter,
-                        'total': num_packs,
-                        'pack_text': f"{pack_idx} of {num_packs}",
-                        'po_number': po_number,
-                        'batch_number': batch_detail.batch_number,
-                        'quantity': float(batch_detail.quantity),
-                        'qty_per_pack': float(batch_detail.qty_per_pack) if batch_detail.qty_per_pack else float(batch_detail.quantity),
-                        'no_of_packs': num_packs,
-                        'grn_date': grn_date,
-                        'grn_number': f"{batch_grn}-{pack_idx}",
-                        'expiration_date': batch_detail.expiry_date.strftime('%Y-%m-%d') if batch_detail.expiry_date else 'N/A',
-                        'item_code': line_selection.item_code,
-                        'item_name': line_selection.item_description or '',
-                        'doc_number': f"{batch_grn}-{pack_idx}",
-                        'qr_code_image': qr_code_image,
-                        'qr_data': qr_data
-                    }
-                    labels.append(label)
-                    label_counter += 1
+                qr_data = {
+                    'id': batch_grn,
+                    'po': str(po_number),
+                    'item': line_selection.item_code,
+                    'batch': batch_detail.batch_number,
+                    'qty': int(batch_detail.qty_per_pack) if batch_detail.qty_per_pack else int(batch_detail.quantity),
+                    'pack': f"{label_counter} of {total_packs}",
+                    'grn_date': grn_date,
+                    'exp_date': batch_detail.expiry_date.strftime('%Y-%m-%d') if batch_detail.expiry_date else 'N/A'
+                }
+                
+                import json
+                qr_text = json.dumps(qr_data)
+                qr_code_image = generate_barcode_multi_grn(qr_text)
+                
+                label = {
+                    'sequence': label_counter,
+                    'total': total_packs,
+                    'pack_text': f"{label_counter} of {total_packs}",
+                    'po_number': po_number,
+                    'batch_number': batch_detail.batch_number,
+                    'quantity': float(batch_detail.quantity),
+                    'qty_per_pack': float(batch_detail.qty_per_pack) if batch_detail.qty_per_pack else float(batch_detail.quantity),
+                    'no_of_packs': total_packs,
+                    'grn_date': grn_date,
+                    'grn_number': batch_grn,
+                    'expiration_date': batch_detail.expiry_date.strftime('%Y-%m-%d') if batch_detail.expiry_date else 'N/A',
+                    'item_code': line_selection.item_code,
+                    'item_name': line_selection.item_description or '',
+                    'doc_number': batch_grn,
+                    'qr_code_image': qr_code_image,
+                    'qr_data': qr_data
+                }
+                labels.append(label)
+                label_counter += 1
         
         # Handle standard items with batch_details (created via number_of_packs)
         elif has_batch_details and label_type == 'regular':
