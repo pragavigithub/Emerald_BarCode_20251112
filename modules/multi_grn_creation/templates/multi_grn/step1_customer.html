@@ -173,12 +173,20 @@ $(document).ready(function() {
                     
                     if (data.success && data.cardcodes) {
                         // Populate customer dropdown
+                        const uniqueCustomers = new Map();
+                        
                         data.cardcodes.forEach(customer => {
-                            const cardCode = customer["'Card_Code'"] || customer.Card_Code;
-                            const cardName = customer["'Card Name'"] || customer.Card_Name;
+                            const cardCode = customer.CardCode;
+                            const cardName = customer.CardName;
                             
+                            if (!uniqueCustomers.has(cardCode)) {
+                                uniqueCustomers.set(cardCode, cardName);
+                            }
+                        });
+                        
+                        uniqueCustomers.forEach((cardName, cardCode) => {
                             const option = new Option(
-                                cardName,
+                                `${cardName} (${cardCode})`,
                                 cardCode,
                                 false,
                                 false
@@ -188,7 +196,7 @@ $(document).ready(function() {
                         });
                         
                         customerDropdown.trigger('change');
-                        console.log(`✅ Loaded ${data.cardcodes.length} customers for series ${selectedId}`);
+                        console.log(`✅ Loaded ${uniqueCustomers.size} unique customers for series ${selectedId}`);
                     } else {
                         customerErrorMessage.text('Failed to load customers: ' + (data.error || 'Unknown error'));
                         customerErrorMessage.show();
