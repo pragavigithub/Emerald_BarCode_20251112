@@ -15,8 +15,8 @@ When users entered "Number of Packs/Bags = 2", the system was:
 
 ## Solution
 
-### 1. Batch Generation Logic Changes
-**File:** `modules/multi_grn_creation/routes.py` (lines 1038-1086)
+### 1. Batch Generation Logic Changes (update_line_item endpoint)
+**File:** `modules/multi_grn_creation/routes.py` (lines 1035-1083)
 
 **Before:**
 - Created multiple `MultiGRNBatchDetails` records (one per pack)
@@ -27,6 +27,20 @@ When users entered "Number of Packs/Bags = 2", the system was:
 - Creates SINGLE `MultiGRNBatchDetails` record with full quantity
 - Stores `no_of_packs` and `qty_per_pack` for QR label generation only
 - Example: 5 items, 2 packs → 1 record (qty 5, no_of_packs=2)
+
+### 1b. Batch Generation for Non-Managed Items (add_item_to_batch endpoint)
+**File:** `modules/multi_grn_creation/routes.py` (lines 2015-2032)
+
+**Before:**
+- Created multiple `MultiGRNBatchDetails` records in a loop (one per pack)
+- Each record had split quantity
+- Example: 10 items, 2 packs → 2 records (qty 5, qty 5)
+
+**After:**
+- Creates SINGLE `MultiGRNBatchDetails` record with full quantity
+- Stores `no_of_packs` for QR label generation only
+- Example: 10 items, 2 packs → 1 record (qty 10, no_of_packs=2)
+- Added logging to track creation
 
 ### 2. QR Label Generation Changes
 **File:** `modules/multi_grn_creation/routes.py` (lines 1656-1759)
