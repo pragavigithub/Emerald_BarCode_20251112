@@ -238,3 +238,8 @@ logging.info("✅ Custom Jinja2 filters registered")
 
 # Import routes to register them
 import routes
+
+# Import REST API endpoints
+import api_rest
+
+logging.info("✅ REST API endpoints loaded")

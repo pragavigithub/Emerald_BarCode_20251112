@@ -28,6 +28,9 @@ RECENT UPDATES (Nov 2025):
 - Fixed CardCode/CardName dropdown population in Multi-GRN Step 1 - Nov 17, 2025
 - Fixed duplicate PO entry error with graceful handling - Nov 17, 2025
 - Fixed Multi-GRN Step 3 KeyError when SAP login fails - Nov 18, 2025
+- Added comprehensive REST API endpoints for all modules (api_rest.py) - Nov 17, 2025
+  * GET, POST, PATCH, DELETE operations for all models
+  * JSON format support for external integrations
 
 Run with: python mysql_consolidated_migration.py
 """
