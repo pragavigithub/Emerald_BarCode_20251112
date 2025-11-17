@@ -495,21 +495,22 @@ document.getElementById('confirmBtn').addEventListener('click', function() {
         const resultDiv = document.getElementById('resultDiv');
         
         if (data.success) {
-            let html = '<div class="alert alert-success"><h5>✅ GRNs Posted Successfully!</h5>';
-            html += `<p>Total Success: ${data.total_success} | Total Failed: ${data.total_failed}</p>`;
-            html += '<ul>';
-            data.results.forEach(r => {
-                if (r.success) {
-                    html += `<li>PO ${r.po_num}: GRN #${r.grn_num} created</li>`;
-                } else {
-                    html += `<li class="text-danger">PO ${r.po_num}: Failed - ${r.error}</li>`;
-                }
-            });
-            html += '</ul>';
-            html += `<a href="{{ url_for('multi_grn.view_batch', batch_id=batch.id) }}" class="btn btn-primary mt-2">View Batch Details</a></div>`;
+            let html = '<div class="alert alert-success"><h5>✅ GRN Posted Successfully!</h5>';
+            html += `<p><strong>GRN Number:</strong> ${data.grn_doc_num}</p>`;
+            html += `<p><strong>Message:</strong> ${data.message || 'Consolidated GRN created successfully'}</p>`;
+            
+            if (data.po_count) {
+                html += `<p><strong>Purchase Orders:</strong> ${data.po_count} | <strong>Total Lines:</strong> ${data.line_count}</p>`;
+            }
+            
+            html += `<div class="mt-3">`;
+            html += `<a href="{{ url_for('multi_grn.view_batch', batch_id=batch.id) }}" class="btn btn-primary">View Batch Details</a>`;
+            html += `<a href="{{ url_for('multi_grn.index') }}" class="btn btn-secondary ms-2">Back to Multi GRN</a>`;
+            html += `</div>`;
+            html += '</div>';
             resultDiv.innerHTML = html;
         } else {
-            resultDiv.innerHTML = `<div class="alert alert-danger">❌ Error: ${data.error}</div>`;
+            resultDiv.innerHTML = `<div class="alert alert-danger">❌ Error: ${data.error || 'Unknown error occurred'}</div>`;
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-paper-plane"></i> Confirm & Post GRNs';
         }
