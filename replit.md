@@ -9,6 +9,52 @@ A Flask-based Warehouse Management System (WMS) designed to streamline inventory
 
 ## Recent Updates
 
+### November 17, 2025 - Multi GRN Bug Fixes (Complete)
+
+#### 1. QR Label Duplication Fix
+**Issue:** Batch-managed items generated 4 QR labels instead of 2 when Number of Bags = 2
+
+**Root Cause:** Nested loop creating multiple labels per batch_detail record
+- Each batch_detail already represents one pack/bag
+- Code was looping again over num_packs for each batch_detail
+- Result: 2 batch_details × 2 num_packs = 4 labels (incorrect)
+
+**Fix:**
+- ✅ Removed nested loop in batch label generation
+- ✅ Each batch_detail now generates exactly ONE label
+- ✅ Corrected pack numbering: "1 of 2", "2 of 2"
+- ✅ total_packs calculated from len(batch_details)
+
+**Result:**
+- Number of Bags = 2 → 2 QR labels (correct)
+- Each label prints on separate page (existing CSS confirmed)
+
+**Files:** `modules/multi_grn_creation/routes.py` (lines 1649-1705), `migrations/mysql/changes/2025-11-17_multi_grn_qr_label_duplication_fix.md`
+
+#### 2. Empty Receive Qty Field Error Fix
+**Issue:** Step 3 crashed with decimal.InvalidOperation when Receive Qty field left empty
+
+**Root Cause:** 
+- Empty form input ("") converted directly to Decimal without validation
+- SAP OpenQuantity could be None/empty causing same error
+- Users expected to select items at Step 3, enter quantities at Step 4
+
+**Fix:**
+- ✅ Added comprehensive input sanitization for SAP OpenQuantity values
+- ✅ Handle empty/None values with safe Decimal('0') default
+- ✅ Form input validation with try/except for conversion errors
+- ✅ Fallback to open_qty with logging for diagnostics
+- ✅ Skip lines with selected_qty <= 0
+
+**Result:**
+- Users can now leave Receive Qty blank at Step 3 (item selection only)
+- Quantities can be entered in Step 4 (Line Item Details)
+- Robust handling of invalid SAP data or form input
+
+**Files:** `modules/multi_grn_creation/routes.py` (lines 242-259)
+
+---
+
 ### November 14, 2025 - Multi GRN Critical Bug Fixes (Complete)
 **Issue:** Standard items were incorrectly including BatchNumbers section in SAP JSON, causing API errors
 

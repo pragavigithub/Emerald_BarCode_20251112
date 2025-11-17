@@ -235,8 +235,25 @@ def create_step3_select_lines(batch_id):
             for line_data_json in selected_lines:
                 line_data = json.loads(line_data_json)
                 qty_key = f'qty_po_{po_link.id}_line_{line_data["LineNum"]}'
-                open_qty = line_data.get('OpenQuantity', line_data.get('Quantity', 0))
-                selected_qty = Decimal(request.form.get(qty_key, open_qty))
+                
+                # Sanitize open_qty from SAP - ensure it's a valid number
+                raw_open_qty = line_data.get('OpenQuantity', line_data.get('Quantity', 0))
+                try:
+                    open_qty = Decimal(str(raw_open_qty)) if raw_open_qty not in (None, '', 'None') else Decimal('0')
+                except (ValueError, InvalidOperation):
+                    open_qty = Decimal('0')
+                
+                # Handle empty receive quantity field - use open quantity as default
+                receive_qty_str = request.form.get(qty_key, '').strip()
+                if receive_qty_str == '' or receive_qty_str is None:
+                    selected_qty = open_qty
+                else:
+                    try:
+                        selected_qty = Decimal(receive_qty_str)
+                    except (ValueError, InvalidOperation):
+                        # If invalid input, default to open quantity
+                        logging.warning(f"Invalid receive quantity '{receive_qty_str}' for item {line_data.get('ItemCode')}, using open qty {open_qty}")
+                        selected_qty = open_qty
                 
                 if selected_qty > 0:
                     # Check if line already exists to prevent duplicates
