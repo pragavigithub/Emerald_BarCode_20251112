@@ -10,11 +10,48 @@ from modules.multi_grn_creation.services import SAPMultiGRNService
 import logging
 from datetime import datetime, date
 import json
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 multi_grn_bp = Blueprint('multi_grn', __name__, 
                               template_folder='templates',
                               url_prefix='/multi-grn')
+
+
+def distribute_quantity_to_packs(total_quantity, num_packs):
+    """
+    Distribute total quantity across packs as integers.
+    First packs get extra units if quantity doesn't divide evenly.
+    Uses ROUND_HALF_UP to preserve total quantity (no truncation).
+    
+    Example: 11 quantity ÷ 3 packs = [4, 4, 3]
+    Example: 10 quantity ÷ 3 packs = [4, 3, 3]
+    Example: 110.5 quantity ÷ 4 packs = [28, 28, 28, 27] (rounds to 111)
+    Example: 110.25 quantity ÷ 4 packs = [28, 28, 27, 27] (rounds to 110)
+    
+    Args:
+        total_quantity: Total quantity to distribute (will be rounded using ROUND_HALF_UP)
+        num_packs: Number of packs to distribute into
+        
+    Returns:
+        list: List of integer quantities for each pack
+    """
+    if num_packs <= 0:
+        return []
+    
+    # Use ROUND_HALF_UP to consistently round .5 up (not banker's rounding)
+    total_qty_decimal = Decimal(str(total_quantity))
+    total_qty_int = int(total_qty_decimal.to_integral_value(rounding=ROUND_HALF_UP))
+    base_qty = total_qty_int // num_packs
+    remainder = total_qty_int % num_packs
+    
+    quantities = []
+    for i in range(num_packs):
+        if i < remainder:
+            quantities.append(base_qty + 1)
+        else:
+            quantities.append(base_qty)
+    
+    return quantities
 
 @multi_grn_bp.route('/')
 @login_required
@@ -1043,11 +1080,14 @@ def update_line_item():
             
             bags_count = int(number_of_bags)
             
-            # Calculate quantity per pack for label display (for QR labels only)
+            # Calculate quantity per pack for label display (INTEGER ONLY, no decimals)
             if line_selection.selected_quantity:
-                total_qty = Decimal(str(line_selection.selected_quantity))
-                # Calculate average quantity per pack for display purposes
-                qty_per_pack = total_qty / Decimal(bags_count)
+                total_qty_original = Decimal(str(line_selection.selected_quantity))
+                # Use ROUND_HALF_UP and integer division to get base quantity per pack
+                # Actual distribution will be calculated when generating QR labels
+                total_qty_int = int(total_qty_original.to_integral_value(rounding=ROUND_HALF_UP))
+                total_qty = Decimal(total_qty_int)  # Store rounded integer quantity
+                qty_per_pack = Decimal(total_qty_int // bags_count)
             else:
                 total_qty = Decimal('0')
                 qty_per_pack = Decimal('0')
@@ -1068,12 +1108,12 @@ def update_line_item():
             # Generate GRN number (single entry)
             grn_number = f"MGN-{batch_id}-{line_selection_id}-1"
             
-            # Create SINGLE batch detail record with FULL quantity
+            # Create SINGLE batch detail record with FULL quantity (rounded to integer)
             # The no_of_packs field is stored for QR label generation only
             batch_detail = MultiGRNBatchDetails(
                 line_selection_id=line_selection_id,
                 batch_number=batch_number,
-                quantity=total_qty,  # FULL quantity, not split
+                quantity=total_qty,  # FULL quantity (rounded), not split
                 expiry_date=expiry_date_obj,
                 grn_number=grn_number,
                 qty_per_pack=qty_per_pack,  # For QR label display only
@@ -1671,14 +1711,20 @@ def generate_barcode_labels_multi_grn():
             num_packs = batch_detail.no_of_packs or 1
             batch_grn = batch_detail.grn_number or doc_number
             
+            # Calculate integer distribution across packs (first packs get remainder)
+            total_quantity = batch_detail.quantity
+            pack_quantities = distribute_quantity_to_packs(total_quantity, num_packs)
+            
             # Generate multiple labels based on no_of_packs field
             for pack_num in range(1, num_packs + 1):
+                pack_qty = pack_quantities[pack_num - 1]  # Get specific quantity for this pack
+                
                 qr_data = {
                     'id': batch_grn,
                     'po': str(po_number),
                     'item': line_selection.item_code,
                     'batch': batch_detail.batch_number,
-                    'qty': int(batch_detail.qty_per_pack) if batch_detail.qty_per_pack else int(batch_detail.quantity),
+                    'qty': pack_qty,
                     'pack': f"{pack_num} of {num_packs}",
                     'grn_date': grn_date,
                     'exp_date': batch_detail.expiry_date.strftime('%Y-%m-%d') if batch_detail.expiry_date else 'N/A'
@@ -1695,7 +1741,7 @@ def generate_barcode_labels_multi_grn():
                     'po_number': po_number,
                     'batch_number': batch_detail.batch_number,
                     'quantity': float(batch_detail.quantity),
-                    'qty_per_pack': float(batch_detail.qty_per_pack) if batch_detail.qty_per_pack else float(batch_detail.quantity),
+                    'qty_per_pack': pack_qty,
                     'no_of_packs': num_packs,
                     'grn_date': grn_date,
                     'grn_number': batch_grn,
@@ -1718,14 +1764,20 @@ def generate_barcode_labels_multi_grn():
             num_packs = batch_detail.no_of_packs or 1
             batch_grn = batch_detail.grn_number or doc_number
             
+            # Calculate integer distribution across packs (first packs get remainder)
+            total_quantity = batch_detail.quantity
+            pack_quantities = distribute_quantity_to_packs(total_quantity, num_packs)
+            
             # Generate multiple labels based on no_of_packs field
             for pack_num in range(1, num_packs + 1):
+                pack_qty = pack_quantities[pack_num - 1]  # Get specific quantity for this pack
+                
                 qr_data = {
                     'id': batch_grn,
                     'po': str(po_number),
                     'item': line_selection.item_code,
                     'batch': batch_detail.batch_number,
-                    'qty': int(batch_detail.qty_per_pack) if batch_detail.qty_per_pack else int(batch_detail.quantity),
+                    'qty': pack_qty,
                     'pack': f"{pack_num} of {num_packs}",
                     'grn_date': grn_date,
                     'exp_date': batch_detail.expiry_date.strftime('%Y-%m-%d') if batch_detail.expiry_date else 'N/A'
@@ -1742,7 +1794,7 @@ def generate_barcode_labels_multi_grn():
                     'po_number': po_number,
                     'batch_number': batch_detail.batch_number,
                     'quantity': float(batch_detail.quantity),
-                    'qty_per_pack': float(batch_detail.qty_per_pack) if batch_detail.qty_per_pack else float(batch_detail.quantity),
+                    'qty_per_pack': pack_qty,
                     'no_of_packs': num_packs,
                     'grn_date': grn_date,
                     'grn_number': f"{batch_grn}",
@@ -1983,9 +2035,11 @@ def add_item_to_batch(batch_id):
                     for idx, batch_data in enumerate(batch_numbers):
                         batch_qty = float(batch_data.get('quantity', 0))
                         
-                        # Use Decimal for precise quantity distribution across bags, round to 3 decimal places
+                        # Use INTEGER division for qty per pack (no decimals allowed)
                         if number_of_bags > 0:
-                            qty_per_pack = (Decimal(str(batch_qty)) / Decimal(str(number_of_bags))).quantize(Decimal('0.001'))
+                            batch_qty_decimal = Decimal(str(batch_qty))
+                            batch_qty_int = int(batch_qty_decimal.to_integral_value(rounding=ROUND_HALF_UP))
+                            qty_per_pack = Decimal(batch_qty_int // number_of_bags)
                         else:
                             qty_per_pack = Decimal(str(batch_qty))
                         grn_number = f"MGN-{batch.id}-{line_selection.id}-{idx+1}"
@@ -2013,7 +2067,10 @@ def add_item_to_batch(batch_id):
         if not is_batch_managed and not is_serial_managed and number_of_bags > 1:
             # Create SINGLE batch detail with full quantity
             # Number of bags is used for QR label generation only, NOT for splitting batches in JSON
-            qty_per_pack = (Decimal(str(quantity)) / Decimal(str(number_of_bags))).quantize(Decimal('0.001'))
+            # Use INTEGER division for qty per pack (no decimals allowed)
+            quantity_decimal = Decimal(str(quantity))
+            quantity_int = int(quantity_decimal.to_integral_value(rounding=ROUND_HALF_UP))
+            qty_per_pack = Decimal(quantity_int // number_of_bags)
             grn_number = f"MGN-{batch.id}-{line_selection.id}-1"
             
             batch_detail = MultiGRNBatchDetails(

@@ -9,6 +9,33 @@ A Flask-based Warehouse Management System (WMS) designed to streamline inventory
 
 ## Recent Updates
 
+### November 17, 2025 - Multi GRN Integer Pack Distribution (Complete)
+
+**Issue:** QR labels displayed decimal quantities per pack (e.g., "Qty per Pack: 110.25"), making item counting impractical.
+
+**Requirement:** Quantity per pack should be integers only. When total quantity is not evenly divisible, first packs get extra units.
+
+**Implementation:**
+- ✅ Created `distribute_quantity_to_packs()` helper function with ROUND_HALF_UP rounding
+- ✅ Updated all qty_per_pack calculations to use integer division with ROUND_HALF_UP
+- ✅ Modified QR label generation to calculate and display individual pack quantities
+- ✅ Preserved total quantities (no loss from rounding)
+
+**Examples:**
+- 11 ÷ 3 packs = [4, 4, 3] ✓
+- 110.5 ÷ 4 packs → rounds to 111 → [28, 28, 28, 27] ✓
+- 110.25 ÷ 4 packs → rounds to 110 → [28, 28, 27, 27] ✓
+
+**Result:**
+- **Before:** 110.25 ÷ 4 packs → all packs show "27.56" (decimal)
+- **After:** 110.25 ÷ 4 packs → packs show 28, 28, 27, 27 (integers)
+- Total quantity preserved through smart rounding (ROUND_HALF_UP)
+- First packs receive extra units when quantity doesn't divide evenly
+
+**Files:** `modules/multi_grn_creation/routes.py` (lines 23-57, 1091, 2044, 2075, 1718-1719), `migrations/mysql/changes/2025-11-17_multi_grn_integer_pack_distribution.md`
+
+---
+
 ### November 17, 2025 - Multi GRN Single Batch Generation Fix (Complete)
 
 **Issue:** When entering "Number of Packs/Bags = 2", the system created 2 separate batch entries in the SAP JSON with split quantities, instead of using packs for QR label identification only.
