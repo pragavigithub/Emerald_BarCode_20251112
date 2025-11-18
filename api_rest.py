@@ -52,11 +52,11 @@ Example Pattern:
             items = Resource.query.filter_by(user_id=current_user.id).all()
         return jsonify({'success': True, 'data': [serialize_model(i) for i in items]})
 """
-from flask import jsonify, request
+from flask import jsonify, request, redirect, url_for
 from flask_login import login_required, current_user
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
-from app import app, db
+from app import app, db, login_manager
 from models import (
     User, InventoryTransfer, InventoryTransferItem, TransferScanState,
     PickList, PickListItem, PickListLine, PickListBinAllocation,
@@ -71,6 +71,21 @@ from modules.grpo.models import GRPODocument, GRPOItem, GRPOSerialNumber, GRPOBa
 from modules.multi_grn_creation.models import MultiGRNBatch, MultiGRNPOLink, MultiGRNLineSelection, MultiGRNBatchDetails, MultiGRNSerialDetails
 from modules.sales_delivery.models import DeliveryDocument, DeliveryItem
 import json
+
+
+# ================================
+# REST API Unauthorized Handler
+# ================================
+
+@login_manager.unauthorized_handler
+def unauthorized_api():
+    """Handle unauthorized access for REST API endpoints"""
+    if request.path.startswith('/api/rest/'):
+        return jsonify({
+            'success': False,
+            'error': 'Authentication required. Please login first.'
+        }), 401
+    return redirect(url_for('login', next=request.url))
 
 
 def serialize_model(obj, exclude_fields=None):
@@ -159,6 +174,88 @@ def require_permission(permission_name):
             return f(*args, **kwargs)
         return decorated_function
     return decorator
+
+
+# ================================
+# Authentication API Endpoints
+# ================================
+
+@app.route('/api/rest/auth/login', methods=['POST'])
+def api_login():
+    """POST login - Authenticate user and create session"""
+    try:
+        data = get_request_data()
+        username = data.get('username')
+        password = data.get('password')
+        
+        if not username or not password:
+            return jsonify({
+                'success': False,
+                'error': 'Username and password are required'
+            }), 400
+        
+        from werkzeug.security import check_password_hash
+        from flask_login import login_user
+        
+        user = User.query.filter_by(username=username).first()
+        if not user or not check_password_hash(user.password_hash, password):
+            return jsonify({
+                'success': False,
+                'error': 'Invalid username or password'
+            }), 401
+        
+        if not user.is_active:
+            return jsonify({
+                'success': False,
+                'error': 'User account is inactive'
+            }), 403
+        
+        login_user(user, remember=True)
+        user.last_login = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Login successful',
+            'data': {
+                'user': serialize_model(user, exclude_fields=['password_hash']),
+                'permissions': user.get_permissions()
+            }
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/auth/logout', methods=['POST'])
+@login_required
+def api_logout():
+    """POST logout - Invalidate user session"""
+    try:
+        from flask_login import logout_user
+        logout_user()
+        return jsonify({
+            'success': True,
+            'message': 'Logout successful'
+        }), 200
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/auth/me', methods=['GET'])
+@login_required
+def api_get_current_user():
+    """GET current authenticated user info"""
+    try:
+        return jsonify({
+            'success': True,
+            'data': {
+                'user': serialize_model(current_user, exclude_fields=['password_hash']),
+                'permissions': current_user.get_permissions()
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 # ================================
@@ -1760,6 +1857,260 @@ def api_update_sap_inventory_count(count_id):
             'success': True,
             'data': serialize_model(count),
             'message': 'SAP inventory count updated successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ================================
+# Serial Item Transfer API Endpoints
+# ================================
+
+@app.route('/api/rest/serial-item-transfers', methods=['GET'])
+@login_required
+@require_permission('serial_item_transfer')
+def api_get_serial_item_transfers():
+    """GET list of serial item transfers - Filtered by ownership"""
+    try:
+        if check_admin_permission():
+            transfers = SerialItemTransfer.query.all()
+        else:
+            transfers = SerialItemTransfer.query.filter_by(user_id=current_user.id).all()
+        
+        return jsonify({
+            'success': True,
+            'data': [serialize_model(t) for t in transfers],
+            'count': len(transfers)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/serial-item-transfers/<int:transfer_id>', methods=['GET'])
+@login_required
+@require_permission('serial_item_transfer')
+def api_get_serial_item_transfer(transfer_id):
+    """GET single serial item transfer with items - Owner or admin only"""
+    try:
+        transfer = SerialItemTransfer.query.get(transfer_id)
+        if not transfer:
+            return jsonify({'success': False, 'error': 'Serial item transfer not found'}), 404
+        
+        if not check_resource_ownership(transfer):
+            return jsonify({
+                'success': False,
+                'error': 'Access denied: You can only view your own serial item transfers'
+            }), 403
+        
+        data = serialize_model(transfer)
+        data['items'] = [serialize_model(item) for item in transfer.items]
+        
+        return jsonify({'success': True, 'data': data})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/serial-item-transfers', methods=['POST'])
+@login_required
+@require_permission('serial_item_transfer')
+def api_create_serial_item_transfer():
+    """POST create new serial item transfer"""
+    try:
+        data = get_request_data()
+        
+        transfer = SerialItemTransfer(
+            transfer_number=data.get('transfer_number'),
+            user_id=current_user.id,
+            status=data.get('status', 'draft'),
+            from_warehouse=data.get('from_warehouse'),
+            to_warehouse=data.get('to_warehouse'),
+            priority=data.get('priority', 'normal'),
+            notes=data.get('notes')
+        )
+        db.session.add(transfer)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'data': serialize_model(transfer),
+            'message': 'Serial item transfer created successfully'
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/serial-item-transfers/<int:transfer_id>', methods=['PATCH'])
+@login_required
+@require_permission('serial_item_transfer')
+def api_update_serial_item_transfer(transfer_id):
+    """PATCH update serial item transfer - Owner or admin only"""
+    try:
+        transfer = SerialItemTransfer.query.get(transfer_id)
+        if not transfer:
+            return jsonify({'success': False, 'error': 'Serial item transfer not found'}), 404
+        
+        if not check_resource_ownership(transfer):
+            return jsonify({
+                'success': False,
+                'error': 'Access denied: You can only update your own serial item transfers'
+            }), 403
+        
+        data = get_request_data()
+        for key, value in data.items():
+            if key != 'items' and hasattr(transfer, key):
+                setattr(transfer, key, value)
+        
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'data': serialize_model(transfer),
+            'message': 'Serial item transfer updated successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/serial-item-transfers/<int:transfer_id>', methods=['DELETE'])
+@login_required
+@require_permission('serial_item_transfer')
+def api_delete_serial_item_transfer(transfer_id):
+    """DELETE serial item transfer - Owner or admin only"""
+    try:
+        transfer = SerialItemTransfer.query.get(transfer_id)
+        if not transfer:
+            return jsonify({'success': False, 'error': 'Serial item transfer not found'}), 404
+        
+        if not check_resource_ownership(transfer):
+            return jsonify({
+                'success': False,
+                'error': 'Access denied: You can only delete your own serial item transfers'
+            }), 403
+        
+        db.session.delete(transfer)
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': 'Serial item transfer deleted successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ================================
+# Serial Item Transfer Items API Endpoints
+# ================================
+
+@app.route('/api/rest/serial-item-transfer-items', methods=['GET'])
+@login_required
+@require_permission('serial_item_transfer')
+def api_get_serial_item_transfer_items():
+    """GET list of all serial item transfer items - Permission required"""
+    try:
+        items = SerialItemTransferItem.query.all()
+        return jsonify({
+            'success': True,
+            'data': [serialize_model(item) for item in items],
+            'count': len(items)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/serial-item-transfer-items/<int:item_id>', methods=['GET'])
+@login_required
+@require_permission('serial_item_transfer')
+def api_get_serial_item_transfer_item(item_id):
+    """GET single serial item transfer item"""
+    try:
+        item = SerialItemTransferItem.query.get(item_id)
+        if not item:
+            return jsonify({'success': False, 'error': 'Serial item transfer item not found'}), 404
+        
+        return jsonify({'success': True, 'data': serialize_model(item)})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/serial-item-transfer-items', methods=['POST'])
+@login_required
+@require_permission('serial_item_transfer')
+def api_create_serial_item_transfer_item():
+    """POST create new serial item transfer item"""
+    try:
+        data = get_request_data()
+        
+        item = SerialItemTransferItem(
+            serial_item_transfer_id=data.get('serial_item_transfer_id'),
+            serial_number=data.get('serial_number'),
+            item_code=data.get('item_code'),
+            item_description=data.get('item_description'),
+            warehouse_code=data.get('warehouse_code'),
+            quantity=data.get('quantity', 1),
+            unit_of_measure=data.get('unit_of_measure', 'EA'),
+            from_warehouse_code=data.get('from_warehouse_code'),
+            to_warehouse_code=data.get('to_warehouse_code'),
+            qc_status=data.get('qc_status', 'pending'),
+            validation_status=data.get('validation_status', 'pending'),
+            validation_error=data.get('validation_error')
+        )
+        db.session.add(item)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'data': serialize_model(item),
+            'message': 'Serial item transfer item created successfully'
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/serial-item-transfer-items/<int:item_id>', methods=['PATCH'])
+@login_required
+@require_permission('serial_item_transfer')
+def api_update_serial_item_transfer_item(item_id):
+    """PATCH update serial item transfer item"""
+    try:
+        item = SerialItemTransferItem.query.get(item_id)
+        if not item:
+            return jsonify({'success': False, 'error': 'Serial item transfer item not found'}), 404
+        
+        data = get_request_data()
+        for key, value in data.items():
+            if hasattr(item, key):
+                setattr(item, key, value)
+        
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'data': serialize_model(item),
+            'message': 'Serial item transfer item updated successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/serial-item-transfer-items/<int:item_id>', methods=['DELETE'])
+@login_required
+@require_permission('serial_item_transfer')
+def api_delete_serial_item_transfer_item(item_id):
+    """DELETE serial item transfer item"""
+    try:
+        item = SerialItemTransferItem.query.get(item_id)
+        if not item:
+            return jsonify({'success': False, 'error': 'Serial item transfer item not found'}), 404
+        
+        db.session.delete(item)
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': 'Serial item transfer item deleted successfully'
         })
     except Exception as e:
         db.session.rollback()
