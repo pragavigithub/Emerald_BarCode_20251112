@@ -25,9 +25,9 @@
                     <div class="col-md-6 mb-3">
                         <label for="item_code" class="form-label">Barcode / Item Code <span class="text-danger">*</span></label>
                         <div class="input-group">
-                            <input type="text" class="form-control" id="item_code" name="item_code" 
+                            <input type="text" class="form-control" id="item_code" name="item_code"
                                    placeholder="Scan QR Label or enter item code" autofocus required>
-                            <button type="button" class="btn btn-outline-primary" onclick="startBarcodeScanner()">
+                            <button type="button" class="btn btn-outline-primary" onclick="showQRScannerForTransfer()">
                                 <i class="fas fa-camera"></i> Scan
                             </button>
                         </div>
@@ -53,7 +53,7 @@
                     </div>
                     <div class="col-md-3 mb-3">
                         <label for="quantity" class="form-label">Quantity <span class="text-danger">*</span></label>
-                        <input type="number" class="form-control" id="quantity" name="quantity" 
+                        <input type="number" class="form-control" id="quantity" name="quantity"
                                value="1" min="1" step="1" required>
                     </div>
                 </div>
@@ -121,12 +121,12 @@
 
                     <div class="mb-3">
                         <label for="notes" class="form-label">Notes</label>
-                        <textarea class="form-control" id="notes" name="notes" rows="3" 
+                        <textarea class="form-control" id="notes" name="notes" rows="3"
                                   placeholder="Enter any notes or comments"></textarea>
                     </div>
 
                     <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i> 
+                        <i class="fas fa-info-circle"></i>
                         <strong>Note:</strong> This will create the transfer document with the scanned item already included.
                     </div>
 
@@ -141,56 +141,61 @@
     </div>
 </div>
 
-<!-- Barcode Scanner Modal -->
-<div class="modal fade" id="barcodeScannerModal" tabindex="-1" aria-labelledby="barcodeScannerModalLabel" aria-hidden="true">
+<!-- QR Scanner Modal -->
+<div class="modal fade" id="qrScannerModal" tabindex="-1" aria-labelledby="qrScannerModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="barcodeScannerModalLabel">
-                    <i class="fas fa-camera"></i> Scan Barcode
+                <h5 class="modal-title" id="qrScannerModalLabel">
+                    <i class="fas fa-camera"></i> Scan QR Code
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="stopQRScanner()"></button>
             </div>
             <div class="modal-body">
-                <div class="scanner-container" style="position: relative; width: 100%; height: 400px;">
-                    <video id="barcodeVideo" class="scanner-video" autoplay playsinline 
-                           style="width: 100%; height: 100%; object-fit: cover;"></video>
-                    <div class="scanner-overlay" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-                         border: 2px solid #ff0000; width: 80%; height: 50px;"></div>
+                <div id="qrReaderContainer" style="display: none;">
+                    <div id="qr-reader" style="width: 100%;"></div>
                 </div>
-                <div class="mt-3" id="scanResult" style="display: none;">
-                    <div class="alert alert-success">
-                        <strong>Scanned:</strong> <span id="scannedCode"></span>
-                    </div>
+
+                <div id="qrScanResult" class="alert alert-success mt-3" style="display: none;">
+                    <strong>Scanned:</strong> <span id="qrScanResultText"></span>
+                </div>
+
+                <div id="qrScanError" class="alert alert-danger mt-3" style="display: none;"></div>
+
+                <div class="text-center mt-3">
+                    <p class="text-muted">Position the QR code within the camera view</p>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="stopQRScanner()">Close</button>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Include Html5Qrcode library for QR code scanning -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
 <script>
-let barcodeScanner = null;
+let html5QrCode = null;
 let itemValidated = false;
 let validationTimeout = null;
 
 // Load warehouses on page load
 document.addEventListener('DOMContentLoaded', function() {
     loadWarehouses();
-    
+
     // Add auto-validation on item code change
     document.getElementById('item_code').addEventListener('input', function() {
         clearTimeout(validationTimeout);
         const itemCode = this.value.trim();
-        
+
         if (itemCode.length > 0) {
             // Show loading indicator
             document.getElementById('validationStatus').style.display = 'inline-flex';
             document.getElementById('validationSpinner').style.display = 'inline';
             document.getElementById('validationSuccess').style.display = 'none';
-            
+
             // Auto-validate after 500ms of no typing
             validationTimeout = setTimeout(function() {
                 validateItem();
@@ -201,7 +206,7 @@ document.addEventListener('DOMContentLoaded', function() {
             resetValidation();
         }
     });
-    
+
     // Add warehouse change listeners to load bins
     document.getElementById('from_warehouse').addEventListener('change', function() {
         const warehouseCode = this.value;
@@ -209,12 +214,17 @@ document.addEventListener('DOMContentLoaded', function() {
             loadBinLocations(warehouseCode, 'from_bin', 'fromBinLoadingText');
         }
     });
-    
+
     document.getElementById('to_warehouse').addEventListener('change', function() {
         const warehouseCode = this.value;
         if (warehouseCode) {
             loadBinLocations(warehouseCode, 'to_bin', 'toBinLoadingText');
         }
+    });
+
+    // Handle modal close event
+    document.getElementById('qrScannerModal').addEventListener('hidden.bs.modal', function () {
+        stopQRScanner();
     });
 });
 
@@ -225,7 +235,7 @@ function loadWarehouses() {
             if (data.success) {
                 const fromSelect = document.getElementById('from_warehouse');
                 const toSelect = document.getElementById('to_warehouse');
-                
+
                 data.warehouses.forEach(wh => {
                     const fromOption = new Option(wh.WarehouseName + ' (' + wh.WarehouseCode + ')', wh.WarehouseCode);
                     const toOption = new Option(wh.WarehouseName + ' (' + wh.WarehouseCode + ')', wh.WarehouseCode);
@@ -242,16 +252,16 @@ function loadWarehouses() {
 function loadBinLocations(warehouseCode, selectId, loadingTextId) {
     const binSelect = document.getElementById(selectId);
     const loadingText = document.getElementById(loadingTextId);
-    
+
     // Clear existing options
     binSelect.innerHTML = '<option value="">Loading bin locations...</option>';
     loadingText.textContent = 'Loading...';
-    
+
     fetch(`/direct-inventory-transfer/api/get-bin-locations?warehouse_code=${encodeURIComponent(warehouseCode)}`)
         .then(response => response.json())
         .then(data => {
             binSelect.innerHTML = '<option value="">Select Bin Location (Optional)</option>';
-            
+
             if (data.success && data.bins && data.bins.length > 0) {
                 data.bins.forEach(bin => {
                     const option = new Option(bin.BinCode, bin.BinCode);
@@ -288,80 +298,121 @@ function resetValidation() {
     itemValidated = false;
 }
 
-function startBarcodeScanner() {
-    const modal = new bootstrap.Modal(document.getElementById('barcodeScannerModal'));
+// QR Scanner for Inventory Transfer
+function showQRScannerForTransfer() {
+    const modal = new bootstrap.Modal(document.getElementById('qrScannerModal'));
     modal.show();
-    
-    document.getElementById('barcodeScannerModal').addEventListener('shown.bs.modal', function () {
-        initBarcodeScanner();
-    });
-    
-    document.getElementById('barcodeScannerModal').addEventListener('hidden.bs.modal', function () {
-        stopBarcodeScanner();
+
+    setTimeout(() => {
+        startQRScannerForTransfer();
+    }, 500);
+}
+
+function startQRScannerForTransfer() {
+    const qrReaderContainer = document.getElementById('qrReaderContainer');
+    const qrScanResult = document.getElementById('qrScanResult');
+    const qrScanError = document.getElementById('qrScanError');
+
+    qrReaderContainer.style.display = 'block';
+    qrScanResult.style.display = 'none';
+    qrScanError.style.display = 'none';
+
+    if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("qr-reader");
+    }
+
+    const config = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0
+    };
+
+    html5QrCode.start(
+        { facingMode: "environment" },
+        config,
+        (decodedText, decodedResult) => {
+            console.log(`QR Code scanned: ${decodedText}`);
+            processScannedQRLabel(decodedText);
+            stopQRScanner();
+
+            const modal = bootstrap.Modal.getInstance(document.getElementById('qrScannerModal'));
+            if (modal) {
+                modal.hide();
+            }
+        },
+        (errorMessage) => {
+            // Scanning errors are normal, ignore them
+        }
+    ).catch(err => {
+        console.error('Error starting QR scanner:', err);
+        qrScanError.textContent = 'Failed to start camera. Please check camera permissions and try again.';
+        qrScanError.style.display = 'block';
+        qrReaderContainer.style.display = 'none';
     });
 }
 
-function initBarcodeScanner() {
-    const video = document.getElementById('barcodeVideo');
-    
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-            .then(function(stream) {
-                video.srcObject = stream;
-                video.play();
-                
-                if (typeof Quagga !== 'undefined') {
-                    Quagga.init({
-                        inputStream: {
-                            name: "Live",
-                            type: "LiveStream",
-                            target: video
-                        },
-                        decoder: {
-                            readers: ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader", "upc_reader"]
-                        }
-                    }, function(err) {
-                        if (err) {
-                            console.error('Quagga initialization error:', err);
-                            return;
-                        }
-                        Quagga.start();
-                    });
-                    
-                    Quagga.onDetected(function(result) {
-                        const code = result.codeResult.code;
-                        document.getElementById('scannedCode').textContent = code;
-                        document.getElementById('scanResult').style.display = 'block';
-                        document.getElementById('item_code').value = code;
-                        
-                        setTimeout(function() {
-                            bootstrap.Modal.getInstance(document.getElementById('barcodeScannerModal')).hide();
-                            validateItem();
-                        }, 1000);
-                    });
-                }
-            })
-            .catch(function(error) {
-                console.error('Camera access error:', error);
-                alert('Could not access camera. Please enter barcode manually.');
-            });
+function stopQRScanner() {
+    if (html5QrCode && html5QrCode.isScanning) {
+        html5QrCode.stop().then((ignore) => {
+            console.log('QR Code scanning stopped.');
+            document.getElementById('qrReaderContainer').style.display = 'none';
+        }).catch((err) => {
+            console.error('Error stopping QR scanner:', err);
+        });
     }
 }
 
-function stopBarcodeScanner() {
-    if (typeof Quagga !== 'undefined') {
-        Quagga.stop();
-    }
-    
-    const video = document.getElementById('barcodeVideo');
-    if (video.srcObject) {
-        video.srcObject.getTracks().forEach(track => track.stop());
+function processScannedQRLabel(qrData) {
+    console.log('Processing scanned QR label:', qrData);
+
+    try {
+        // Try to parse as JSON
+        const parsedData = JSON.parse(qrData);
+        console.log('Parsed QR Data:', parsedData);
+
+        // Extract item code from JSON
+        const itemCode = parsedData.item || parsedData.id || parsedData.ItemCode || qrData;
+
+        // Show success message
+        document.getElementById('qrScanResultText').textContent = itemCode;
+        document.getElementById('qrScanResult').style.display = 'block';
+
+        // Set item code
+        document.getElementById('item_code').value = itemCode;
+
+        // Auto-fill quantity if available in QR code
+        if (parsedData.qty) {
+            document.getElementById('quantity').value = parsedData.qty;
+        }
+
+        // Auto-fill batch number if available in QR code
+        if (parsedData.batch) {
+            document.getElementById('batch_number').value = parsedData.batch;
+        }
+
+        // Trigger validation after a short delay
+        setTimeout(function() {
+            validateItem();
+        }, 500);
+
+    } catch (e) {
+        // If not JSON, use raw data
+        console.log('QR Data (not JSON):', qrData);
+
+        document.getElementById('qrScanResultText').textContent = qrData;
+        document.getElementById('qrScanResult').style.display = 'block';
+        document.getElementById('item_code').value = qrData;
+
+        // Trigger validation
+        setTimeout(function() {
+            validateItem();
+        }, 500);
     }
 }
 
 function validateItem() {
     const itemCode = document.getElementById('item_code').value.trim();
-    
+
     if (!itemCode) {
         resetValidation();
         return;
@@ -380,12 +431,12 @@ function validateItem() {
             // Show success indicator
             document.getElementById('validationSpinner').style.display = 'none';
             document.getElementById('validationSuccess').style.display = 'inline';
-            
+
             // Update form fields
             document.getElementById('item_description').value = data.item_description;
             document.getElementById('item_type').value = data.item_type;
             document.getElementById('item_type_display').value = data.item_type.charAt(0).toUpperCase() + data.item_type.slice(1);
-            
+
             // Handle serial/batch/non-serial items
             if (data.item_type === 'serial') {
                 document.getElementById('serialSection').style.display = 'block';
@@ -398,79 +449,109 @@ function validateItem() {
                 document.getElementById('batchSection').style.display = 'block';
                 document.getElementById('serial_numbers').required = false;
                 document.getElementById('batch_number').required = true;
-                document.getElementById('batch_number').focus();
+
+                // If batch number was already filled from QR code, don't focus
+                if (!document.getElementById('batch_number').value) {
+                    document.getElementById('batch_number').focus();
+                }
             } else {
                 document.getElementById('serialSection').style.display = 'none';
                 document.getElementById('batchSection').style.display = 'none';
                 document.getElementById('serial_numbers').required = false;
                 document.getElementById('batch_number').required = false;
             }
-            
+
             document.getElementById('warehouseSection').style.display = 'block';
             itemValidated = true;
+
+            // Show success alert
+            showAlert('success', 'Item validated successfully!');
         } else {
             // Hide validation indicator
             document.getElementById('validationStatus').style.display = 'none';
-            
+
             // Show error
-            alert('Validation failed: ' + data.error);
+            showAlert('danger', 'Validation failed: ' + data.error);
             resetValidation();
         }
     })
     .catch(error => {
         console.error('Error:', error);
         document.getElementById('validationStatus').style.display = 'none';
-        alert('Error validating item');
+        showAlert('danger', 'Error validating item');
         resetValidation();
     });
+}
+
+function showAlert(type, message) {
+    // Remove any existing alerts
+    const existingAlerts = document.querySelectorAll('.alert-notification');
+    existingAlerts.forEach(alert => alert.remove());
+
+    // Create new alert
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show alert-notification`;
+    alertDiv.style.position = 'fixed';
+    alertDiv.style.top = '20px';
+    alertDiv.style.right = '20px';
+    alertDiv.style.zIndex = '9999';
+    alertDiv.style.minWidth = '300px';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+
+    document.body.appendChild(alertDiv);
+
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
 }
 
 document.getElementById('createTransferForm').addEventListener('submit', function(e) {
     if (!itemValidated) {
         e.preventDefault();
-        alert('Please wait for item validation to complete');
+        showAlert('warning', 'Please wait for item validation to complete');
         return false;
     }
-    
+
     const fromWarehouse = document.getElementById('from_warehouse').value;
     const toWarehouse = document.getElementById('to_warehouse').value;
-    
+
     if (fromWarehouse === toWarehouse) {
         e.preventDefault();
-        alert('From Warehouse and To Warehouse must be different');
+        showAlert('danger', 'From Warehouse and To Warehouse must be different');
         return false;
     }
-    
+
     const itemType = document.getElementById('item_type').value;
     const quantity = parseInt(document.getElementById('quantity').value);
-    
+
     if (itemType === 'serial') {
         const serialNumbers = document.getElementById('serial_numbers').value.trim();
         if (!serialNumbers) {
             e.preventDefault();
-            alert('Serial numbers are required for serial-managed items');
+            showAlert('danger', 'Serial numbers are required for serial-managed items');
             return false;
         }
         const serialCount = serialNumbers.split(',').filter(s => s.trim()).length;
         if (serialCount !== quantity) {
             e.preventDefault();
-            alert(`Number of serial numbers (${serialCount}) must match quantity (${quantity})`);
+            showAlert('danger', `Number of serial numbers (${serialCount}) must match quantity (${quantity})`);
             return false;
         }
     }
-    
+
     if (itemType === 'batch') {
         const batchNumber = document.getElementById('batch_number').value.trim();
         if (!batchNumber) {
             e.preventDefault();
-            alert('Batch number is required for batch-managed items');
+            showAlert('danger', 'Batch number is required for batch-managed items');
             return false;
         }
     }
 });
 </script>
-
-<!-- Include Quagga.js for barcode scanning -->
-<script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
 
 {% endblock %}
