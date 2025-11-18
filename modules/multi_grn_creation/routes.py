@@ -156,6 +156,128 @@ def delete_batch(batch_id):
     
     return redirect(url_for('multi_grn.index'))
 
+@multi_grn_bp.route('/<int:batch_id>/edit', methods=['GET'])
+@login_required
+def edit_batch(batch_id):
+    """Edit entry point - allows editing draft batches by redirecting to step 2"""
+    if not current_user.has_permission('multiple_grn'):
+        flash('Access denied', 'error')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        batch = MultiGRNBatch.query.get_or_404(batch_id)
+        
+        # Verify ownership
+        if batch.user_id != current_user.id:
+            flash('Access denied - You can only edit your own batches', 'error')
+            return redirect(url_for('multi_grn.index'))
+        
+        # Only allow editing draft batches
+        if batch.status != 'draft':
+            flash('Only draft batches can be edited', 'warning')
+            return redirect(url_for('multi_grn.index'))
+        
+        # Set edit mode in session
+        session['editing_batch_id'] = batch_id
+        
+        logging.info(f"✏️ User {current_user.username} editing draft batch {batch.batch_number}")
+        flash(f'Editing batch {batch.batch_number} - You can modify PO selection, line items, and QR labels', 'info')
+        
+        # Redirect to step 2 (PO selection) for editing
+        return redirect(url_for('multi_grn.create_step2_select_pos', batch_id=batch_id))
+        
+    except Exception as e:
+        logging.error(f"Error accessing edit for batch {batch_id}: {e}")
+        flash('Error accessing batch for editing', 'error')
+        return redirect(url_for('multi_grn.index'))
+
+@multi_grn_bp.route('/remove-po/<int:batch_id>/<int:po_link_id>', methods=['POST'])
+@login_required
+def remove_po_from_batch(batch_id, po_link_id):
+    """Remove a PO from the batch (and cascade delete line selections)"""
+    if not current_user.has_permission('multiple_grn'):
+        return jsonify({'success': False, 'error': 'Access denied'}), 403
+    
+    try:
+        batch = MultiGRNBatch.query.get_or_404(batch_id)
+        
+        # Verify ownership
+        if batch.user_id != current_user.id:
+            return jsonify({'success': False, 'error': 'Access denied'}), 403
+        
+        # Only allow removing from draft batches
+        if batch.status != 'draft':
+            return jsonify({'success': False, 'error': 'Only draft batches can be modified'}), 400
+        
+        po_link = MultiGRNPOLink.query.get_or_404(po_link_id)
+        
+        # Verify this PO belongs to the batch
+        if po_link.batch_id != batch_id:
+            return jsonify({'success': False, 'error': 'Invalid PO link'}), 400
+        
+        # Check if this is the last PO in the batch
+        if len(batch.po_links) <= 1:
+            return jsonify({'success': False, 'error': 'Cannot remove the last PO. Batch must have at least one Purchase Order.'}), 400
+        
+        po_doc_num = po_link.po_doc_num
+        
+        # Delete the PO link (cascade will delete line_selections)
+        db.session.delete(po_link)
+        batch.total_pos = max(0, batch.total_pos - 1) if batch.total_pos else 0
+        db.session.commit()
+        
+        logging.info(f"🗑️ Removed PO {po_doc_num} from batch {batch_id}")
+        return jsonify({'success': True, 'message': f'PO {po_doc_num} removed from batch'})
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error removing PO {po_link_id} from batch {batch_id}: {e}")
+        return jsonify({'success': False, 'error': 'Error removing PO'}), 500
+
+@multi_grn_bp.route('/remove-line/<int:batch_id>/<int:line_id>', methods=['POST'])
+@login_required
+def remove_line_from_batch(batch_id, line_id):
+    """Remove a line selection from the batch (and cascade delete batch/serial details)"""
+    if not current_user.has_permission('multiple_grn'):
+        return jsonify({'success': False, 'error': 'Access denied'}), 403
+    
+    try:
+        batch = MultiGRNBatch.query.get_or_404(batch_id)
+        
+        # Verify ownership
+        if batch.user_id != current_user.id:
+            return jsonify({'success': False, 'error': 'Access denied'}), 403
+        
+        # Only allow removing from draft batches
+        if batch.status != 'draft':
+            return jsonify({'success': False, 'error': 'Only draft batches can be modified'}), 400
+        
+        line_selection = MultiGRNLineSelection.query.get_or_404(line_id)
+        
+        # Verify this line belongs to a PO in the batch
+        po_link = MultiGRNPOLink.query.get(line_selection.po_link_id)
+        if not po_link or po_link.batch_id != batch_id:
+            return jsonify({'success': False, 'error': 'Invalid line selection'}), 400
+        
+        # Check if this is the last line in the batch
+        total_lines = sum(len(po.line_selections) for po in batch.po_links)
+        if total_lines <= 1:
+            return jsonify({'success': False, 'error': 'Cannot remove the last line item. Batch must have at least one line.'}), 400
+        
+        item_code = line_selection.item_code
+        
+        # Delete the line selection (cascade will delete batch_details and serial_details)
+        db.session.delete(line_selection)
+        db.session.commit()
+        
+        logging.info(f"🗑️ Removed line item {item_code} from batch {batch_id}")
+        return jsonify({'success': True, 'message': f'Line item {item_code} removed from batch'})
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error removing line {line_id} from batch {batch_id}: {e}")
+        return jsonify({'success': False, 'error': 'Error removing line item'}), 500
+
 @multi_grn_bp.route('/create/step1', methods=['GET', 'POST'])
 @login_required
 def create_step1_customer():

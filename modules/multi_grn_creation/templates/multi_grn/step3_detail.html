@@ -102,6 +102,11 @@
                                                 <i data-feather="printer"></i> Print {% if line.serial_details|length > 0 %}Serial{% else %}Batch{% endif %} Labels
                                             </button>
                                             {% endif %}
+                                            <button type="button" class="btn btn-sm btn-danger" 
+                                                    onclick="removeLine({{ batch.id }}, {{ line.id }}, '{{ line.item_code }}')"
+                                                    title="Remove Line Item">
+                                                <i data-feather="trash-2"></i> Remove
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -336,6 +341,34 @@
         // Show modal
         const modal = new bootstrap.Modal(document.getElementById('addItemModal'));
         modal.show();
+    }
+
+    // Remove Line Item
+    function removeLine(batchId, lineId, itemCode) {
+        if (!confirm(`Are you sure you want to remove line item "${itemCode}"? This will delete all batch/serial details and QR labels for this item.`)) {
+            return;
+        }
+        
+        fetch(`/multi-grn/remove-line/${batchId}/${lineId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Successfully removed - reload to refresh counters
+                location.reload();
+            } else {
+                // Failed (e.g., last line) - show error, do NOT reload
+                alert(data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error removing line:', error);
+            alert('Error removing line item. Please try again.');
+        });
     }
 
     // Validate Item Code (Same as GRPO Module)

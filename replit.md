@@ -9,6 +9,43 @@ A Flask-based Warehouse Management System (WMS) designed to streamline inventory
 
 ## Recent Updates
 
+### November 18, 2025 - Multi GRN Edit Functionality (Complete)
+
+**Feature:** Draft Multi GRN batches can now be edited after initial creation.
+
+**Implementation:**
+- **Edit Entry Point:** New `/multi-grn/<batch_id>/edit` route with draft-only and owner-only access controls
+- **Index UI:** Added "Edit" button (orange) for draft status batches, positioned between View and Delete buttons
+- **Step 2 (PO Selection) Editing:**
+  - Displays existing POs with remove buttons
+  - Allows adding more POs from available list
+  - Prevents removing last PO (batch must have ≥1 PO)
+  - Page reload after PO removal to refresh UI
+- **Step 3 (Line Selection) Editing:**
+  - Added "Remove" button for each line item in step3_detail.html
+  - Prevents removing last line item (batch must have ≥1 line)
+  - Cascade deletes batch_details and serial_details on line removal
+  - Page reload after line removal to refresh counters
+- **Step 4 & 5 (Details & QR):** Already supported via existing "Add Item" and "Print Labels" buttons
+
+**User Workflow:**
+1. Click "Edit" on draft batch from index page
+2. Modify PO selection (Step 2) - add/remove POs
+3. Modify line selection (Step 3) - add/remove line items
+4. Update batch/serial details using "Add Item" button
+5. Regenerate QR labels using "Print Labels" button
+6. Submit when ready for QC approval
+
+**Validation:**
+- Only draft batches can be edited
+- Only batch owner can edit
+- Batch must always have at least 1 PO and 1 line item
+- Clear error messages when validation fails
+
+**Files Modified:** `modules/multi_grn_creation/routes.py`, `modules/multi_grn_creation/templates/multi_grn/index.html`, `modules/multi_grn_creation/templates/multi_grn/step2_select_pos.html`, `modules/multi_grn_creation/templates/multi_grn/step3_detail.html`
+
+---
+
 ### November 17, 2025 - Multi GRN Integer Pack Distribution (Complete)
 
 **Issue:** QR labels displayed decimal quantities per pack (e.g., "Qty per Pack: 110.25"), making item counting impractical.
