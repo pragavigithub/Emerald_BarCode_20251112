@@ -1811,7 +1811,7 @@ def generate_barcode_labels_multi_grn():
                 serial_list = ', '.join([s.serial_number for s in pack_serials])
                 
                 qr_data = {
-                    'id': serial_grn,
+                    'id': f"{serial_grn}-{pack_idx}",
                     'po': str(po_number),
                     'item': line_selection.item_code,
                     'serial': serial_list,
@@ -1835,11 +1835,11 @@ def generate_barcode_labels_multi_grn():
                     'qty_per_pack': float(qty_per_pack),
                     'no_of_packs': num_packs,
                     'grn_date': grn_date,
-                    'grn_number': serial_grn,
+                    'grn_number': f"{serial_grn}-{pack_idx}",
                     'expiration_date': ref_serial.expiry_date.strftime('%Y-%m-%d') if ref_serial.expiry_date else 'N/A',
                     'item_code': line_selection.item_code,
                     'item_name': line_selection.item_description or '',
-                    'doc_number': serial_grn,
+                    'doc_number': f"{serial_grn}-{pack_idx}",
                     'qr_code_image': qr_code_image,
                     'qr_data': qr_data
                 }
@@ -1875,7 +1875,7 @@ def generate_barcode_labels_multi_grn():
                 pack_qty = pack_quantities[pack_num - 1]  # Get specific quantity for this pack
                 
                 qr_data = {
-                    'id': batch_grn,
+                    'id': f"{batch_grn}-{pack_num}",
                     'po': str(po_number),
                     'item': line_selection.item_code,
                     'batch': batch_detail.batch_number,
@@ -1899,11 +1899,11 @@ def generate_barcode_labels_multi_grn():
                     'qty_per_pack': pack_qty,
                     'no_of_packs': num_packs,
                     'grn_date': grn_date,
-                    'grn_number': batch_grn,
+                    'grn_number': f"{batch_grn}-{pack_num}",
                     'expiration_date': batch_detail.expiry_date.strftime('%Y-%m-%d') if batch_detail.expiry_date else 'N/A',
                     'item_code': line_selection.item_code,
                     'item_name': line_selection.item_description or '',
-                    'doc_number': batch_grn,
+                    'doc_number': f"{batch_grn}-{pack_num}",
                     'qr_code_image': qr_code_image,
                     'qr_data': qr_data
                 }
@@ -1928,7 +1928,7 @@ def generate_barcode_labels_multi_grn():
                 pack_qty = pack_quantities[pack_num - 1]  # Get specific quantity for this pack
                 
                 qr_data = {
-                    'id': batch_grn,
+                    'id': f"{batch_grn}-{pack_num}",
                     'po': str(po_number),
                     'item': line_selection.item_code,
                     'batch': batch_detail.batch_number,
@@ -1952,11 +1952,11 @@ def generate_barcode_labels_multi_grn():
                     'qty_per_pack': pack_qty,
                     'no_of_packs': num_packs,
                     'grn_date': grn_date,
-                    'grn_number': f"{batch_grn}",
+                    'grn_number': f"{batch_grn}-{pack_num}",
                     'expiration_date': batch_detail.expiry_date.strftime('%Y-%m-%d') if batch_detail.expiry_date else 'N/A',
                     'item_code': line_selection.item_code,
                     'item_name': line_selection.item_description or '',
-                    'doc_number': f"{batch_grn}",
+                    'doc_number': f"{batch_grn}-{pack_num}",
                     'qr_code_image': qr_code_image,
                     'qr_data': qr_data
                 }

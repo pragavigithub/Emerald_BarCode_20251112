@@ -224,7 +224,7 @@
                 <div class="col-md-6 mb-3 d-flex">
                     <div class="card border-dark flex-fill" style="max-width: 500px;">
                         <div class="card-header bg-light text-center py-1">
-                            <small><strong>${label.batch_number || label.serial_number ? (label.batch_number ? 'BatchItem' : 'SerialItem') : 'Item'}_${String(label.sequence || index + 1).padStart(2, '0')}</strong></small>
+                            <small><strong>${label.item_code || 'Item'} - ${label.batch_number || label.serial_number || ''}</strong></small>
                         </div>
                         <div class="card-body p-2">
                             <div class="row g-2">

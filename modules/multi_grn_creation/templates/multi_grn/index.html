@@ -39,6 +39,9 @@
                         <select id="statusFilter" name="status" class="form-select form-select-sm" onchange="this.form.submit()">
                             <option value="">All Statuses</option>
                             <option value="draft" {{ 'selected' if status_filter == 'draft' else '' }}>Draft</option>
+                            <option value="submitted" {{ 'selected' if status_filter == 'submitted' else '' }}>Submitted</option>
+                            <option value="qc_approved" {{ 'selected' if status_filter == 'qc_approved' else '' }}>QC Approved</option>
+                            <option value="rejected" {{ 'selected' if status_filter == 'rejected' else '' }}>Rejected</option>
                             <option value="completed" {{ 'selected' if status_filter == 'completed' else '' }}>Completed</option>
                             <option value="failed" {{ 'selected' if status_filter == 'failed' else '' }}>Failed</option>
                         </select>
@@ -104,6 +107,12 @@
                         <td>
                             {% if batch.status == 'completed' %}
                                 <span class="badge bg-success">Completed</span>
+                            {% elif batch.status == 'qc_approved' %}
+                                <span class="badge bg-success">QC Approved</span>
+                            {% elif batch.status == 'submitted' %}
+                                <span class="badge bg-warning">Submitted</span>
+                            {% elif batch.status == 'rejected' %}
+                                <span class="badge bg-danger">Rejected</span>
                             {% elif batch.status == 'failed' %}
                                 <span class="badge bg-danger">Failed</span>
                             {% elif batch.status == 'draft' %}
@@ -121,9 +130,22 @@
                             <a href="{{ url_for('multi_grn.edit_batch', batch_id=batch.id) }}" class="btn btn-sm btn-outline-warning ms-1">
                                 <i class="fas fa-edit"></i> Edit
                             </a>
+                            <button type="button" class="btn btn-sm btn-success ms-1" 
+                                    onclick="submitForQC({{ batch.id }}, '{{ batch.batch_number }}')">
+                                <i class="fas fa-paper-plane"></i> Submit for QC
+                            </button>
                             <button type="button" class="btn btn-sm btn-outline-danger ms-1" 
                                     onclick="confirmDelete({{ batch.id }}, '{{ batch.batch_number }}', '{{ batch.customer_name }}')">
                                 <i class="fas fa-trash"></i> Delete
+                            </button>
+                            {% elif batch.status == 'submitted' %}
+                            <button type="button" class="btn btn-sm btn-success ms-1" 
+                                    onclick="showApproveModal({{ batch.id }}, '{{ batch.batch_number }}')">
+                                <i class="fas fa-check"></i> Approve
+                            </button>
+                            <button type="button" class="btn btn-sm btn-danger ms-1" 
+                                    onclick="showRejectModal({{ batch.id }}, '{{ batch.batch_number }}')">
+                                <i class="fas fa-times"></i> Reject
                             </button>
                             {% endif %}
                         </td>
@@ -201,7 +223,60 @@
 <form id="deleteForm" method="POST" style="display: none;">
 </form>
 
+<!-- QC Approve Modal -->
+<div class="modal fade" id="approveModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-check-circle"></i> Approve GRN Batch</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to approve batch <strong id="approveBatchNumber"></strong>?</p>
+                <p class="text-muted small">This will post the GRN to SAP B1.</p>
+                <div class="mb-3">
+                    <label for="approveNotes" class="form-label">QC Notes (Optional)</label>
+                    <textarea class="form-control" id="approveNotes" rows="3" placeholder="Enter any quality control notes..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="approveGRN()">
+                    <i class="fas fa-check"></i> Approve & Post to SAP
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- QC Reject Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-times-circle"></i> Reject GRN Batch</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to reject batch <strong id="rejectBatchNumber"></strong>?</p>
+                <div class="mb-3">
+                    <label for="rejectNotes" class="form-label">Rejection Reason <span class="text-danger">*</span></label>
+                    <textarea class="form-control" id="rejectNotes" rows="3" placeholder="Enter reason for rejection..." required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="rejectGRN()">
+                    <i class="fas fa-times"></i> Reject Batch
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+let currentBatchId = null;
+
 function changeRowsPerPage(perPage) {
     const urlParams = new URLSearchParams(window.location.search);
     urlParams.set('per_page', perPage);
@@ -223,6 +298,102 @@ function confirmDelete(batchId, batchNumber, customerName) {
         form.action = '{{ url_for("multi_grn.index") }}'.replace('/multi-grn/', '/multi-grn/delete/') + batchId;
         form.submit();
     }
+}
+
+function submitForQC(batchId, batchNumber) {
+    if (confirm(`Submit batch ${batchNumber || '#' + batchId} for QC approval?`)) {
+        fetch(`/multi-grn/batch/${batchId}/submit`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Batch submitted for QC approval successfully!');
+                window.location.reload();
+            } else {
+                alert('Error: ' + (data.error || 'Failed to submit batch'));
+            }
+        })
+        .catch(error => {
+            alert('Network error: ' + error.message);
+        });
+    }
+}
+
+function showApproveModal(batchId, batchNumber) {
+    currentBatchId = batchId;
+    document.getElementById('approveBatchNumber').textContent = batchNumber || '#' + batchId;
+    document.getElementById('approveNotes').value = '';
+    const modal = new bootstrap.Modal(document.getElementById('approveModal'));
+    modal.show();
+}
+
+function showRejectModal(batchId, batchNumber) {
+    currentBatchId = batchId;
+    document.getElementById('rejectBatchNumber').textContent = batchNumber || '#' + batchId;
+    document.getElementById('rejectNotes').value = '';
+    const modal = new bootstrap.Modal(document.getElementById('rejectModal'));
+    modal.show();
+}
+
+function approveGRN() {
+    const notes = document.getElementById('approveNotes').value;
+    
+    fetch(`/multi-grn/batch/${currentBatchId}/approve`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            qc_notes: notes
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Batch approved and posted to SAP successfully!');
+            window.location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to approve batch'));
+        }
+    })
+    .catch(error => {
+        alert('Network error: ' + error.message);
+    });
+}
+
+function rejectGRN() {
+    const notes = document.getElementById('rejectNotes').value.trim();
+    
+    if (!notes) {
+        alert('Please enter a rejection reason');
+        return;
+    }
+    
+    fetch(`/multi-grn/batch/${currentBatchId}/reject`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            qc_notes: notes
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Batch rejected successfully!');
+            window.location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to reject batch'));
+        }
+    })
+    .catch(error => {
+        alert('Network error: ' + error.message);
+    });
 }
 </script>
 {% endblock %}
