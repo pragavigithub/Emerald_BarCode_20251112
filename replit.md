@@ -18,7 +18,7 @@ The system is built on a Flask web application backend, utilizing Jinja2 for ser
 
 **Technical Implementations:**
 *   **SAP B1 Integration:** Utilizes a dedicated `SAPMultiGRNService` class for secure and robust communication with the SAP B1 Service Layer, including SSL/TLS verification and optimized OData filtering. Conditional handling of batch/serial numbers in SAP JSON prevents API errors.
-*   **Modular Design:** New features are implemented as modular blueprints with their own templates and services.
+*   **Modular Design:** New features are implemented as modular blueprints with their own templates and services. **All module blueprints use absolute template paths** (`Path(__file__).resolve().parent / 'templates'`) for PyInstaller .exe build compatibility (updated Nov 20, 2025).
 *   **Frontend:** Jinja2 templating with JavaScript libraries like Select2 for enhanced UI components.
 *   **Error Handling:** Comprehensive validation and error logging for API communications and user inputs.
 *   **Optimized SAP SQL Query Validation:** SQL query validation runs only on initial startup using a flag-based system.
