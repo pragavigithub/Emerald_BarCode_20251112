@@ -1,3 +1,4 @@
-Status: completed successfully
-Database: a9b74dfe
-Timestamp: 2025-11-19T14:08:16.521601
+Status: attempted but failed (SAP connection issue)
+Database: 8d78fc82
+Timestamp: 2025-11-20T11:51:29.301042
+Note: Validation was attempted once. Will not retry on restarts unless database changes.
