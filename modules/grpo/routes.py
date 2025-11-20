@@ -11,12 +11,15 @@ from sap_integration import SAPIntegration
 import logging
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
+from pathlib import Path
 import qrcode
 import io
 import base64
 import json
 
-grpo_bp = Blueprint('grpo', __name__, url_prefix='/grpo', template_folder='templates')
+# Use absolute path for template_folder to support PyInstaller .exe builds
+grpo_bp = Blueprint('grpo', __name__, url_prefix='/grpo', 
+                    template_folder=str(Path(__file__).resolve().parent / 'templates'))
 
 @grpo_bp.route('/')
 @login_required

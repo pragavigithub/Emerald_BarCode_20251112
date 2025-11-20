@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from datetime import datetime
+from pathlib import Path
 import logging
 import json
 import re
@@ -10,8 +11,9 @@ from models import SerialItemTransfer, SerialItemTransferItem, DocumentNumberSer
 from sap_integration import SAPIntegration
 from sqlalchemy import or_
 
-# Create blueprint for Serial Item Transfer module
-serial_item_bp = Blueprint('serial_item_transfer', __name__, url_prefix='/serial-item-transfer')
+# Create blueprint for Serial Item Transfer module with absolute path for PyInstaller .exe builds
+serial_item_bp = Blueprint('serial_item_transfer', __name__, url_prefix='/serial-item-transfer',
+                           template_folder=str(Path(__file__).resolve().parent / 'templates'))
 
 
 def generate_serial_item_transfer_number():

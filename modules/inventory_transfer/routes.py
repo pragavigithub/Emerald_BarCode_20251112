@@ -13,10 +13,12 @@ import re
 import string
 import json
 from datetime import datetime
+from pathlib import Path
 
+# Use absolute path for template_folder to support PyInstaller .exe builds
 transfer_bp = Blueprint('inventory_transfer', __name__, 
                          url_prefix='/inventory_transfer',
-                         template_folder='templates')
+                         template_folder=str(Path(__file__).resolve().parent / 'templates'))
 
 def generate_transfer_number():
     """Generate unique transfer number for serial transfers"""

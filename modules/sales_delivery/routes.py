@@ -4,10 +4,12 @@ from app import db
 from modules.sales_delivery.models import DeliveryDocument, DeliveryItem
 from sap_integration import SAPIntegration
 from datetime import datetime
+from pathlib import Path
 import logging
 
+# Use absolute path for template_folder to support PyInstaller .exe builds
 sales_delivery_bp = Blueprint('sales_delivery', __name__, 
-                              template_folder='templates',
+                              template_folder=str(Path(__file__).resolve().parent / 'templates'),
                               url_prefix='/sales_delivery')
 
 

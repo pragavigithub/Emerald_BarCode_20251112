@@ -9,11 +9,13 @@ from modules.multi_grn_creation.models import MultiGRNBatch, MultiGRNPOLink, Mul
 from modules.multi_grn_creation.services import SAPMultiGRNService
 import logging
 from datetime import datetime, date
+from pathlib import Path
 import json
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
+# Use absolute path for template_folder to support PyInstaller .exe builds
 multi_grn_bp = Blueprint('multi_grn', __name__, 
-                              template_folder='templates',
+                              template_folder=str(Path(__file__).resolve().parent / 'templates'),
                               url_prefix='/multi-grn')
 
 

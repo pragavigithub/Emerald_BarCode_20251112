@@ -3,14 +3,16 @@ from flask_login import login_required, current_user
 from datetime import datetime
 import logging
 import json
+from pathlib import Path
 
 from app import db
 from models import DirectInventoryTransfer, DirectInventoryTransferItem, DocumentNumberSeries
 from sap_integration import SAPIntegration
 
+# Use absolute path for template_folder to support PyInstaller .exe builds
 direct_inventory_transfer_bp = Blueprint('direct_inventory_transfer', __name__, 
                                          url_prefix='/direct-inventory-transfer',
-                                         template_folder='templates')
+                                         template_folder=str(Path(__file__).resolve().parent / 'templates'))
 
 
 def generate_direct_transfer_number():
