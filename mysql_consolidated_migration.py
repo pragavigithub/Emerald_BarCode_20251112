@@ -31,6 +31,7 @@ RECENT UPDATES (Nov 2025):
 - Added comprehensive REST API endpoints for all modules (api_rest.py) - Nov 17, 2025
   * GET, POST, PATCH, DELETE operations for all models
   * JSON format support for external integrations
+- Added submitted_at field to direct_inventory_transfers table - Nov 20, 2025
 
 Run with: python mysql_consolidated_migration.py
 """
@@ -605,6 +606,7 @@ class MySQLConsolidatedMigration:
                     qc_approver_id INT,
                     qc_approved_at TIMESTAMP NULL,
                     qc_notes TEXT,
+                    submitted_at TIMESTAMP NULL,
                     from_warehouse VARCHAR(50),
                     to_warehouse VARCHAR(50),
                     from_bin VARCHAR(50),

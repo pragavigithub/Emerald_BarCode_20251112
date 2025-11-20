@@ -15,7 +15,7 @@ except Exception as e:
     logging.warning(f"⚠️ Could not load credentials: {e}")
     logging.info("Using system environment variables as fallback")
 
-# Configure logging
+# Configure basic logging (will be enhanced later)
 logging.basicConfig(level=logging.DEBUG)
 
 
@@ -29,6 +29,14 @@ login_manager = LoginManager()
 
 # Create Flask app
 app = Flask(__name__)
+
+# Setup comprehensive logging to C:\tmp\wms_logs
+try:
+    from logging_config import setup_logging
+    log_directory = setup_logging(app)
+    logging.info(f"✅ Comprehensive logging configured. Logs directory: {log_directory}")
+except Exception as e:
+    logging.warning(f"⚠️ Could not setup comprehensive logging: {e}. Using basic logging only.")
 
 # Validate SESSION_SECRET is set - required for security
 session_secret = os.environ.get("SESSION_SECRET")

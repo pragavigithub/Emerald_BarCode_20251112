@@ -8,7 +8,9 @@ from app import db
 from models import DirectInventoryTransfer, DirectInventoryTransferItem, DocumentNumberSeries
 from sap_integration import SAPIntegration
 
-direct_inventory_transfer_bp = Blueprint('direct_inventory_transfer', __name__, url_prefix='/direct-inventory-transfer')
+direct_inventory_transfer_bp = Blueprint('direct_inventory_transfer', __name__, 
+                                         url_prefix='/direct-inventory-transfer',
+                                         template_folder='templates')
 
 
 def generate_direct_transfer_number():
