@@ -1,17 +1,19 @@
 -- ================================================================
 -- MySQL Migration: Multi GRN Module - Complete Schema
--- Date: 2025-11-07
+-- Date: 2025-11-21 (Updated)
 -- Description: Consolidated MySQL migration for Multi GRN module
 --              with QR label generation, batch/serial support,
---              and warehouse/bin location management
+--              warehouse/bin location management, and QC approval
 -- ================================================================
 
--- Table 1: multi_grn_batches
+-- Table 1: multi_grn_document
 -- Main batch record for multiple GRN creation
-CREATE TABLE IF NOT EXISTS `multi_grn_batches` (
+CREATE TABLE IF NOT EXISTS `multi_grn_document` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `batch_number` VARCHAR(50) UNIQUE,
     `user_id` INT NOT NULL,
+    `series_id` INT,
+    `series_name` VARCHAR(100),
     `customer_code` VARCHAR(50) NOT NULL,
     `customer_name` VARCHAR(200) NOT NULL,
     `status` VARCHAR(20) DEFAULT 'draft' NOT NULL,
@@ -22,18 +24,27 @@ CREATE TABLE IF NOT EXISTS `multi_grn_batches` (
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
     `posted_at` DATETIME,
     `completed_at` DATETIME,
+    `submitted_at` DATETIME,
+    `qc_approver_id` INT,
+    `qc_approved_at` DATETIME,
+    `qc_notes` TEXT,
     
-    -- Foreign key constraint
+    -- Foreign key constraints
     CONSTRAINT `fk_batch_user` 
         FOREIGN KEY (`user_id`) 
         REFERENCES `users` (`id`) 
         ON DELETE CASCADE,
+    CONSTRAINT `fk_batch_qc_approver` 
+        FOREIGN KEY (`qc_approver_id`) 
+        REFERENCES `users` (`id`) 
+        ON DELETE SET NULL,
     
     -- Indexes
     INDEX `idx_batch_user` (`user_id`),
     INDEX `idx_batch_number` (`batch_number`),
     INDEX `idx_batch_status` (`status`),
-    INDEX `idx_batch_customer` (`customer_code`)
+    INDEX `idx_batch_customer` (`customer_code`),
+    INDEX `idx_batch_qc_approver` (`qc_approver_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table 2: multi_grn_po_links
@@ -57,7 +68,7 @@ CREATE TABLE IF NOT EXISTS `multi_grn_po_links` (
     -- Foreign key constraint
     CONSTRAINT `fk_po_link_batch` 
         FOREIGN KEY (`batch_id`) 
-        REFERENCES `multi_grn_batches` (`id`) 
+        REFERENCES `multi_grn_document` (`id`) 
         ON DELETE CASCADE,
     
     -- Unique constraint
@@ -195,11 +206,54 @@ CREATE TABLE IF NOT EXISTS `multi_grn_serial_details` (
 --     mgbd.batch_number as detail_batch,
 --     mgbd.quantity,
 --     mgbd.no_of_packs
--- FROM multi_grn_batches mgb
+-- FROM multi_grn_document mgb
 -- JOIN multi_grn_po_links mgpl ON mgb.id = mgpl.batch_id
 -- JOIN multi_grn_line_selections mgls ON mgpl.id = mgls.po_link_id
 -- LEFT JOIN multi_grn_batch_details mgbd ON mgls.id = mgbd.line_selection_id;
 
+-- ================================================================
+-- Additional Notes
+-- ================================================================
+-- REST API ENDPOINTS AVAILABLE:
+-- 
+-- Multi GRN Batch (multi_grn_document):
+--   GET    /api/rest/multi-grn-batches           - List all batches
+--   GET    /api/rest/multi-grn-batches/{id}      - Get single batch with PO links
+--   POST   /api/rest/multi-grn-batches           - Create new batch
+--   PATCH  /api/rest/multi-grn-batches/{id}      - Update batch
+--   DELETE /api/rest/multi-grn-batches/{id}      - Delete batch
+-- 
+-- Multi GRN PO Links (multi_grn_po_links):
+--   GET    /api/rest/multi-grn-po-links          - List all PO links (filter: ?batch_id=X)
+--   GET    /api/rest/multi-grn-po-links/{id}     - Get single PO link with line selections
+--   POST   /api/rest/multi-grn-po-links          - Create new PO link
+--   PATCH  /api/rest/multi-grn-po-links/{id}     - Update PO link
+--   DELETE /api/rest/multi-grn-po-links/{id}     - Delete PO link
+-- 
+-- Multi GRN Line Selections (multi_grn_line_selections):
+--   GET    /api/rest/multi-grn-line-selections   - List all line selections (filter: ?po_link_id=X or ?batch_id=X)
+--   GET    /api/rest/multi-grn-line-selections/{id} - Get single line selection with batch/serial details
+--   POST   /api/rest/multi-grn-line-selections   - Create new line selection
+--   PATCH  /api/rest/multi-grn-line-selections/{id} - Update line selection
+--   DELETE /api/rest/multi-grn-line-selections/{id} - Delete line selection
+-- 
+-- Multi GRN Batch Details (multi_grn_batch_details):
+--   GET    /api/rest/multi-grn-batch-details     - List all batch details (filter: ?line_selection_id=X)
+--   GET    /api/rest/multi-grn-batch-details/{id} - Get single batch detail
+--   POST   /api/rest/multi-grn-batch-details     - Create new batch detail
+--   PATCH  /api/rest/multi-grn-batch-details/{id} - Update batch detail
+--   DELETE /api/rest/multi-grn-batch-details/{id} - Delete batch detail
+-- 
+-- Multi GRN Serial Details (multi_grn_serial_details):
+--   GET    /api/rest/multi-grn-serial-details    - List all serial details (filter: ?line_selection_id=X)
+--   GET    /api/rest/multi-grn-serial-details/{id} - Get single serial detail
+--   POST   /api/rest/multi-grn-serial-details    - Create new serial detail
+--   PATCH  /api/rest/multi-grn-serial-details/{id} - Update serial detail
+--   DELETE /api/rest/multi-grn-serial-details/{id} - Delete serial detail
+-- 
+-- All endpoints require authentication and 'multiple_grn' permission.
+-- Ownership checks ensure users can only access/modify their own records.
+--
 -- ================================================================
 -- Rollback Instructions (if needed)
 -- ================================================================
@@ -207,4 +261,4 @@ CREATE TABLE IF NOT EXISTS `multi_grn_serial_details` (
 -- DROP TABLE IF EXISTS `multi_grn_batch_details`;
 -- DROP TABLE IF EXISTS `multi_grn_line_selections`;
 -- DROP TABLE IF EXISTS `multi_grn_po_links`;
--- DROP TABLE IF EXISTS `multi_grn_batches`;
+-- DROP TABLE IF EXISTS `multi_grn_document`;

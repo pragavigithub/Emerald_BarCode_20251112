@@ -1334,6 +1334,709 @@ def api_delete_multi_grn_batch(batch_id):
 
 
 # ================================
+# Multi GRN PO Links API Endpoints
+# ================================
+
+@app.route('/api/rest/multi-grn-po-links', methods=['GET'])
+@require_permission('multiple_grn')
+@login_required
+def api_get_multi_grn_po_links():
+    """GET list of multi GRN PO links - Filtered by batch ownership"""
+    try:
+        batch_id = request.args.get('batch_id', type=int)
+        
+        if batch_id:
+            batch = MultiGRNBatch.query.get(batch_id)
+            if batch and not check_resource_ownership(batch):
+                return jsonify({
+                    'success': False,
+                    'error': 'Access denied: You can only view PO links from your own batches'
+                }), 403
+            po_links = MultiGRNPOLink.query.filter_by(batch_id=batch_id).all()
+        elif check_admin_permission():
+            po_links = MultiGRNPOLink.query.all()
+        else:
+            user_batches = MultiGRNBatch.query.filter_by(user_id=current_user.id).all()
+            batch_ids = [b.id for b in user_batches]
+            po_links = MultiGRNPOLink.query.filter(MultiGRNPOLink.batch_id.in_(batch_ids)).all()
+        
+        return jsonify({
+            'success': True,
+            'data': [serialize_model(link) for link in po_links],
+            'count': len(po_links)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/multi-grn-po-links/<int:link_id>', methods=['GET'])
+@require_permission('multiple_grn')
+@login_required
+def api_get_multi_grn_po_link(link_id):
+    """GET single multi GRN PO link with line selections - Owner or admin only"""
+    try:
+        po_link = MultiGRNPOLink.query.get(link_id)
+        if not po_link:
+            return jsonify({'success': False, 'error': 'PO link not found'}), 404
+        
+        if not check_resource_ownership(po_link.batch):
+            return jsonify({
+                'success': False,
+                'error': 'Access denied: You can only view PO links from your own batches'
+            }), 403
+        
+        data = serialize_model(po_link)
+        data['line_selections'] = [serialize_model(line) for line in po_link.line_selections]
+        
+        return jsonify({'success': True, 'data': data})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/multi-grn-po-links', methods=['POST'])
+@require_permission('multiple_grn')
+@login_required
+def api_create_multi_grn_po_link():
+    """POST create new multi GRN PO link"""
+    try:
+        data = get_request_data()
+        
+        batch_id = data.get('batch_id')
+        if not batch_id:
+            return jsonify({'success': False, 'error': 'batch_id is required'}), 400
+        
+        batch = MultiGRNBatch.query.get(batch_id)
+        if not batch:
+            return jsonify({'success': False, 'error': 'Batch not found'}), 404
+        
+        if not check_resource_ownership(batch):
+            return jsonify({
+                'success': False,
+                'error': 'Access denied: You can only add PO links to your own batches'
+            }), 403
+        
+        po_link = MultiGRNPOLink(
+            batch_id=batch_id,
+            po_doc_entry=data.get('po_doc_entry'),
+            po_doc_num=data.get('po_doc_num'),
+            po_card_code=data.get('po_card_code'),
+            po_card_name=data.get('po_card_name'),
+            po_doc_date=data.get('po_doc_date'),
+            po_doc_total=data.get('po_doc_total'),
+            status=data.get('status', 'selected')
+        )
+        db.session.add(po_link)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'data': serialize_model(po_link),
+            'message': 'PO link created successfully'
+        }), 201
+    except IntegrityError as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': 'Duplicate PO link for this batch'}), 409
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/multi-grn-po-links/<int:link_id>', methods=['PATCH'])
+@require_permission('multiple_grn')
+@login_required
+def api_update_multi_grn_po_link(link_id):
+    """PATCH update multi GRN PO link - Owner or admin only"""
+    try:
+        po_link = MultiGRNPOLink.query.get(link_id)
+        if not po_link:
+            return jsonify({'success': False, 'error': 'PO link not found'}), 404
+        
+        if not check_resource_ownership(po_link.batch):
+            return jsonify({
+                'success': False,
+                'error': 'Access denied: You can only update PO links from your own batches'
+            }), 403
+        
+        data = get_request_data()
+        allowed_fields = ['po_doc_entry', 'po_doc_num', 'po_card_code', 'po_card_name', 
+                         'po_doc_date', 'po_doc_total', 'status', 'sap_grn_doc_num', 
+                         'sap_grn_doc_entry', 'posted_at', 'error_message']
+        
+        for key, value in data.items():
+            if key in allowed_fields:
+                setattr(po_link, key, value)
+        
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'data': serialize_model(po_link),
+            'message': 'PO link updated successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/multi-grn-po-links/<int:link_id>', methods=['DELETE'])
+@require_permission('multiple_grn')
+@login_required
+def api_delete_multi_grn_po_link(link_id):
+    """DELETE multi GRN PO link - Owner or admin only"""
+    try:
+        po_link = MultiGRNPOLink.query.get(link_id)
+        if not po_link:
+            return jsonify({'success': False, 'error': 'PO link not found'}), 404
+        
+        if not check_resource_ownership(po_link.batch):
+            return jsonify({
+                'success': False,
+                'error': 'Access denied: You can only delete PO links from your own batches'
+            }), 403
+        
+        db.session.delete(po_link)
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': 'PO link deleted successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ================================
+# Multi GRN Line Selection API Endpoints
+# ================================
+
+@app.route('/api/rest/multi-grn-line-selections', methods=['GET'])
+@require_permission('multiple_grn')
+@login_required
+def api_get_multi_grn_line_selections():
+    """GET list of multi GRN line selections - Filtered by batch ownership"""
+    try:
+        po_link_id = request.args.get('po_link_id', type=int)
+        batch_id = request.args.get('batch_id', type=int)
+        
+        if po_link_id:
+            po_link = MultiGRNPOLink.query.get(po_link_id)
+            if po_link and not check_resource_ownership(po_link.batch):
+                return jsonify({
+                    'success': False,
+                    'error': 'Access denied: You can only view line selections from your own batches'
+                }), 403
+            line_selections = MultiGRNLineSelection.query.filter_by(po_link_id=po_link_id).all()
+        elif batch_id:
+            batch = MultiGRNBatch.query.get(batch_id)
+            if batch and not check_resource_ownership(batch):
+                return jsonify({
+                    'success': False,
+                    'error': 'Access denied: You can only view line selections from your own batches'
+                }), 403
+            po_links = MultiGRNPOLink.query.filter_by(batch_id=batch_id).all()
+            po_link_ids = [link.id for link in po_links]
+            line_selections = MultiGRNLineSelection.query.filter(MultiGRNLineSelection.po_link_id.in_(po_link_ids)).all()
+        elif check_admin_permission():
+            line_selections = MultiGRNLineSelection.query.all()
+        else:
+            user_batches = MultiGRNBatch.query.filter_by(user_id=current_user.id).all()
+            batch_ids = [b.id for b in user_batches]
+            po_links = MultiGRNPOLink.query.filter(MultiGRNPOLink.batch_id.in_(batch_ids)).all()
+            po_link_ids = [link.id for link in po_links]
+            line_selections = MultiGRNLineSelection.query.filter(MultiGRNLineSelection.po_link_id.in_(po_link_ids)).all()
+        
+        return jsonify({
+            'success': True,
+            'data': [serialize_model(line) for line in line_selections],
+            'count': len(line_selections)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/multi-grn-line-selections/<int:line_id>', methods=['GET'])
+@require_permission('multiple_grn')
+@login_required
+def api_get_multi_grn_line_selection(line_id):
+    """GET single multi GRN line selection with batch and serial details - Owner or admin only"""
+    try:
+        line_selection = MultiGRNLineSelection.query.get(line_id)
+        if not line_selection:
+            return jsonify({'success': False, 'error': 'Line selection not found'}), 404
+        
+        if not check_resource_ownership(line_selection.po_link.batch):
+            return jsonify({
+                'success': False,
+                'error': 'Access denied: You can only view line selections from your own batches'
+            }), 403
+        
+        data = serialize_model(line_selection)
+        data['batch_details'] = [serialize_model(batch) for batch in line_selection.batch_details]
+        data['serial_details'] = [serialize_model(serial) for serial in line_selection.serial_details]
+        
+        return jsonify({'success': True, 'data': data})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/multi-grn-line-selections', methods=['POST'])
+@require_permission('multiple_grn')
+@login_required
+def api_create_multi_grn_line_selection():
+    """POST create new multi GRN line selection"""
+    try:
+        data = get_request_data()
+        
+        po_link_id = data.get('po_link_id')
+        if not po_link_id:
+            return jsonify({'success': False, 'error': 'po_link_id is required'}), 400
+        
+        po_link = MultiGRNPOLink.query.get(po_link_id)
+        if not po_link:
+            return jsonify({'success': False, 'error': 'PO link not found'}), 404
+        
+        if not check_resource_ownership(po_link.batch):
+            return jsonify({
+                'success': False,
+                'error': 'Access denied: You can only add line selections to your own batches'
+            }), 403
+        
+        line_selection = MultiGRNLineSelection(
+            po_link_id=po_link_id,
+            po_line_num=data.get('po_line_num'),
+            item_code=data.get('item_code'),
+            item_description=data.get('item_description'),
+            ordered_quantity=data.get('ordered_quantity'),
+            open_quantity=data.get('open_quantity'),
+            selected_quantity=data.get('selected_quantity'),
+            warehouse_code=data.get('warehouse_code'),
+            bin_location=data.get('bin_location'),
+            unit_price=data.get('unit_price'),
+            unit_of_measure=data.get('unit_of_measure'),
+            line_status=data.get('line_status'),
+            inventory_type=data.get('inventory_type'),
+            batch_required=data.get('batch_required', 'N'),
+            serial_required=data.get('serial_required', 'N'),
+            manage_method=data.get('manage_method', 'N')
+        )
+        db.session.add(line_selection)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'data': serialize_model(line_selection),
+            'message': 'Line selection created successfully'
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/multi-grn-line-selections/<int:line_id>', methods=['PATCH'])
+@require_permission('multiple_grn')
+@login_required
+def api_update_multi_grn_line_selection(line_id):
+    """PATCH update multi GRN line selection - Owner or admin only"""
+    try:
+        line_selection = MultiGRNLineSelection.query.get(line_id)
+        if not line_selection:
+            return jsonify({'success': False, 'error': 'Line selection not found'}), 404
+        
+        if not check_resource_ownership(line_selection.po_link.batch):
+            return jsonify({
+                'success': False,
+                'error': 'Access denied: You can only update line selections from your own batches'
+            }), 403
+        
+        data = get_request_data()
+        allowed_fields = ['po_line_num', 'item_code', 'item_description', 'ordered_quantity',
+                         'open_quantity', 'selected_quantity', 'warehouse_code', 'bin_location',
+                         'unit_price', 'unit_of_measure', 'line_status', 'inventory_type',
+                         'serial_numbers', 'batch_numbers', 'posting_payload', 'barcode_generated',
+                         'batch_required', 'serial_required', 'manage_method']
+        
+        for key, value in data.items():
+            if key in allowed_fields:
+                setattr(line_selection, key, value)
+        
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'data': serialize_model(line_selection),
+            'message': 'Line selection updated successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/multi-grn-line-selections/<int:line_id>', methods=['DELETE'])
+@require_permission('multiple_grn')
+@login_required
+def api_delete_multi_grn_line_selection(line_id):
+    """DELETE multi GRN line selection - Owner or admin only"""
+    try:
+        line_selection = MultiGRNLineSelection.query.get(line_id)
+        if not line_selection:
+            return jsonify({'success': False, 'error': 'Line selection not found'}), 404
+        
+        if not check_resource_ownership(line_selection.po_link.batch):
+            return jsonify({
+                'success': False,
+                'error': 'Access denied: You can only delete line selections from your own batches'
+            }), 403
+        
+        db.session.delete(line_selection)
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': 'Line selection deleted successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ================================
+# Multi GRN Batch Details API Endpoints
+# ================================
+
+@app.route('/api/rest/multi-grn-batch-details', methods=['GET'])
+@require_permission('multiple_grn')
+@login_required
+def api_get_multi_grn_batch_details():
+    """GET list of multi GRN batch details - Filtered by batch ownership"""
+    try:
+        line_selection_id = request.args.get('line_selection_id', type=int)
+        
+        if line_selection_id:
+            line_selection = MultiGRNLineSelection.query.get(line_selection_id)
+            if line_selection and not check_resource_ownership(line_selection.po_link.batch):
+                return jsonify({
+                    'success': False,
+                    'error': 'Access denied: You can only view batch details from your own batches'
+                }), 403
+            batch_details = MultiGRNBatchDetails.query.filter_by(line_selection_id=line_selection_id).all()
+        elif check_admin_permission():
+            batch_details = MultiGRNBatchDetails.query.all()
+        else:
+            user_batches = MultiGRNBatch.query.filter_by(user_id=current_user.id).all()
+            batch_ids = [b.id for b in user_batches]
+            po_links = MultiGRNPOLink.query.filter(MultiGRNPOLink.batch_id.in_(batch_ids)).all()
+            po_link_ids = [link.id for link in po_links]
+            line_selections = MultiGRNLineSelection.query.filter(MultiGRNLineSelection.po_link_id.in_(po_link_ids)).all()
+            line_selection_ids = [line.id for line in line_selections]
+            batch_details = MultiGRNBatchDetails.query.filter(MultiGRNBatchDetails.line_selection_id.in_(line_selection_ids)).all()
+        
+        return jsonify({
+            'success': True,
+            'data': [serialize_model(detail) for detail in batch_details],
+            'count': len(batch_details)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/multi-grn-batch-details/<int:detail_id>', methods=['GET'])
+@require_permission('multiple_grn')
+@login_required
+def api_get_multi_grn_batch_detail(detail_id):
+    """GET single multi GRN batch detail - Owner or admin only"""
+    try:
+        batch_detail = MultiGRNBatchDetails.query.get(detail_id)
+        if not batch_detail:
+            return jsonify({'success': False, 'error': 'Batch detail not found'}), 404
+        
+        if not check_resource_ownership(batch_detail.line_selection.po_link.batch):
+            return jsonify({
+                'success': False,
+                'error': 'Access denied: You can only view batch details from your own batches'
+            }), 403
+        
+        return jsonify({'success': True, 'data': serialize_model(batch_detail)})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/multi-grn-batch-details', methods=['POST'])
+@require_permission('multiple_grn')
+@login_required
+def api_create_multi_grn_batch_detail():
+    """POST create new multi GRN batch detail"""
+    try:
+        data = get_request_data()
+        
+        line_selection_id = data.get('line_selection_id')
+        if not line_selection_id:
+            return jsonify({'success': False, 'error': 'line_selection_id is required'}), 400
+        
+        line_selection = MultiGRNLineSelection.query.get(line_selection_id)
+        if not line_selection:
+            return jsonify({'success': False, 'error': 'Line selection not found'}), 404
+        
+        if not check_resource_ownership(line_selection.po_link.batch):
+            return jsonify({
+                'success': False,
+                'error': 'Access denied: You can only add batch details to your own batches'
+            }), 403
+        
+        batch_detail = MultiGRNBatchDetails(
+            line_selection_id=line_selection_id,
+            batch_number=data.get('batch_number'),
+            quantity=data.get('quantity'),
+            manufacturer_serial_number=data.get('manufacturer_serial_number'),
+            internal_serial_number=data.get('internal_serial_number'),
+            expiry_date=data.get('expiry_date'),
+            barcode=data.get('barcode'),
+            grn_number=data.get('grn_number'),
+            qty_per_pack=data.get('qty_per_pack'),
+            no_of_packs=data.get('no_of_packs', 1)
+        )
+        db.session.add(batch_detail)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'data': serialize_model(batch_detail),
+            'message': 'Batch detail created successfully'
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/multi-grn-batch-details/<int:detail_id>', methods=['PATCH'])
+@require_permission('multiple_grn')
+@login_required
+def api_update_multi_grn_batch_detail(detail_id):
+    """PATCH update multi GRN batch detail - Owner or admin only"""
+    try:
+        batch_detail = MultiGRNBatchDetails.query.get(detail_id)
+        if not batch_detail:
+            return jsonify({'success': False, 'error': 'Batch detail not found'}), 404
+        
+        if not check_resource_ownership(batch_detail.line_selection.po_link.batch):
+            return jsonify({
+                'success': False,
+                'error': 'Access denied: You can only update batch details from your own batches'
+            }), 403
+        
+        data = get_request_data()
+        allowed_fields = ['batch_number', 'quantity', 'manufacturer_serial_number',
+                         'internal_serial_number', 'expiry_date', 'barcode', 'grn_number',
+                         'qty_per_pack', 'no_of_packs']
+        
+        for key, value in data.items():
+            if key in allowed_fields:
+                setattr(batch_detail, key, value)
+        
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'data': serialize_model(batch_detail),
+            'message': 'Batch detail updated successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/multi-grn-batch-details/<int:detail_id>', methods=['DELETE'])
+@require_permission('multiple_grn')
+@login_required
+def api_delete_multi_grn_batch_detail(detail_id):
+    """DELETE multi GRN batch detail - Owner or admin only"""
+    try:
+        batch_detail = MultiGRNBatchDetails.query.get(detail_id)
+        if not batch_detail:
+            return jsonify({'success': False, 'error': 'Batch detail not found'}), 404
+        
+        if not check_resource_ownership(batch_detail.line_selection.po_link.batch):
+            return jsonify({
+                'success': False,
+                'error': 'Access denied: You can only delete batch details from your own batches'
+            }), 403
+        
+        db.session.delete(batch_detail)
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': 'Batch detail deleted successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ================================
+# Multi GRN Serial Details API Endpoints
+# ================================
+
+@app.route('/api/rest/multi-grn-serial-details', methods=['GET'])
+@require_permission('multiple_grn')
+@login_required
+def api_get_multi_grn_serial_details():
+    """GET list of multi GRN serial details - Filtered by batch ownership"""
+    try:
+        line_selection_id = request.args.get('line_selection_id', type=int)
+        
+        if line_selection_id:
+            line_selection = MultiGRNLineSelection.query.get(line_selection_id)
+            if line_selection and not check_resource_ownership(line_selection.po_link.batch):
+                return jsonify({
+                    'success': False,
+                    'error': 'Access denied: You can only view serial details from your own batches'
+                }), 403
+            serial_details = MultiGRNSerialDetails.query.filter_by(line_selection_id=line_selection_id).all()
+        elif check_admin_permission():
+            serial_details = MultiGRNSerialDetails.query.all()
+        else:
+            user_batches = MultiGRNBatch.query.filter_by(user_id=current_user.id).all()
+            batch_ids = [b.id for b in user_batches]
+            po_links = MultiGRNPOLink.query.filter(MultiGRNPOLink.batch_id.in_(batch_ids)).all()
+            po_link_ids = [link.id for link in po_links]
+            line_selections = MultiGRNLineSelection.query.filter(MultiGRNLineSelection.po_link_id.in_(po_link_ids)).all()
+            line_selection_ids = [line.id for line in line_selections]
+            serial_details = MultiGRNSerialDetails.query.filter(MultiGRNSerialDetails.line_selection_id.in_(line_selection_ids)).all()
+        
+        return jsonify({
+            'success': True,
+            'data': [serialize_model(detail) for detail in serial_details],
+            'count': len(serial_details)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/multi-grn-serial-details/<int:detail_id>', methods=['GET'])
+@require_permission('multiple_grn')
+@login_required
+def api_get_multi_grn_serial_detail(detail_id):
+    """GET single multi GRN serial detail - Owner or admin only"""
+    try:
+        serial_detail = MultiGRNSerialDetails.query.get(detail_id)
+        if not serial_detail:
+            return jsonify({'success': False, 'error': 'Serial detail not found'}), 404
+        
+        if not check_resource_ownership(serial_detail.line_selection.po_link.batch):
+            return jsonify({
+                'success': False,
+                'error': 'Access denied: You can only view serial details from your own batches'
+            }), 403
+        
+        return jsonify({'success': True, 'data': serialize_model(serial_detail)})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/multi-grn-serial-details', methods=['POST'])
+@require_permission('multiple_grn')
+@login_required
+def api_create_multi_grn_serial_detail():
+    """POST create new multi GRN serial detail"""
+    try:
+        data = get_request_data()
+        
+        line_selection_id = data.get('line_selection_id')
+        if not line_selection_id:
+            return jsonify({'success': False, 'error': 'line_selection_id is required'}), 400
+        
+        line_selection = MultiGRNLineSelection.query.get(line_selection_id)
+        if not line_selection:
+            return jsonify({'success': False, 'error': 'Line selection not found'}), 404
+        
+        if not check_resource_ownership(line_selection.po_link.batch):
+            return jsonify({
+                'success': False,
+                'error': 'Access denied: You can only add serial details to your own batches'
+            }), 403
+        
+        serial_detail = MultiGRNSerialDetails(
+            line_selection_id=line_selection_id,
+            serial_number=data.get('serial_number'),
+            manufacturer_serial_number=data.get('manufacturer_serial_number'),
+            internal_serial_number=data.get('internal_serial_number'),
+            expiry_date=data.get('expiry_date'),
+            barcode=data.get('barcode'),
+            grn_number=data.get('grn_number'),
+            qty_per_pack=data.get('qty_per_pack', 1),
+            no_of_packs=data.get('no_of_packs', 1)
+        )
+        db.session.add(serial_detail)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'data': serialize_model(serial_detail),
+            'message': 'Serial detail created successfully'
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/multi-grn-serial-details/<int:detail_id>', methods=['PATCH'])
+@require_permission('multiple_grn')
+@login_required
+def api_update_multi_grn_serial_detail(detail_id):
+    """PATCH update multi GRN serial detail - Owner or admin only"""
+    try:
+        serial_detail = MultiGRNSerialDetails.query.get(detail_id)
+        if not serial_detail:
+            return jsonify({'success': False, 'error': 'Serial detail not found'}), 404
+        
+        if not check_resource_ownership(serial_detail.line_selection.po_link.batch):
+            return jsonify({
+                'success': False,
+                'error': 'Access denied: You can only update serial details from your own batches'
+            }), 403
+        
+        data = get_request_data()
+        allowed_fields = ['serial_number', 'manufacturer_serial_number', 'internal_serial_number',
+                         'expiry_date', 'barcode', 'grn_number', 'qty_per_pack', 'no_of_packs']
+        
+        for key, value in data.items():
+            if key in allowed_fields:
+                setattr(serial_detail, key, value)
+        
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'data': serialize_model(serial_detail),
+            'message': 'Serial detail updated successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/multi-grn-serial-details/<int:detail_id>', methods=['DELETE'])
+@require_permission('multiple_grn')
+@login_required
+def api_delete_multi_grn_serial_detail(detail_id):
+    """DELETE multi GRN serial detail - Owner or admin only"""
+    try:
+        serial_detail = MultiGRNSerialDetails.query.get(detail_id)
+        if not serial_detail:
+            return jsonify({'success': False, 'error': 'Serial detail not found'}), 404
+        
+        if not check_resource_ownership(serial_detail.line_selection.po_link.batch):
+            return jsonify({
+                'success': False,
+                'error': 'Access denied: You can only delete serial details from your own batches'
+            }), 403
+        
+        db.session.delete(serial_detail)
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': 'Serial detail deleted successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ================================
 # Delivery Document API Endpoints
 # ================================
 
