@@ -7,7 +7,7 @@ from datetime import datetime
 
 class MultiGRNBatch(db.Model):
     """Main batch record for multiple GRN creation"""
-    __tablename__ = 'multi_grn_batches'
+    __tablename__ = 'multi_grn_document'
     
     id = db.Column(db.Integer, primary_key=True)
     batch_number = db.Column(db.String(50), unique=True, nullable=True)
@@ -29,7 +29,7 @@ class MultiGRNBatch(db.Model):
     qc_approved_at = db.Column(db.DateTime)
     qc_notes = db.Column(db.Text)
     
-    user = db.relationship('User', foreign_keys=[user_id], backref='multi_grn_batches')
+    user = db.relationship('User', foreign_keys=[user_id], backref='multi_grn_document')
     qc_approver = db.relationship('User', foreign_keys=[qc_approver_id])
     po_links = db.relationship('MultiGRNPOLink', backref='batch', lazy=True, cascade='all, delete-orphan')
     
@@ -41,7 +41,7 @@ class MultiGRNPOLink(db.Model):
     __tablename__ = 'multi_grn_po_links'
     
     id = db.Column(db.Integer, primary_key=True)
-    batch_id = db.Column(db.Integer, db.ForeignKey('multi_grn_batches.id'), nullable=False)
+    batch_id = db.Column(db.Integer, db.ForeignKey('multi_grn_document.id'), nullable=False)
     po_doc_entry = db.Column(db.Integer, nullable=False)
     po_doc_num = db.Column(db.String(50), nullable=False)
     po_card_code = db.Column(db.String(50))
