@@ -647,6 +647,32 @@ def approve_batch(batch_id):
         if batch.status != 'submitted':
             return jsonify({'success': False, 'error': 'Only submitted batches can be approved'}), 400
         
+        from modules.multi_grn_creation.models import MultiGRNBatchDetails, MultiGRNSerialDetails
+        
+        total_items = 0
+        verified_items = 0
+        
+        for po_link in batch.po_links:
+            for line in po_link.line_selections:
+                batch_details = MultiGRNBatchDetails.query.filter_by(line_selection_id=line.id).all()
+                serial_details = MultiGRNSerialDetails.query.filter_by(line_selection_id=line.id).all()
+                
+                for detail in batch_details:
+                    total_items += 1
+                    if detail.status == 'verified':
+                        verified_items += 1
+                
+                for detail in serial_details:
+                    total_items += 1
+                    if detail.status == 'verified':
+                        verified_items += 1
+        
+        if total_items > 0 and verified_items != total_items:
+            return jsonify({
+                'success': False, 
+                'error': f'Not all items have been verified. {verified_items}/{total_items} items verified. Please scan all QR codes before approval.'
+            }), 400
+        
         qc_notes = ''
         if request.form:
             qc_notes = request.form.get('qc_notes', '')

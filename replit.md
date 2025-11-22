@@ -28,7 +28,7 @@ The system is built on a Flask web application backend, utilizing Jinja2 for ser
 
 **Feature Specifications:**
 *   **User Management:** Comprehensive authentication, role-based access, and self-service profile management.
-*   **GRPO Management:** Standard Goods Receipt PO processing, intelligent batch/serial field management, and a multi-GRN module for batch creation from multiple Purchase Orders via a 5-step workflow with SAP B1 integration and QR label generation. Includes dynamic SAP bin location lookup, QC workflow, unique QR identifiers per pack, and editing of draft batches.
+*   **GRPO Management:** Standard Goods Receipt PO processing, intelligent batch/serial field management, and a multi-GRN module for batch creation from multiple Purchase Orders via a 5-step workflow with SAP B1 integration and QR label generation. Includes dynamic SAP bin location lookup, QC workflow with line-by-line verification, unique QR identifiers per pack, and editing of draft batches.
 *   **Inventory Transfer:** Enhanced module for creating inventory transfer requests with document series selection, SAP B1 validation, and robust QR label scanning with duplicate prevention and quantity accumulation.
 *   **Direct Inventory Transfer:** Barcode-based inventory transfer module with automatic serial/batch detection, real-time SAP B1 validation, warehouse and bin selection, QC approval workflow, and direct posting to SAP B1 as StockTransfers. Includes camera-based scanning.
 *   **Sales Order Against Delivery:** Module for creating Delivery Notes against Sales Orders with SAP B1 integration, including SO series selection, cascading dropdown for open SO document numbers, item picking with batch/serial validation, and individual QR code label generation.
@@ -37,6 +37,32 @@ The system is built on a Flask web application backend, utilizing Jinja2 for ser
 *   **Inventory Counting:** SAP B1 integrated inventory counting with local database storage for tracking, audit trails, user tracking, and timestamps, including a comprehensive history view.
 *   **Branch Management:** Functionality for managing different warehouse branches.
 *   **Quality Control Dashboard:** Provides a unified oversight for quality approval workflows across Multi GRN, Direct Transfer, and Sales Delivery modules, with SAP B1 posting integration upon approval.
+
+### Multi GRN QC Approval Workflow (Updated Nov 22, 2025)
+The Multi GRN module now implements a comprehensive line-by-line verification workflow:
+
+**Status Flow:**
+1. **Draft** → Items created by GRN team with batch/serial details
+2. **Submitted** → Batch submitted for QC review
+3. **QC Review** → QC team scans QR codes line-by-line to verify each item
+   - Each batch/serial detail has status: `pending` → `verified`
+   - QC review page shows real-time verification progress
+   - "Approve & Post to SAP" button is disabled until ALL items are verified
+4. **Approved & Posted** → All items verified, batch posted to SAP B1 as consolidated GRN
+
+**Key Features:**
+- Line-by-line QR code scanning verification
+- Real-time progress tracking showing verified vs. total items
+- Barcode scanner support with auto-focus input field
+- Server-side validation ensures all items are verified before SAP posting
+- QC notes captured for audit trail
+- Verification status persists in database (multi_grn_batch_details.status, multi_grn_serial_details.status)
+
+**Database Changes:**
+- Added `status` column (VARCHAR(20), default 'pending') to:
+  - `multi_grn_batch_details` table
+  - `multi_grn_serial_details` table
+- MySQL migration file updated accordingly
 
 ## External Dependencies
 *   **SAP B1 Service Layer API**: For all core inventory and document management functionalities (GRPO, pick lists, inventory transfers, serial numbers, business partners, inventory counts).
