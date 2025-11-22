@@ -351,11 +351,13 @@ class MySQLConsolidatedMigration:
                     grn_number VARCHAR(50),
                     qty_per_pack DECIMAL(15, 3),
                     no_of_packs INT DEFAULT 1,
+                    status VARCHAR(20) DEFAULT 'pending' NOT NULL,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (line_selection_id) REFERENCES multi_grn_line_selections(id) ON DELETE CASCADE,
                     INDEX idx_batch_line_selection (line_selection_id),
                     INDEX idx_batch_number (batch_number),
-                    INDEX idx_grn_number (grn_number)
+                    INDEX idx_grn_number (grn_number),
+                    INDEX idx_batch_status (status)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             ''',
             
@@ -372,11 +374,13 @@ class MySQLConsolidatedMigration:
                     grn_number VARCHAR(50),
                     qty_per_pack DECIMAL(15, 3) DEFAULT 1,
                     no_of_packs INT DEFAULT 1,
+                    status VARCHAR(20) DEFAULT 'pending' NOT NULL,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (line_selection_id) REFERENCES multi_grn_line_selections(id) ON DELETE CASCADE,
                     INDEX idx_serial_line_selection (line_selection_id),
                     INDEX idx_serial_number (serial_number),
-                    INDEX idx_serial_grn_number (grn_number)
+                    INDEX idx_serial_grn_number (grn_number),
+                    INDEX idx_serial_status (status)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             ''',
             

@@ -135,6 +135,7 @@ class MultiGRNBatchDetails(db.Model):
     grn_number = db.Column(db.String(50))
     qty_per_pack = db.Column(db.Numeric(15, 3))
     no_of_packs = db.Column(db.Integer, default=1)
+    status = db.Column(db.String(20), default='pending', nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     def __repr__(self):
@@ -154,6 +155,7 @@ class MultiGRNSerialDetails(db.Model):
     grn_number = db.Column(db.String(50))
     qty_per_pack = db.Column(db.Numeric(15, 3), default=1)
     no_of_packs = db.Column(db.Integer, default=1)
+    status = db.Column(db.String(20), default='pending', nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     def __repr__(self):
