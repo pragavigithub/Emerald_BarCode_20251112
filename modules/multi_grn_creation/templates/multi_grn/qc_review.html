@@ -71,7 +71,7 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-8">
+                        <div class="col-md-6">
                             <div class="form-group">
                                 <label for="qr-scanner-input" class="form-label">Scan QR Code (Use barcode scanner device)</label>
                                 <input type="text" 
@@ -85,11 +85,19 @@
                                 </small>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="form-group">
                                 <label class="form-label">&nbsp;</label>
                                 <button type="button" class="btn btn-primary btn-lg w-100" onclick="manualScan()">
                                     <i class="fas fa-check-circle"></i> Scan & Verify
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="form-label">&nbsp;</label>
+                                <button type="button" class="btn btn-success btn-lg w-100" onclick="showCameraScanner()">
+                                    <i class="fas fa-camera"></i> Camera Scanner
                                 </button>
                             </div>
                         </div>
@@ -227,9 +235,39 @@
     </div>
 </div>
 
+<!-- Camera Scanner Modal -->
+<div class="modal fade" id="cameraScannerModal" tabindex="-1" aria-labelledby="cameraScannerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="cameraScannerModalLabel">
+                    <i class="fas fa-camera"></i> Camera QR Code Scanner
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Point your camera at the QR code label. The scanner will automatically detect and verify it.
+                </div>
+                <div id="qr-reader" style="width: 100%;"></div>
+                <div id="camera-scan-result" class="mt-3"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="stopCameraScanner()">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include Html5Qrcode Library -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
 <script>
 const batchId = {{ batch.id }};
 let scanTimeout = null;
+let html5QrCode = null;
 
 document.getElementById('qr-scanner-input').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
@@ -423,6 +461,79 @@ function rejectBatch() {
         alert('Network error: ' + error.message);
     });
 }
+
+// Camera Scanner Functions
+function showCameraScanner() {
+    const modal = new bootstrap.Modal(document.getElementById('cameraScannerModal'));
+    modal.show();
+    
+    // Small delay to ensure modal is fully shown before starting camera
+    setTimeout(() => {
+        startCameraScanner();
+    }, 500);
+}
+
+function startCameraScanner() {
+    const scanResultDiv = document.getElementById('camera-scan-result');
+    scanResultDiv.innerHTML = '';
+    
+    if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("qr-reader");
+    }
+    
+    const config = { 
+        fps: 10, 
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0
+    };
+    
+    html5QrCode.start(
+        { facingMode: "environment" },
+        config,
+        (decodedText, decodedResult) => {
+            console.log(`QR Code scanned: ${decodedText}`);
+            
+            // Process the scanned QR code
+            processScan(decodedText);
+            
+            // Stop scanner and close modal
+            stopCameraScanner();
+            const modal = bootstrap.Modal.getInstance(document.getElementById('cameraScannerModal'));
+            if (modal) {
+                modal.hide();
+            }
+        },
+        (errorMessage) => {
+            // Scanning errors are normal during the scan process, so we ignore them
+        }
+    ).catch(err => {
+        console.error('Error starting camera scanner:', err);
+        scanResultDiv.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle"></i> Failed to start camera. 
+                Please check camera permissions and ensure you're using HTTPS.
+                <br><small>Error: ${err}</small>
+            </div>
+        `;
+    });
+}
+
+function stopCameraScanner() {
+    if (html5QrCode && html5QrCode.isScanning) {
+        html5QrCode.stop()
+            .then(() => {
+                console.log('Camera scanner stopped');
+            })
+            .catch(err => {
+                console.error('Error stopping camera scanner:', err);
+            });
+    }
+}
+
+// Cleanup when modal is hidden
+document.getElementById('cameraScannerModal').addEventListener('hidden.bs.modal', function () {
+    stopCameraScanner();
+});
 
 document.getElementById('qr-scanner-input').focus();
 </script>
