@@ -962,7 +962,7 @@ def qc_review_batch(batch_id):
 @multi_grn_bp.route('/api/scan-qr-code', methods=['POST'])
 @login_required
 def scan_qr_code():
-    """API endpoint to scan QR code and mark line item as verified"""
+    """API endpoint to scan QR code and mark line item as verified - with quantity validation"""
     try:
         data = request.get_json()
         qr_data = data.get('qr_data', '')
@@ -973,6 +973,7 @@ def scan_qr_code():
         try:
             qr_json = json.loads(qr_data)
             grn_id = qr_json.get('id', '')
+            qr_qty = qr_json.get('qty', 0)
         except:
             return jsonify({'success': False, 'error': 'Invalid QR code format'}), 400
         
@@ -995,12 +996,22 @@ def scan_qr_code():
                     }
                 })
             
+            db_qty_per_pack = float(batch_detail.qty_per_pack) if batch_detail.qty_per_pack else float(batch_detail.quantity)
+            
+            if int(qr_qty) != int(db_qty_per_pack):
+                return jsonify({
+                    'success': False,
+                    'error': f'Quantity mismatch! QR code shows {int(qr_qty)} but expected {int(db_qty_per_pack)} for this pack. Please verify the correct label.'
+                }), 400
+            
             batch_detail.status = 'verified'
             db.session.commit()
             
+            logging.info(f"✅ Batch detail verified: GRN={grn_id}, Batch={batch_detail.batch_number}, Qty={qr_qty}")
+            
             return jsonify({
                 'success': True,
-                'message': 'Batch item verified successfully',
+                'message': f'Batch item verified successfully (Qty: {int(qr_qty)} matched)',
                 'detail_type': 'batch',
                 'item_info': {
                     'batch_number': batch_detail.batch_number,
@@ -1022,12 +1033,22 @@ def scan_qr_code():
                     }
                 })
             
+            db_qty_per_pack = float(serial_detail.qty_per_pack) if serial_detail.qty_per_pack else 1.0
+            
+            if int(qr_qty) != int(db_qty_per_pack):
+                return jsonify({
+                    'success': False,
+                    'error': f'Quantity mismatch! QR code shows {int(qr_qty)} but expected {int(db_qty_per_pack)} for this pack. Please verify the correct label.'
+                }), 400
+            
             serial_detail.status = 'verified'
             db.session.commit()
             
+            logging.info(f"✅ Serial detail verified: GRN={grn_id}, Serial={serial_detail.serial_number}, Qty={qr_qty}")
+            
             return jsonify({
                 'success': True,
-                'message': 'Serial item verified successfully',
+                'message': f'Serial item verified successfully (Qty: {int(qr_qty)} matched)',
                 'detail_type': 'serial',
                 'item_info': {
                     'serial_number': serial_detail.serial_number,

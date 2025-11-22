@@ -51,12 +51,14 @@ The Multi GRN module now implements a comprehensive line-by-line verification wo
 4. **Approved & Posted** → All items verified, batch posted to SAP B1 as consolidated GRN
 
 **Key Features:**
-- Line-by-line QR code scanning verification
+- Line-by-line QR code scanning verification using barcode scanner device (no camera-based scanning)
+- **Quantity validation**: System compares scanned QR quantity with database record pack quantity before marking as verified
 - Real-time progress tracking showing verified vs. total items
 - Barcode scanner support with auto-focus input field
 - Server-side validation ensures all items are verified before SAP posting
 - QC notes captured for audit trail
 - Verification status persists in database (multi_grn_batch_details.status, multi_grn_serial_details.status)
+- Error handling for quantity mismatches to prevent incorrect verification
 
 **Database Changes:**
 - Added `status` column (VARCHAR(20), default 'pending') to:

@@ -67,26 +67,29 @@
 
             <div class="card mb-4">
                 <div class="card-header bg-secondary text-white">
-                    <h5 class="mb-0"><i class="fas fa-camera"></i> QR Code Scanner</h5>
+                    <h5 class="mb-0"><i class="fas fa-barcode"></i> Line-by-Line QR Code Scanner</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-8">
                             <div class="form-group">
-                                <label for="qr-scanner-input" class="form-label">Scan QR Code (Use barcode scanner or camera)</label>
+                                <label for="qr-scanner-input" class="form-label">Scan QR Code (Use barcode scanner device)</label>
                                 <input type="text" 
                                        class="form-control form-control-lg" 
                                        id="qr-scanner-input" 
-                                       placeholder="Focus here and scan QR code..."
+                                       placeholder="Focus here and scan QR code with barcode scanner..."
                                        autofocus>
-                                <small class="text-muted">Focus the cursor here and scan the QR code with a barcode scanner</small>
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle"></i> 
+                                    Scan each QR label - the system will verify quantity matches before marking as verified
+                                </small>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label class="form-label">&nbsp;</label>
                                 <button type="button" class="btn btn-primary btn-lg w-100" onclick="manualScan()">
-                                    <i class="fas fa-barcode"></i> Manual Scan
+                                    <i class="fas fa-check-circle"></i> Scan & Verify
                                 </button>
                             </div>
                         </div>
