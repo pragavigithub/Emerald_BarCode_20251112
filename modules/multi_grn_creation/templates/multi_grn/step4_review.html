@@ -75,8 +75,8 @@
                 <a href="{{ url_for('multi_grn.create_step3_select_lines', batch_id=batch.id) }}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i> Back
                 </a>
-                <button type="button" class="btn btn-success" id="confirmBtn">
-                    <i class="fas fa-paper-plane"></i> Confirm & Post GRNs
+                <button type="button" class="btn btn-primary" id="confirmBtn">
+                    <i class="fas fa-paper-plane"></i> Submit for QC Approval
                 </button>
             </div>
 
@@ -480,11 +480,11 @@ function submitAddItem() {
 }
 
 document.getElementById('confirmBtn').addEventListener('click', function() {
-    if (!confirm('Are you sure you want to post these GRNs to SAP B1?')) return;
+    if (!confirm('Submit this batch for QC approval? SAP posting will occur after QC approves.')) return;
     
     const btn = this;
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Posting...';
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Submitting...';
     
     fetch('{{ url_for("multi_grn.create_step5_post", batch_id=batch.id) }}', {
         method: 'POST',
@@ -495,14 +495,12 @@ document.getElementById('confirmBtn').addEventListener('click', function() {
         const resultDiv = document.getElementById('resultDiv');
         
         if (data.success) {
-            let html = '<div class="alert alert-success"><h5>✅ GRN Posted Successfully!</h5>';
-            html += `<p><strong>GRN Number:</strong> ${data.grn_doc_num}</p>`;
-            html += `<p><strong>Message:</strong> ${data.message || 'Consolidated GRN created successfully'}</p>`;
-            
-            if (data.po_count) {
-                html += `<p><strong>Purchase Orders:</strong> ${data.po_count} | <strong>Total Lines:</strong> ${data.line_count}</p>`;
-            }
-            
+            let html = '<div class="alert alert-success"><h5>✅ Batch Submitted for QC Approval!</h5>';
+            html += `<p><strong>Status:</strong> Submitted</p>`;
+            html += `<p><strong>Message:</strong> ${data.message || 'Batch submitted successfully. QC will review and approve for SAP posting.'}</p>`;
+            html += `<div class="alert alert-info mt-3">`;
+            html += `<i class="fas fa-info-circle"></i> <strong>Next Step:</strong> The batch is now pending QC approval. Once approved, it will be posted to SAP B1.`;
+            html += `</div>`;
             html += `<div class="mt-3">`;
             html += `<a href="{{ url_for('multi_grn.view_batch', batch_id=batch.id) }}" class="btn btn-primary">View Batch Details</a>`;
             html += `<a href="{{ url_for('multi_grn.index') }}" class="btn btn-secondary ms-2">Back to Multi GRN</a>`;
@@ -512,13 +510,13 @@ document.getElementById('confirmBtn').addEventListener('click', function() {
         } else {
             resultDiv.innerHTML = `<div class="alert alert-danger">❌ Error: ${data.error || 'Unknown error occurred'}</div>`;
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-paper-plane"></i> Confirm & Post GRNs';
+            btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit for QC Approval';
         }
     })
     .catch(err => {
         document.getElementById('resultDiv').innerHTML = `<div class="alert alert-danger">❌ Error: ${err.message}</div>`;
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Confirm & Post GRNs';
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit for QC Approval';
     });
 });
 </script>
