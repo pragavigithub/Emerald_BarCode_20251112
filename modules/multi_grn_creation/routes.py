@@ -972,10 +972,24 @@ def scan_qr_code():
         
         try:
             qr_json = json.loads(qr_data)
-            grn_id = qr_json.get('id', '')
+            grn_id_full = qr_json.get('id', '')
             qr_qty = qr_json.get('qty', 0)
         except:
             return jsonify({'success': False, 'error': 'Invalid QR code format'}), 400
+        
+        # Extract base GRN number by removing pack number suffix
+        # QR label format: "MGN-13-22-1-1" where last segment is pack number
+        # Database stores: "MGN-13-22-1" (base GRN without pack number)
+        grn_id_parts = grn_id_full.rsplit('-', 1)
+        if len(grn_id_parts) == 2 and grn_id_parts[1].isdigit():
+            # Has pack number suffix, use base GRN
+            grn_id = grn_id_parts[0]
+            pack_number = grn_id_parts[1]
+            logging.info(f"QR scan: Full ID={grn_id_full}, Base GRN={grn_id}, Pack={pack_number}")
+        else:
+            # No pack number suffix, use as-is
+            grn_id = grn_id_full
+            logging.info(f"QR scan: GRN ID={grn_id} (no pack suffix)")
         
         from modules.multi_grn_creation.models import MultiGRNBatchDetails, MultiGRNSerialDetails
         
