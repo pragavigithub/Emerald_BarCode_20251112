@@ -972,35 +972,29 @@ def scan_qr_code():
         
         try:
             qr_json = json.loads(qr_data)
-            grn_id_full = qr_json.get('id', '')
-            qr_qty = qr_json.get('qty', 0)
+            grn_id = qr_json.get('id', '')  # Full GRN with pack number (e.g., MGN-13-22-1-1)
+            qr_qty = qr_json.get('qty', 0)  # Quantity from QR code
         except:
             return jsonify({'success': False, 'error': 'Invalid QR code format'}), 400
         
-        # Extract base GRN number by removing pack number suffix
-        # QR label format: "MGN-13-22-1-1" where last segment is pack number
-        # Database stores: "MGN-13-22-1" (base GRN without pack number)
-        grn_id_parts = grn_id_full.rsplit('-', 1)
-        if len(grn_id_parts) == 2 and grn_id_parts[1].isdigit():
-            # Has pack number suffix, use base GRN
-            grn_id = grn_id_parts[0]
-            pack_number = grn_id_parts[1]
-            logging.info(f"QR scan: Full ID={grn_id_full}, Base GRN={grn_id}, Pack={pack_number}")
-        else:
-            # No pack number suffix, use as-is
-            grn_id = grn_id_full
-            logging.info(f"QR scan: GRN ID={grn_id} (no pack suffix)")
+        if not grn_id:
+            return jsonify({'success': False, 'error': 'QR code ID is missing'}), 400
+        
+        logging.info(f"🔍 QR scan received: GRN ID={grn_id}, Qty={qr_qty}")
         
         from modules.multi_grn_creation.models import MultiGRNBatchDetails, MultiGRNSerialDetails
         
+        # Query database using FULL GRN number (including pack suffix)
         batch_detail = MultiGRNBatchDetails.query.filter_by(grn_number=grn_id).first()
         serial_detail = MultiGRNSerialDetails.query.filter_by(grn_number=grn_id).first()
         
         if batch_detail:
+            # Check if already verified
             if batch_detail.status == 'verified':
+                logging.info(f"ℹ️ Pack already verified: GRN={grn_id}")
                 return jsonify({
                     'success': True,
-                    'message': 'This item was already verified',
+                    'message': 'This pack was already verified',
                     'already_verified': True,
                     'detail_type': 'batch',
                     'item_info': {
@@ -1010,22 +1004,26 @@ def scan_qr_code():
                     }
                 })
             
-            db_qty_per_pack = float(batch_detail.qty_per_pack) if batch_detail.qty_per_pack else float(batch_detail.quantity)
+            # Validate quantity matches (QR qty should match database quantity for this pack)
+            db_pack_qty = int(float(batch_detail.quantity))
+            qr_pack_qty = int(qr_qty)
             
-            if int(qr_qty) != int(db_qty_per_pack):
+            if qr_pack_qty != db_pack_qty:
+                logging.error(f"❌ Quantity mismatch: GRN={grn_id}, QR Qty={qr_pack_qty}, DB Qty={db_pack_qty}")
                 return jsonify({
                     'success': False,
-                    'error': f'Quantity mismatch! QR code shows {int(qr_qty)} but expected {int(db_qty_per_pack)} for this pack. Please verify the correct label.'
+                    'error': f'Quantity mismatch! QR label shows {qr_pack_qty} but database expects {db_pack_qty} for pack {grn_id}. Please verify the correct label.'
                 }), 400
             
+            # Mark as verified
             batch_detail.status = 'verified'
             db.session.commit()
             
-            logging.info(f"✅ Batch detail verified: GRN={grn_id}, Batch={batch_detail.batch_number}, Qty={qr_qty}")
+            logging.info(f"✅ Pack verified: GRN={grn_id}, Batch={batch_detail.batch_number}, Qty={qr_pack_qty}")
             
             return jsonify({
                 'success': True,
-                'message': f'Batch item verified successfully (Qty: {int(qr_qty)} matched)',
+                'message': f'Pack verified successfully! Batch: {batch_detail.batch_number}, Qty: {qr_pack_qty} matched',
                 'detail_type': 'batch',
                 'item_info': {
                     'batch_number': batch_detail.batch_number,
@@ -1035,10 +1033,12 @@ def scan_qr_code():
             })
         
         elif serial_detail:
+            # Check if already verified
             if serial_detail.status == 'verified':
+                logging.info(f"ℹ️ Serial already verified: GRN={grn_id}")
                 return jsonify({
                     'success': True,
-                    'message': 'This item was already verified',
+                    'message': 'This serial was already verified',
                     'already_verified': True,
                     'detail_type': 'serial',
                     'item_info': {
@@ -1047,22 +1047,26 @@ def scan_qr_code():
                     }
                 })
             
-            db_qty_per_pack = float(serial_detail.qty_per_pack) if serial_detail.qty_per_pack else 1.0
+            # Validate quantity matches
+            db_serial_qty = int(float(serial_detail.qty_per_pack)) if serial_detail.qty_per_pack else 1
+            qr_serial_qty = int(qr_qty)
             
-            if int(qr_qty) != int(db_qty_per_pack):
+            if qr_serial_qty != db_serial_qty:
+                logging.error(f"❌ Quantity mismatch: GRN={grn_id}, QR Qty={qr_serial_qty}, DB Qty={db_serial_qty}")
                 return jsonify({
                     'success': False,
-                    'error': f'Quantity mismatch! QR code shows {int(qr_qty)} but expected {int(db_qty_per_pack)} for this pack. Please verify the correct label.'
+                    'error': f'Quantity mismatch! QR label shows {qr_serial_qty} but database expects {db_serial_qty} for pack {grn_id}. Please verify the correct label.'
                 }), 400
             
+            # Mark as verified
             serial_detail.status = 'verified'
             db.session.commit()
             
-            logging.info(f"✅ Serial detail verified: GRN={grn_id}, Serial={serial_detail.serial_number}, Qty={qr_qty}")
+            logging.info(f"✅ Serial verified: GRN={grn_id}, Serial={serial_detail.serial_number}, Qty={qr_serial_qty}")
             
             return jsonify({
                 'success': True,
-                'message': f'Serial item verified successfully (Qty: {int(qr_qty)} matched)',
+                'message': f'Serial verified successfully! Serial: {serial_detail.serial_number}, Qty: {qr_serial_qty} matched',
                 'detail_type': 'serial',
                 'item_info': {
                     'serial_number': serial_detail.serial_number,
@@ -1071,7 +1075,11 @@ def scan_qr_code():
             })
         
         else:
-            return jsonify({'success': False, 'error': 'QR code not found in this batch'}), 404
+            logging.error(f"❌ Pack not found in database: GRN={grn_id}")
+            return jsonify({
+                'success': False, 
+                'error': f'Pack {grn_id} not found in this batch. Please ensure you are scanning the correct QR label for this batch.'
+            }), 404
     
     except Exception as e:
         logging.error(f"Error scanning QR code: {str(e)}")
@@ -2296,29 +2304,52 @@ def add_item_to_batch(batch_id):
                     for idx, batch_data in enumerate(batch_numbers):
                         batch_qty = float(batch_data.get('quantity', 0))
                         
-                        # Use INTEGER division for qty per pack (no decimals allowed)
-                        if number_of_bags > 0:
+                        # Calculate quantity distribution across packs
+                        if number_of_bags > 1:
                             batch_qty_decimal = Decimal(str(batch_qty))
                             batch_qty_int = int(batch_qty_decimal.to_integral_value(rounding=ROUND_HALF_UP))
-                            qty_per_pack = Decimal(batch_qty_int // number_of_bags)
+                            
+                            # Distribute quantity across packs (first packs get remainder)
+                            base_qty = batch_qty_int // number_of_bags
+                            remainder = batch_qty_int % number_of_bags
+                            
+                            # Create separate record for each pack
+                            for pack_num in range(1, number_of_bags + 1):
+                                # First 'remainder' packs get base_qty + 1, rest get base_qty
+                                pack_qty = Decimal(base_qty + 1) if pack_num <= remainder else Decimal(base_qty)
+                                grn_number = f"MGN-{batch.id}-{line_selection.id}-{idx+1}-{pack_num}"
+                                
+                                batch_detail = MultiGRNBatchDetails(
+                                    line_selection_id=line_selection.id,
+                                    batch_number=batch_data.get('batch_number'),
+                                    quantity=pack_qty,  # Quantity for THIS pack only
+                                    manufacturer_serial_number=batch_data.get('manufacturer_serial_number', ''),
+                                    internal_serial_number=batch_data.get('internal_serial_number', ''),
+                                    expiry_date=datetime.strptime(batch_data['expiry_date'], '%Y-%m-%d').date() if batch_data.get('expiry_date') else expiry_date_obj,
+                                    grn_number=grn_number,  # Includes pack number
+                                    qty_per_pack=pack_qty,  # Same as quantity
+                                    no_of_packs=1  # This record represents 1 pack
+                                )
+                                db.session.add(batch_detail)
+                                logging.info(f"✅ Created pack {pack_num}/{number_of_bags}: GRN={grn_number}, Qty={pack_qty}")
                         else:
-                            qty_per_pack = Decimal(str(batch_qty))
-                        grn_number = f"MGN-{batch.id}-{line_selection.id}-{idx+1}"
-                        
-                        batch_detail = MultiGRNBatchDetails(
-                            line_selection_id=line_selection.id,
-                            batch_number=batch_data.get('batch_number'),
-                            quantity=batch_qty,
-                            manufacturer_serial_number=batch_data.get('manufacturer_serial_number', ''),
-                            internal_serial_number=batch_data.get('internal_serial_number', ''),
-                            expiry_date=datetime.strptime(batch_data['expiry_date'], '%Y-%m-%d').date() if batch_data.get('expiry_date') else expiry_date_obj,
-                            grn_number=grn_number,
-                            qty_per_pack=qty_per_pack,
-                            no_of_packs=number_of_bags
-                        )
-                        db.session.add(batch_detail)
+                            # Single pack - create one record
+                            grn_number = f"MGN-{batch.id}-{line_selection.id}-{idx+1}-1"
+                            batch_detail = MultiGRNBatchDetails(
+                                line_selection_id=line_selection.id,
+                                batch_number=batch_data.get('batch_number'),
+                                quantity=Decimal(str(batch_qty)),
+                                manufacturer_serial_number=batch_data.get('manufacturer_serial_number', ''),
+                                internal_serial_number=batch_data.get('internal_serial_number', ''),
+                                expiry_date=datetime.strptime(batch_data['expiry_date'], '%Y-%m-%d').date() if batch_data.get('expiry_date') else expiry_date_obj,
+                                grn_number=grn_number,
+                                qty_per_pack=Decimal(str(batch_qty)),
+                                no_of_packs=1
+                            )
+                            db.session.add(batch_detail)
                     
-                    logging.info(f"✅ Added {len(batch_numbers)} batch numbers for item {item_code}")
+                    total_records = len(batch_numbers) * number_of_bags if number_of_bags > 1 else len(batch_numbers)
+                    logging.info(f"✅ Added {total_records} pack records for item {item_code}")
                 
             except json.JSONDecodeError:
                 db.session.rollback()
@@ -2326,25 +2357,32 @@ def add_item_to_batch(batch_id):
         
         # Handle non-managed items with bags
         if not is_batch_managed and not is_serial_managed and number_of_bags > 1:
-            # Create SINGLE batch detail with full quantity
-            # Number of bags is used for QR label generation only, NOT for splitting batches in JSON
-            # Use INTEGER division for qty per pack (no decimals allowed)
+            # Create separate record for each pack
             quantity_decimal = Decimal(str(quantity))
             quantity_int = int(quantity_decimal.to_integral_value(rounding=ROUND_HALF_UP))
-            qty_per_pack = Decimal(quantity_int // number_of_bags)
-            grn_number = f"MGN-{batch.id}-{line_selection.id}-1"
             
-            batch_detail = MultiGRNBatchDetails(
-                line_selection_id=line_selection.id,
-                batch_number=batch_number or f"PACK-1",
-                quantity=Decimal(str(quantity)),  # FULL quantity, not split
-                expiry_date=expiry_date_obj,
-                grn_number=grn_number,
-                qty_per_pack=qty_per_pack,  # For QR label display only
-                no_of_packs=number_of_bags  # For QR label generation only
-            )
-            db.session.add(batch_detail)
-            logging.info(f"✅ Created single batch detail for non-managed item {item_code}: Total Qty={quantity}, Packs={number_of_bags}, Qty/Pack={qty_per_pack}")
+            # Distribute quantity across packs (first packs get remainder)
+            base_qty = quantity_int // number_of_bags
+            remainder = quantity_int % number_of_bags
+            
+            for pack_num in range(1, number_of_bags + 1):
+                # First 'remainder' packs get base_qty + 1, rest get base_qty
+                pack_qty = Decimal(base_qty + 1) if pack_num <= remainder else Decimal(base_qty)
+                grn_number = f"MGN-{batch.id}-{line_selection.id}-1-{pack_num}"
+                
+                batch_detail = MultiGRNBatchDetails(
+                    line_selection_id=line_selection.id,
+                    batch_number=batch_number or f"PACK-{pack_num}",
+                    quantity=pack_qty,  # Quantity for THIS pack only
+                    expiry_date=expiry_date_obj,
+                    grn_number=grn_number,  # Includes pack number
+                    qty_per_pack=pack_qty,  # Same as quantity
+                    no_of_packs=1  # This record represents 1 pack
+                )
+                db.session.add(batch_detail)
+                logging.info(f"✅ Created pack {pack_num}/{number_of_bags}: GRN={grn_number}, Qty={pack_qty}")
+            
+            logging.info(f"✅ Created {number_of_bags} pack records for non-managed item {item_code}: Total Qty={quantity}")
         
         db.session.commit()
         
