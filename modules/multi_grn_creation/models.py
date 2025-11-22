@@ -1,12 +1,33 @@
 """
 Multiple GRN Creation Module Models
 Database models for batch GRN creation from multiple POs
+
+STATUS WORKFLOW (QC Approval Required):
+--------------------------------------
+1. draft       - Batch being created, items being selected
+2. submitted   - Batch submitted for QC approval (no SAP posting yet)
+3. qc_approved - QC has approved the batch (internal status)
+4. posted      - Consolidated GRN successfully posted to SAP B1
+5. rejected    - QC has rejected the batch
+6. failed      - SAP posting failed after QC approval
+
+CRITICAL DESIGN:
+- SAP posting happens ONLY through QC Dashboard after approval
+- Multi GRN screen does NOT post to SAP directly
+- Consolidated posting: Multiple POs → Single GRN document
 """
 from app import db
 from datetime import datetime
 
 class MultiGRNBatch(db.Model):
-    """Main batch record for multiple GRN creation"""
+    """
+    Main batch record for multiple GRN creation
+    
+    Status Flow:
+        draft → submitted → qc_approved → posted
+               ↓
+            rejected (if QC rejects)
+    """
     __tablename__ = 'multi_grn_document'
     
     id = db.Column(db.Integer, primary_key=True)

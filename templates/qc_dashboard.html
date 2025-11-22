@@ -1205,12 +1205,12 @@ function showDeliveryRejectionModal(deliveryId, deliveryNumber) {
 // Multi GRN approval functions
 function showMultiGRNApprovalModal(batchId, batchNumber) {
     document.getElementById('approvalPONumber').textContent = batchNumber;
-    document.getElementById('approvalForm').action = `/multi_grn/${batchId}/qc_approve`;
+    document.getElementById('approvalForm').action = `/multi-grn/batch/${batchId}/approve`;
     document.querySelector('#approvalModal .modal-title').textContent = 'Approve Multi GRN Batch';
     const alertDiv = document.querySelector('#approvalModal .alert');
     alertDiv.innerHTML = `
         <i data-feather="check-circle"></i>
-        Are you sure you want to approve Multi GRN Batch <strong>${batchNumber}</strong>? This will post all GRNs to SAP B1.
+        Are you sure you want to approve Multi GRN Batch <strong>${batchNumber}</strong>? This will create a consolidated GRN and post to SAP B1.
     `;
     feather.replace();
     const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
@@ -1219,7 +1219,7 @@ function showMultiGRNApprovalModal(batchId, batchNumber) {
 
 function showMultiGRNRejectionModal(batchId, batchNumber) {
     document.getElementById('rejectionPONumber').textContent = batchNumber;
-    document.getElementById('rejectionForm').action = `/multi_grn/${batchId}/qc_reject`;
+    document.getElementById('rejectionForm').action = `/multi-grn/batch/${batchId}/reject`;
     document.querySelector('#rejectionModal .modal-title').textContent = 'Reject Multi GRN Batch';
     const alertDiv = document.querySelector('#rejectionModal .alert');
     alertDiv.innerHTML = `
