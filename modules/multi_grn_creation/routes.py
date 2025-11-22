@@ -882,6 +882,182 @@ def reject_batch(batch_id):
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@multi_grn_bp.route('/batch/<int:batch_id>/qc-review')
+@login_required
+def qc_review_batch(batch_id):
+    """QC Review page for line-by-line verification"""
+    try:
+        batch = MultiGRNBatch.query.get_or_404(batch_id)
+        
+        if not current_user.has_permission('qc_dashboard') and current_user.role not in ['admin', 'manager']:
+            flash('Access denied - QC permissions required', 'error')
+            return redirect(url_for('dashboard'))
+        
+        if batch.status not in ['submitted', 'qc_approved']:
+            flash('Only submitted batches can be reviewed', 'error')
+            return redirect(url_for('qc_dashboard'))
+        
+        from modules.multi_grn_creation.models import MultiGRNBatchDetails, MultiGRNSerialDetails
+        
+        total_line_items = 0
+        verified_line_items = 0
+        all_verified = False
+        
+        for po_link in batch.po_links:
+            for line in po_link.line_selections:
+                batch_details_count = MultiGRNBatchDetails.query.filter_by(line_selection_id=line.id).count()
+                serial_details_count = MultiGRNSerialDetails.query.filter_by(line_selection_id=line.id).count()
+                
+                total_line_items += batch_details_count + serial_details_count
+                
+                verified_batch = MultiGRNBatchDetails.query.filter_by(
+                    line_selection_id=line.id, 
+                    status='verified'
+                ).count()
+                verified_serial = MultiGRNSerialDetails.query.filter_by(
+                    line_selection_id=line.id, 
+                    status='verified'
+                ).count()
+                
+                verified_line_items += verified_batch + verified_serial
+        
+        all_verified = total_line_items > 0 and verified_line_items == total_line_items
+        
+        return render_template('multi_grn/qc_review.html', 
+                             batch=batch,
+                             total_line_items=total_line_items,
+                             verified_line_items=verified_line_items,
+                             all_verified=all_verified)
+    except Exception as e:
+        logging.error(f"Error loading QC review page: {str(e)}")
+        flash('Error loading QC review page', 'error')
+        return redirect(url_for('qc_dashboard'))
+
+@multi_grn_bp.route('/api/scan-qr-code', methods=['POST'])
+@login_required
+def scan_qr_code():
+    """API endpoint to scan QR code and mark line item as verified"""
+    try:
+        data = request.get_json()
+        qr_data = data.get('qr_data', '')
+        
+        if not qr_data:
+            return jsonify({'success': False, 'error': 'QR code data is required'}), 400
+        
+        try:
+            qr_json = json.loads(qr_data)
+            grn_id = qr_json.get('id', '')
+        except:
+            return jsonify({'success': False, 'error': 'Invalid QR code format'}), 400
+        
+        from modules.multi_grn_creation.models import MultiGRNBatchDetails, MultiGRNSerialDetails
+        
+        batch_detail = MultiGRNBatchDetails.query.filter_by(grn_number=grn_id).first()
+        serial_detail = MultiGRNSerialDetails.query.filter_by(grn_number=grn_id).first()
+        
+        if batch_detail:
+            if batch_detail.status == 'verified':
+                return jsonify({
+                    'success': True,
+                    'message': 'This item was already verified',
+                    'already_verified': True,
+                    'detail_type': 'batch',
+                    'item_info': {
+                        'batch_number': batch_detail.batch_number,
+                        'quantity': float(batch_detail.quantity),
+                        'grn_number': batch_detail.grn_number
+                    }
+                })
+            
+            batch_detail.status = 'verified'
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': 'Batch item verified successfully',
+                'detail_type': 'batch',
+                'item_info': {
+                    'batch_number': batch_detail.batch_number,
+                    'quantity': float(batch_detail.quantity),
+                    'grn_number': batch_detail.grn_number
+                }
+            })
+        
+        elif serial_detail:
+            if serial_detail.status == 'verified':
+                return jsonify({
+                    'success': True,
+                    'message': 'This item was already verified',
+                    'already_verified': True,
+                    'detail_type': 'serial',
+                    'item_info': {
+                        'serial_number': serial_detail.serial_number,
+                        'grn_number': serial_detail.grn_number
+                    }
+                })
+            
+            serial_detail.status = 'verified'
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': 'Serial item verified successfully',
+                'detail_type': 'serial',
+                'item_info': {
+                    'serial_number': serial_detail.serial_number,
+                    'grn_number': serial_detail.grn_number
+                }
+            })
+        
+        else:
+            return jsonify({'success': False, 'error': 'QR code not found in this batch'}), 404
+    
+    except Exception as e:
+        logging.error(f"Error scanning QR code: {str(e)}")
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@multi_grn_bp.route('/api/batch/<int:batch_id>/verification-status')
+@login_required
+def batch_verification_status(batch_id):
+    """API endpoint to get batch verification status"""
+    try:
+        batch = MultiGRNBatch.query.get_or_404(batch_id)
+        
+        from modules.multi_grn_creation.models import MultiGRNBatchDetails, MultiGRNSerialDetails
+        
+        total_items = 0
+        verified_items = 0
+        
+        for po_link in batch.po_links:
+            for line in po_link.line_selections:
+                batch_details = MultiGRNBatchDetails.query.filter_by(line_selection_id=line.id).all()
+                serial_details = MultiGRNSerialDetails.query.filter_by(line_selection_id=line.id).all()
+                
+                for detail in batch_details:
+                    total_items += 1
+                    if detail.status == 'verified':
+                        verified_items += 1
+                
+                for detail in serial_details:
+                    total_items += 1
+                    if detail.status == 'verified':
+                        verified_items += 1
+        
+        all_verified = total_items > 0 and verified_items == total_items
+        
+        return jsonify({
+            'success': True,
+            'total_items': total_items,
+            'verified_items': verified_items,
+            'all_verified': all_verified,
+            'percentage': round((verified_items / total_items * 100), 2) if total_items > 0 else 0
+        })
+    
+    except Exception as e:
+        logging.error(f"Error getting verification status: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @multi_grn_bp.route('/api/search-customers')
 @login_required
 def api_search_customers():
