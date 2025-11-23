@@ -37,6 +37,45 @@ This file tracks all database schema changes chronologically. Each migration rep
 ## Future Migrations
 Add new migrations below in reverse chronological order (newest first).
 
+### 2025-11-23 - Multi GRN QR Code Label JSON Variable Fix
+- **File**: `MULTI_GRN_QR_LABEL_JSON_FIX.md`
+- **Description**: Fixed QR code label generation failure caused by local variable 'json' being referenced before assignment
+- **Type**: Bug Fix (Code Only - No Schema Changes)
+- **Status**: ✅ Applied
+- **Applied By**: Replit Agent
+- **Changes**:
+  - **Code Fix** in `modules/multi_grn_creation/routes.py`:
+    - Removed 4 inline `import json` statements from `generate_barcode_labels_multi_grn()` function
+    - Python was treating 'json' as a local variable when it saw inline imports
+    - Error occurred when `json.loads()` was called before reaching any inline import in the execution path
+    - Module already imported at file level (line 13), so inline imports were redundant
+  - **Lines Modified**:
+    - Line ~2023: Removed inline import (serial label type)
+    - Line ~2103: Removed inline import (batch label type - this was the failing case)
+    - Line ~2171: Removed inline import (regular label with batch_details)
+    - Line ~2209: Removed inline import (regular label without batch_details)
+- **Error Resolved**:
+  ```
+  ERROR:root:Error generating barcode labels: cannot access local variable 'json' 
+  where it is not associated with a value
+  ```
+- **Impact**:
+  - ✅ QR code label generation now works for all Multi GRN label types
+  - ✅ Batch labels with pack tracking generate correctly
+  - ✅ Serial labels function properly
+  - ✅ Regular labels (with and without packs) work as expected
+- **Testing**:
+  - Application restarted successfully
+  - All label types can now generate QR codes without HTTP 500 errors
+  - Data structure in `multi_grn_batch_details_label` table validated
+- **Database Requirements**: None - Code-only fix, fully backward compatible
+- **Notes**: 
+  - Classic Python scoping issue: inline imports make the name a local variable
+  - Fix improves code clarity by relying on file-level import
+  - No changes to database schema or migration files required
+
+---
+
 ### 2025-11-17 - Multi GRN QR Label Duplication Fix
 - **File**: `mysql/changes/2025-11-17_multi_grn_qr_label_duplication_fix.md`
 - **Description**: Fixed QR label duplication bug where batch-managed items generated incorrect number of labels (4 labels instead of 2 when Number of Bags = 2)

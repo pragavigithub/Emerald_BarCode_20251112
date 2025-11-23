@@ -2020,7 +2020,6 @@ def generate_barcode_labels_multi_grn():
                     'exp_date': ref_serial.expiry_date.strftime('%Y-%m-%d') if ref_serial.expiry_date else 'N/A'
                 }
                 
-                import json
                 qr_text = json.dumps(qr_data)
                 qr_code_image = generate_barcode_multi_grn(qr_text)
                 
@@ -2168,7 +2167,6 @@ def generate_barcode_labels_multi_grn():
                     'exp_date': batch_detail.expiry_date.strftime('%Y-%m-%d') if batch_detail.expiry_date else 'N/A'
                 }
                 
-                import json
                 qr_text = json.dumps(qr_data)
                 qr_code_image = generate_barcode_multi_grn(qr_text)
                 
@@ -2206,7 +2204,6 @@ def generate_barcode_labels_multi_grn():
                 'ItemDesc': line_selection.item_description or ''
             }
             
-            import json
             qr_text = json.dumps(qr_data, indent=2)
             qr_code_image = generate_barcode_multi_grn(qr_text)
             
