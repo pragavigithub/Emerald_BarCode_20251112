@@ -982,7 +982,7 @@ def scan_qr_code():
         
         logging.info(f"🔍 QR scan received: GRN ID={grn_id}, Qty={qr_qty}")
         
-        from modules.multi_grn_creation.models import MultiGRNBatchDetails, MultiGRNSerialDetails
+        from modules.multi_grn_creation.models import MultiGRNBatchDetails, MultiGRNSerialDetails,MultiGRNBatchDetailsLabel
         
         # Query database using FULL GRN number (including pack suffix)
         # This ensures each pack is matched individually: MGN-18-43-1-1, MGN-18-43-1-2, etc.
@@ -992,9 +992,9 @@ def scan_qr_code():
 
         print("Searching DB for:", main_grn)
 
-        batch_detail = MultiGRNBatchDetails.query.filter_by(grn_number=main_grn).first()
+        batch_detail = MultiGRNBatchDetailsLabel.query.filter_by(grn_number=main_grn).first()
         print(batch_detail)
-        serial_detail = MultiGRNSerialDetails.query.filter_by(grn_number=main_grn).first()
+        serial_detail = MultiGRNBatchDetailsLabel.query.filter_by(grn_number=main_grn).first()
         # batch_detail = MultiGRNBatchDetails.query.filter_by(grn_number=grn_id).first()
         # serial_detail = MultiGRNSerialDetails.query.filter_by(grn_number=grn_id).first()
         
@@ -1009,13 +1009,13 @@ def scan_qr_code():
                     'detail_type': 'batch',
                     'item_info': {
                         'batch_number': batch_detail.batch_number,
-                        'quantity': float(batch_detail.quantity),
+                        'quantity': float(batch_detail.qty_in_pack),
                         'grn_number': batch_detail.grn_number
                     }
                 })
             
             # Validate quantity matches (QR qty should match database quantity for this pack)
-            db_pack_qty = int(float(batch_detail.quantity))
+            db_pack_qty = int(float(batch_detail.qty_in_pack))
             qr_pack_qty = int(qr_qty)
             
             if qr_pack_qty != db_pack_qty:
@@ -1037,7 +1037,7 @@ def scan_qr_code():
                 'detail_type': 'batch',
                 'item_info': {
                     'batch_number': batch_detail.batch_number,
-                    'quantity': float(batch_detail.quantity),
+                    'quantity': float(batch_detail.qty_in_pack),
                     'grn_number': batch_detail.grn_number
                 }
             })

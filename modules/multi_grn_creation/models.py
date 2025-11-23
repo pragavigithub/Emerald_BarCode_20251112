@@ -184,6 +184,7 @@ class MultiGRNBatchDetailsLabel(db.Model):
     printed = db.Column(db.Boolean, default=False)
     printed_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.Text)
     
     batch_detail = db.relationship('MultiGRNBatchDetails', backref=db.backref('pack_labels', cascade='all, delete-orphan'))
     
