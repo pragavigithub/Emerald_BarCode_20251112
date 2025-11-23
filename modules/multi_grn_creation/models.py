@@ -160,3 +160,36 @@ class MultiGRNSerialDetails(db.Model):
     
     def __repr__(self):
         return f'<MultiGRNSerialDetails {self.serial_number}>'
+
+class MultiGRNBatchDetailsLabel(db.Model):
+    """Individual pack labels for batch items - links each QR label to unique GRN number
+    
+    This table solves the problem of tracking individual packs when no_of_packs > 1.
+    Each record represents one physical QR label/pack with its own unique GRN number.
+    
+    Example: If batch_details has quantity=7 and no_of_packs=3:
+        - Label 1: pack_number=1, qty_in_pack=3, grn_number=MGN-19-43-1-1
+        - Label 2: pack_number=2, qty_in_pack=2, grn_number=MGN-19-43-1-2
+        - Label 3: pack_number=3, qty_in_pack=2, grn_number=MGN-19-43-1-3
+    """
+    __tablename__ = 'multi_grn_batch_details_label'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    batch_detail_id = db.Column(db.Integer, db.ForeignKey('multi_grn_batch_details.id'), nullable=False)
+    pack_number = db.Column(db.Integer, nullable=False)
+    qty_in_pack = db.Column(db.Numeric(15, 3), nullable=False)
+    grn_number = db.Column(db.String(50), unique=True, nullable=False)
+    barcode = db.Column(db.Text)
+    qr_data = db.Column(db.Text)
+    printed = db.Column(db.Boolean, default=False)
+    printed_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    batch_detail = db.relationship('MultiGRNBatchDetails', backref='pack_labels')
+    
+    __table_args__ = (
+        db.UniqueConstraint('batch_detail_id', 'pack_number', name='uq_batch_pack'),
+    )
+    
+    def __repr__(self):
+        return f'<MultiGRNBatchDetailsLabel Pack:{self.pack_number} GRN:{self.grn_number}>'
