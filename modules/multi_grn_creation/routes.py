@@ -983,10 +983,17 @@ def scan_qr_code():
         logging.info(f"🔍 QR scan received: GRN ID={grn_id}, Qty={qr_qty}")
         
         from modules.multi_grn_creation.models import MultiGRNBatchDetails, MultiGRNSerialDetails
-        
+        parts = grn_id.split("-")
+        main_grn = "-".join(parts[:4])   # Example: MGN-13-22-1
+
+        print("Searching DB for:", main_grn)
+
+        batch_detail = MultiGRNBatchDetails.query.filter_by(grn_number=main_grn).first()
+        print(batch_detail)
+        serial_detail = MultiGRNSerialDetails.query.filter_by(grn_number=main_grn).first()
         # Query database using FULL GRN number (including pack suffix)
-        batch_detail = MultiGRNBatchDetails.query.filter_by(grn_number=grn_id).first()
-        serial_detail = MultiGRNSerialDetails.query.filter_by(grn_number=grn_id).first()
+        # batch_detail = MultiGRNBatchDetails.query.filter_by(grn_number=grn_id).first()
+        # serial_detail = MultiGRNSerialDetails.query.filter_by(grn_number=grn_id).first()
         
         if batch_detail:
             # Check if already verified
