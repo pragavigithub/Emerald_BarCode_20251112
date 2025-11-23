@@ -989,9 +989,9 @@ def scan_qr_code():
         logging.info(f"🔍 Searching DB for: {grn_id}")
         parts = grn_id.split("-")
         main_grn = "-".join(parts[:5])   # Example: MGN-13-22-1
-
+        main_grns = "-".join(parts[:4])
         print("Searching DB for:", main_grn)
-
+        batch_details = MultiGRNBatchDetails.query.filter_by(grn_number=main_grns).first()
         batch_detail = MultiGRNBatchDetailsLabel.query.filter_by(grn_number=main_grn).first()
         print(batch_detail)
         serial_detail = MultiGRNBatchDetailsLabel.query.filter_by(grn_number=main_grn).first()
@@ -1008,7 +1008,7 @@ def scan_qr_code():
                     'already_verified': True,
                     'detail_type': 'batch',
                     'item_info': {
-                        'batch_number': batch_detail.batch_number,
+                        'batch_number': batch_details.batch_number,
                         'quantity': float(batch_detail.qty_in_pack),
                         'grn_number': batch_detail.grn_number
                     }
@@ -1027,16 +1027,17 @@ def scan_qr_code():
             
             # Mark as verified
             batch_detail.status = 'verified'
+            batch_details.status= 'verified'
             db.session.commit()
             
-            logging.info(f"✅ Pack verified: GRN={grn_id}, Batch={batch_detail.batch_number}, Qty={qr_pack_qty}")
+            logging.info(f"✅ Pack verified: GRN={grn_id}, Batch={batch_details.batch_number}, Qty={qr_pack_qty}")
             
             return jsonify({
                 'success': True,
-                'message': f'Pack verified successfully! Batch: {batch_detail.batch_number}, Qty: {qr_pack_qty} matched',
+                'message': f'Pack verified successfully! Batch: {batch_details.batch_number}, Qty: {qr_pack_qty} matched',
                 'detail_type': 'batch',
                 'item_info': {
-                    'batch_number': batch_detail.batch_number,
+                    'batch_number': batch_details.batch_number,
                     'quantity': float(batch_detail.qty_in_pack),
                     'grn_number': batch_detail.grn_number
                 }
