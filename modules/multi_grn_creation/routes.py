@@ -1661,54 +1661,110 @@ def manage_batch_details(line_id):
                     return jsonify({'success': False, 'error': 'Invalid expiry date format'}), 400
             
             no_of_packs = int(data.get('no_of_packs', 1))
-            # Calculate base quantity per pack (integer division)
-            # For batch detail entry, use the total quantity divided by packs
-            # When multiple pack records are created, each will get distributed qty
-            if no_of_packs > 0:
-                base_qty = int(quantity // no_of_packs)
-                # For this single batch detail, use base quantity
-                qty_per_pack = Decimal(base_qty)
+            
+            # Get batch ID and line ID for GRN generation
+            if line_selection.po_link and hasattr(line_selection.po_link, 'batch_id'):
+                batch_id = line_selection.po_link.batch_id
             else:
-                qty_per_pack = Decimal(str(quantity))
+                batch_id = line_id
             
-            barcode_data = f"BATCH:{batch_num}"
-            try:
-                qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
-                qr.add_data(barcode_data)
-                qr.make(fit=True)
-                img = qr.make_image(fill_color="black", back_color="white")
-                buffer = io.BytesIO()
-                img.save(buffer, format='PNG')
-                buffer.seek(0)
-                barcode = f"data:image/png;base64,{base64.b64encode(buffer.getvalue()).decode()}"
-            except Exception:
-                barcode = None
+            # Convert quantity to integer for distribution
+            total_qty_int = int(quantity)
             
-            batch = MultiGRNBatchDetails(
-                line_selection_id=line_id,
-                batch_number=batch_num,
-                quantity=quantity,
-                manufacturer_serial_number=data.get('manufacturer_serial_number'),
-                internal_serial_number=data.get('internal_serial_number'),
-                expiry_date=expiry_date_obj,
-                barcode=barcode,
-                grn_number=data.get('grn_number'),
-                qty_per_pack=qty_per_pack,
-                no_of_packs=no_of_packs
-            )
+            created_packs = []
             
-            db.session.add(batch)
+            if no_of_packs > 1:
+                # Create SEPARATE record for each pack with distributed quantities
+                base_qty = total_qty_int // no_of_packs
+                remainder = total_qty_int % no_of_packs
+                
+                for pack_num in range(1, no_of_packs + 1):
+                    # First 'remainder' packs get base_qty + 1, rest get base_qty
+                    pack_qty = Decimal(base_qty + 1) if pack_num <= remainder else Decimal(base_qty)
+                    
+                    # Generate unique GRN with pack suffix
+                    grn_number = f"MGN-{batch_id}-{line_id}-1-{pack_num}"
+                    
+                    # Generate QR barcode for this pack
+                    barcode_data = f"BATCH:{batch_num}-PACK{pack_num}"
+                    try:
+                        qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
+                        qr.add_data(barcode_data)
+                        qr.make(fit=True)
+                        img = qr.make_image(fill_color="black", back_color="white")
+                        buffer = io.BytesIO()
+                        img.save(buffer, format='PNG')
+                        buffer.seek(0)
+                        barcode = f"data:image/png;base64,{base64.b64encode(buffer.getvalue()).decode()}"
+                    except Exception:
+                        barcode = None
+                    
+                    batch = MultiGRNBatchDetails(
+                        line_selection_id=line_id,
+                        batch_number=batch_num,
+                        quantity=pack_qty,
+                        manufacturer_serial_number=data.get('manufacturer_serial_number'),
+                        internal_serial_number=data.get('internal_serial_number'),
+                        expiry_date=expiry_date_obj,
+                        barcode=barcode,
+                        grn_number=grn_number,
+                        qty_per_pack=pack_qty,
+                        no_of_packs=1
+                    )
+                    db.session.add(batch)
+                    created_packs.append({
+                        'pack_num': pack_num,
+                        'grn_number': grn_number,
+                        'quantity': float(pack_qty)
+                    })
+                    logging.info(f"✅ Created pack {pack_num}/{no_of_packs}: GRN={grn_number}, Qty={pack_qty}")
+            else:
+                # Single pack - create one record
+                grn_number = f"MGN-{batch_id}-{line_id}-1-1"
+                
+                barcode_data = f"BATCH:{batch_num}"
+                try:
+                    qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
+                    qr.add_data(barcode_data)
+                    qr.make(fit=True)
+                    img = qr.make_image(fill_color="black", back_color="white")
+                    buffer = io.BytesIO()
+                    img.save(buffer, format='PNG')
+                    buffer.seek(0)
+                    barcode = f"data:image/png;base64,{base64.b64encode(buffer.getvalue()).decode()}"
+                except Exception:
+                    barcode = None
+                
+                batch = MultiGRNBatchDetails(
+                    line_selection_id=line_id,
+                    batch_number=batch_num,
+                    quantity=Decimal(str(quantity)),
+                    manufacturer_serial_number=data.get('manufacturer_serial_number'),
+                    internal_serial_number=data.get('internal_serial_number'),
+                    expiry_date=expiry_date_obj,
+                    barcode=barcode,
+                    grn_number=grn_number,
+                    qty_per_pack=Decimal(str(quantity)),
+                    no_of_packs=1
+                )
+                db.session.add(batch)
+                created_packs.append({
+                    'pack_num': 1,
+                    'grn_number': grn_number,
+                    'quantity': float(quantity)
+                })
+            
             db.session.commit()
             
-            logging.info(f"✅ Added batch {batch_num} for line selection {line_id}")
+            logging.info(f"✅ Added batch {batch_num} for line selection {line_id}: {len(created_packs)} pack(s)")
             return jsonify({
                 'success': True,
                 'batch': {
-                    'id': batch.id,
-                    'batch_number': batch.batch_number,
-                    'quantity': float(batch.quantity),
-                    'barcode': batch.barcode,
-                    'no_of_packs': batch.no_of_packs
+                    'id': batch.id if no_of_packs == 1 else created_packs[0].get('pack_num'),
+                    'batch_number': batch_num,
+                    'quantity': float(quantity),
+                    'no_of_packs': no_of_packs,
+                    'packs_created': created_packs
                 }
             })
             
