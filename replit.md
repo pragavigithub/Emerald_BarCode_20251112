@@ -66,6 +66,33 @@ The Multi GRN module now implements a comprehensive line-by-line verification wo
   - `multi_grn_serial_details` table
 - MySQL migration file updated accordingly
 
+### Multi GRN Batch Label Linking Table (Added Nov 23, 2025)
+To solve the issue where entering multiple packs (e.g., 3 packs) only generated 1 QR label, a new linking table `multi_grn_batch_details_label` was created to track each individual pack with unique GRN numbers.
+
+**Problem Solved:**
+- **Before**: Quantity=7, Packs=3 → Only 1 QR label generated ("1 of 1", Qty: 3)
+- **After**: Quantity=7, Packs=3 → 3 unique QR labels (Pack 1/3: Qty 3, Pack 2/3: Qty 2, Pack 3/3: Qty 2)
+
+**Database Structure:**
+- `multi_grn_batch_details` stores the parent record (total quantity, no_of_packs)
+- `multi_grn_batch_details_label` stores individual pack records with:
+  - Unique `grn_number` per pack (e.g., MGN-19-43-1-1, MGN-19-43-1-2, MGN-19-43-1-3)
+  - `pack_number` (1, 2, 3, etc.)
+  - `qty_in_pack` (distributed integer quantity)
+  - `barcode` and `qr_data` for each label
+  - `printed` tracking for audit trail
+
+**Key Features:**
+- Automatic integer quantity distribution across packs (7 ÷ 3 = [3, 2, 2])
+- Each pack gets a unique GRN number for tracking
+- QR label generation reads from the label table
+- Print tracking per label
+- Cascading delete protection
+
+**Migration Files:**
+- PostgreSQL: Applied to development database
+- MySQL: `migrations/mysql_multi_grn_batch_details_label_table.sql`
+
 ## External Dependencies
 *   **SAP B1 Service Layer API**: For all core inventory and document management functionalities (GRPO, pick lists, inventory transfers, serial numbers, business partners, inventory counts).
 *   **PostgreSQL**: Primary relational database for production environments.
