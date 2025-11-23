@@ -1345,8 +1345,7 @@ def update_line_item():
             except ValueError:
                 return jsonify({'success': False, 'error': 'Invalid expiration date format'}), 400
         
-        # Handle number of bags - create SINGLE batch detail with full quantity
-        # Number of bags is used for QR label generation only, NOT for splitting batches in JSON
+        # Handle number of bags - create SEPARATE record for each pack
         if number_of_bags and int(number_of_bags) > 0:
             from modules.multi_grn_creation.models import MultiGRNBatchDetails
             from datetime import datetime
@@ -1356,24 +1355,10 @@ def update_line_item():
             
             bags_count = int(number_of_bags)
             
-            # Calculate quantity per pack for label display (INTEGER ONLY, no decimals)
-            if line_selection.selected_quantity:
-                total_qty_original = Decimal(str(line_selection.selected_quantity))
-                # Use ROUND_HALF_UP and integer division to get base quantity per pack
-                # Actual distribution will be calculated when generating QR labels
-                total_qty_int = int(total_qty_original.to_integral_value(rounding=ROUND_HALF_UP))
-                total_qty = Decimal(total_qty_int)  # Store rounded integer quantity
-                qty_per_pack = Decimal(total_qty_int // bags_count)
-            else:
-                total_qty = Decimal('0')
-                qty_per_pack = Decimal('0')
-            
             # Get batch ID from the line's PO link for unique GRN numbering
-            # Handle both PO-based and manual items safely
             if line_selection.po_link and hasattr(line_selection.po_link, 'batch_id'):
                 batch_id = line_selection.po_link.batch_id
             else:
-                # Fallback: use line_selection_id as batch identifier for manual items
                 batch_id = line_selection_id
             
             # Auto-generate batch number using date and item code (YYYYMMDD-ITEMCODE-1)
@@ -1381,22 +1366,38 @@ def update_line_item():
             item_code_short = line_selection.item_code[:10] if line_selection.item_code else "ITEM"
             batch_number = f"{today_str}-{item_code_short}-1"
             
-            # Generate GRN number (single entry)
-            grn_number = f"MGN-{batch_id}-{line_selection_id}-1"
-            
-            # Create SINGLE batch detail record with FULL quantity (rounded to integer)
-            # The no_of_packs field is stored for QR label generation only
-            batch_detail = MultiGRNBatchDetails(
-                line_selection_id=line_selection_id,
-                batch_number=batch_number,
-                quantity=total_qty,  # FULL quantity (rounded), not split
-                expiry_date=expiry_date_obj,
-                grn_number=grn_number,
-                qty_per_pack=qty_per_pack,  # For QR label display only
-                no_of_packs=bags_count  # For QR label generation only
-            )
-            db.session.add(batch_detail)
-            logging.info(f"✅ Created single batch detail for line {line_selection_id}: Batch={batch_number}, Total Qty={total_qty}, Packs={bags_count}, Qty/Pack={qty_per_pack}")
+            # Calculate quantity distribution across packs (INTEGER ONLY)
+            if line_selection.selected_quantity:
+                total_qty_original = Decimal(str(line_selection.selected_quantity))
+                total_qty_int = int(total_qty_original.to_integral_value(rounding=ROUND_HALF_UP))
+                
+                # Distribute quantity evenly across packs (first packs get remainder)
+                base_qty = total_qty_int // bags_count
+                remainder = total_qty_int % bags_count
+                
+                # Create SEPARATE record for each pack
+                for pack_num in range(1, bags_count + 1):
+                    # First 'remainder' packs get base_qty + 1, rest get base_qty
+                    pack_qty = Decimal(base_qty + 1) if pack_num <= remainder else Decimal(base_qty)
+                    
+                    # Generate unique GRN number with pack suffix
+                    grn_number = f"MGN-{batch_id}-{line_selection_id}-1-{pack_num}"
+                    
+                    batch_detail = MultiGRNBatchDetails(
+                        line_selection_id=line_selection_id,
+                        batch_number=batch_number,
+                        quantity=pack_qty,  # Quantity for THIS pack only
+                        expiry_date=expiry_date_obj,
+                        grn_number=grn_number,  # Includes pack number suffix
+                        qty_per_pack=pack_qty,  # Same as quantity
+                        no_of_packs=1  # This record represents 1 pack
+                    )
+                    db.session.add(batch_detail)
+                    logging.info(f"✅ Created pack {pack_num}/{bags_count}: GRN={grn_number}, Qty={pack_qty}")
+                
+                logging.info(f"✅ Created {bags_count} pack records for line {line_selection_id}: Total Qty={total_qty_int}, Batch={batch_number}")
+            else:
+                logging.warning(f"⚠️ No quantity selected for line {line_selection_id}, skipping pack creation")
         
         db.session.commit()
         
