@@ -2076,18 +2076,42 @@ def generate_barcode_labels_multi_grn():
             
             # Generate labels from stored pack label records
             for pack_label in pack_labels:
-                qr_data_dict = json.loads(pack_label.qr_data) if pack_label.qr_data else {}
+                # Check if qr_data exists and is valid JSON, otherwise regenerate it
+                if pack_label.qr_data:
+                    try:
+                        qr_data_dict = json.loads(pack_label.qr_data)
+                    except (json.JSONDecodeError, TypeError) as e:
+                        logging.warning(f"⚠️ Invalid qr_data for pack_label {pack_label.id}, regenerating: {e}")
+                        qr_data_dict = None
+                else:
+                    logging.info(f"🔄 Missing qr_data for pack_label {pack_label.id} (GRN: {pack_label.grn_number}), regenerating")
+                    qr_data_dict = None
+                
+                # Regenerate qr_data if missing or invalid
+                if qr_data_dict is None:
+                    qr_data_dict = {
+                        'id': pack_label.grn_number,
+                        'po': str(po_number),
+                        'item': line_selection.item_code,
+                        'batch': batch_detail.batch_number,
+                        'qty': int(pack_label.qty_in_pack) if pack_label.qty_in_pack else 1,
+                        'pack': f"{pack_label.pack_number} of {num_packs}",
+                        'grn_date': grn_date,
+                        'exp_date': batch_detail.expiry_date.strftime('%Y-%m-%d') if batch_detail.expiry_date else 'N/A'
+                    }
+                    # Save regenerated qr_data back to database for future use
+                    pack_label.qr_data = json.dumps(qr_data_dict)
+                    logging.info(f"✅ Regenerated and saved qr_data for pack_label {pack_label.id}")
                 
                 # Use stored barcode or regenerate if missing
                 if pack_label.barcode:
                     qr_code_image = pack_label.barcode
                 else:
-                    qr_code_image = generate_barcode_multi_grn(pack_label.qr_data or json.dumps({
-                        'id': pack_label.grn_number,
-                        'batch': batch_detail.batch_number,
-                        'pack': f"{pack_label.pack_number} of {num_packs}",
-                        'qty': int(pack_label.qty_in_pack)
-                    }))
+                    qr_text = json.dumps(qr_data_dict)
+                    qr_code_image = generate_barcode_multi_grn(qr_text)
+                    # Optionally save regenerated barcode
+                    if qr_code_image:
+                        pack_label.barcode = qr_code_image
                 
                 label = {
                     'sequence': pack_label.pack_number,
@@ -2096,7 +2120,7 @@ def generate_barcode_labels_multi_grn():
                     'po_number': po_number,
                     'batch_number': batch_detail.batch_number,
                     'quantity': float(batch_detail.quantity),
-                    'qty_per_pack': int(pack_label.qty_in_pack),
+                    'qty_per_pack': int(pack_label.qty_in_pack) if pack_label.qty_in_pack else 1,
                     'no_of_packs': num_packs,
                     'grn_date': grn_date,
                     'grn_number': pack_label.grn_number,
