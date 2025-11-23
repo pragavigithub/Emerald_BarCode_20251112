@@ -185,7 +185,7 @@ class MultiGRNBatchDetailsLabel(db.Model):
     printed_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    batch_detail = db.relationship('MultiGRNBatchDetails', backref='pack_labels')
+    batch_detail = db.relationship('MultiGRNBatchDetails', backref=db.backref('pack_labels', cascade='all, delete-orphan'))
     
     __table_args__ = (
         db.UniqueConstraint('batch_detail_id', 'pack_number', name='uq_batch_pack'),
