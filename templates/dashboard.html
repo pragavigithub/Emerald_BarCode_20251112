@@ -12,7 +12,7 @@
 
 <!-- Statistics Cards -->
 <div class="row mb-4">
-    {% if current_user.has_permission('grpo') %}
+    <!-- {% if current_user.has_permission('grpo') %}
     <div class="col-md-3 col-sm-6 mb-3">
         <div class="card dashboard-card" data-url="{{ url_for('grpo') }}">
             <div class="card-body text-center">
@@ -22,19 +22,19 @@
             </div>
         </div>
     </div>
-    {% endif %}
+    {% endif %} -->
     
-<!--    {% if current_user.has_permission('multiple_grn') %}-->
-<!--    <div class="col-md-3 col-sm-6 mb-3">-->
-<!--        <div class="card dashboard-card" data-url="{{ url_for('multi_grn.index') }}">-->
-<!--            <div class="card-body text-center">-->
-<!--                <i data-feather="layers" class="mb-3" style="width: 48px; height: 48px;"></i>-->
-<!--                <h3>{{ stats.multi_grn_count }}</h3>-->
-<!--                <p>Multi GRN Batches</p>-->
-<!--            </div>-->
-<!--        </div>-->
-<!--    </div>-->
-<!--    {% endif %}-->
+   {% if current_user.has_permission('multiple_grn') %}
+   <div class="col-md-3 col-sm-6 mb-3">
+       <div class="card dashboard-card" data-url="{{ url_for('multi_grn.index') }}">
+           <div class="card-body text-center">
+               <i data-feather="layers" class="mb-3" style="width: 48px; height: 48px;"></i>
+               <h3>{{ stats.multi_grn_count }}</h3>
+               <p>Multi GRN</p>
+           </div>
+       </div>
+   </div>
+   {% endif %}
     
     {% if current_user.has_permission('inventory_transfer') %}
     <div class="col-md-3 col-sm-6 mb-3">

@@ -54,13 +54,13 @@
                         <i data-feather="home"></i> Dashboard
                     </a>
                 </li>
-                {% if current_user.has_permission('grpo') %}
+                <!-- {% if current_user.has_permission('grpo') %}
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('grpo') }}">
                         <i data-feather="package"></i> GRN
                     </a>
                 </li>
-                {% endif %}
+                {% endif %} -->
                 {% if current_user.has_permission('multiple_grn') %}
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('multi_grn.index') }}">
