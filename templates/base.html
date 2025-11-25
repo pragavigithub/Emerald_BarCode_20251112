@@ -87,11 +87,35 @@
                 <!--                        </a>-->
                 <!--                    </li>-->
                 <!--                    {% endif %}-->
-                {% if current_user.has_permission('inventory_transfer') %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('inventory_transfer') }}">
-                        <i data-feather="move"></i> Inventory Transfers
+                {% if current_user.has_permission('inventory_transfer') or current_user.has_permission('direct_inventory_transfer') or current_user.has_permission('inventory_counting') %}
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="inventoryDropdown" role="button"
+                       data-bs-toggle="dropdown" aria-expanded="false">
+                        <i data-feather="package"></i> Inventory
                     </a>
+                    <ul class="dropdown-menu" aria-labelledby="inventoryDropdown">
+                        {% if current_user.has_permission('inventory_transfer') %}
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('inventory_transfer') }}">
+                                <i data-feather="move" style="width: 16px; height: 16px;"></i> Inventory Transfer
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% if current_user.has_permission('direct_inventory_transfer') %}
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('direct_inventory_transfer.index') }}">
+                                <i data-feather="send" style="width: 16px; height: 16px;"></i> Direct Transfer
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% if current_user.has_permission('inventory_counting') %}
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('inventory_counting_sap') }}">
+                                <i data-feather="check-square" style="width: 16px; height: 16px;"></i> Inventory Counting
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
                 </li>
                 {% endif %}
                 {% if current_user.has_permission('sales_delivery') %}
@@ -108,13 +132,6 @@
 <!--                    </a>-->
 <!--                </li>-->
 <!--                {% endif %}-->
-                {% if current_user.has_permission('inventory_counting') %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('inventory_counting_sap') }}">
-                        <i data-feather="check-square"></i> Counting
-                    </a>
-                </li>
-                {% endif %}
                 {% if current_user.has_permission('bin_scanning') %}
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('bin_scanning') }}">
