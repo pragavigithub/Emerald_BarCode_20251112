@@ -98,7 +98,10 @@ The SO Against Invoice module allows creating invoices against existing Sales Or
 
 **Blueprint Registration Fix:**
 - Blueprint `so_invoice_bp` registered in `app.py`
+- Models imported for auto table creation: `from modules.so_against_invoice import models as so_invoice_models`
 - Template folder added to Jinja loader search path
+- Templates moved to proper subfolder structure: `templates/so_against_invoice/`
+- Routes updated to use correct template paths (e.g., `'so_against_invoice/index.html'`)
 - URL prefix: `/so-against-invoice`
 
 **Workflow:**

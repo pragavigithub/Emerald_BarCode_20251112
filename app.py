@@ -104,6 +104,7 @@ import models
 import models_extensions
 from modules.grpo import models as grpo_models
 from modules.multi_grn_creation import models as multi_grn_models
+from modules.so_against_invoice import models as so_invoice_models
 
 with app.app_context():
     # Create all database tables first

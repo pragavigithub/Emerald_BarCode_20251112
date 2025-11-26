@@ -85,7 +85,7 @@ def index():
             page=page, per_page=per_page, error_out=False
         )
         
-        return render_template('index.html',
+        return render_template('so_against_invoice/index.html',
                              documents=documents_paginated.items,
                              pagination=documents_paginated,
                              search=search,
@@ -96,7 +96,7 @@ def index():
     except Exception as e:
         logging.error(f"Error in SO Against Invoice index: {str(e)}")
         flash(f'Error loading documents: {str(e)}', 'error')
-        return render_template('index.html',
+        return render_template('so_against_invoice/index.html',
                              documents=[],
                              pagination=None,
                              search='',
@@ -193,7 +193,7 @@ def detail(doc_id):
             flash('Access denied - You can only view your own documents', 'error')
             return redirect(url_for('so_against_invoice.index'))
         
-        return render_template('detail.html', 
+        return render_template('so_against_invoice/detail.html', 
                              document=document,
                              current_user=current_user)
     
