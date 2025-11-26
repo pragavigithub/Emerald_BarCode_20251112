@@ -93,6 +93,31 @@ To solve the issue where entering multiple packs (e.g., 3 packs) only generated 
 - PostgreSQL: Applied to development database
 - MySQL: `migrations/mysql_multi_grn_batch_details_label_table.sql`
 
+### SO Against Invoice Module (Fixed Nov 26, 2025)
+The SO Against Invoice module allows creating invoices against existing Sales Orders with SAP B1 integration.
+
+**Blueprint Registration Fix:**
+- Blueprint `so_invoice_bp` registered in `app.py`
+- Template folder added to Jinja loader search path
+- URL prefix: `/so-against-invoice`
+
+**Workflow:**
+1. Create new SO Against Invoice document
+2. Select SO Series from dropdown
+3. Validate SO Number against SAP B1
+4. Fetch SO details and open lines
+5. Validate items (serial/batch/quantity)
+6. Post invoice to SAP B1
+
+**Database Tables:**
+- `so_invoice_documents` - Document headers
+- `so_invoice_items` - Line items
+- `so_invoice_serials` - Serial numbers for items
+- `so_series_cache` - SO series cache for faster lookup
+
+**Migration Files:**
+- MySQL: `migrations/mysql/changes/2025-11-26_so_against_invoice_module.sql`
+
 ## External Dependencies
 *   **SAP B1 Service Layer API**: For all core inventory and document management functionalities (GRPO, pick lists, inventory transfers, serial numbers, business partners, inventory counts).
 *   **PostgreSQL**: Primary relational database for production environments.
