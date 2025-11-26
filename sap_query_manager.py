@@ -111,6 +111,16 @@ class SAPQueryManager:
                 "SqlCode": "GetBinCodeByWHCode",
                 "SqlName": "GetBinCodeByWHCode",
                 "SqlText": "SELECT ob.AbsEntry AS BinAbsEntry, ob.BinCode, ob.Disabled AS IsActive FROM OBIN ob WHERE ob.WhsCode = :whsCode AND ob.Disabled = 'N' ORDER BY ob.BinCode"
+            },
+            {
+                "SqlCode": "Series_Validation",
+                "SqlName": "Seriel_Validation",
+                "SqlText": "SELECT T0.[ItemCode], T0.[DistNumber], T1.[WhsCode] FROM [OSRN] T0  INNER JOIN [OSRQ] T1 ON T0.[AbsEntry] =T1.[MdAbsEntry] WHERE  T1.[Quantity] >'0'AND T1.[ItemCode] =:itemCode AND T0.[DistNumber]=:series AND T1.[WhsCode]=:whsCode"
+            },
+            {
+                "SqlCode": "Quantity_Check",
+                "SqlName": "Quantity_Check",
+                "SqlText": "SELECT T1.[OnHand], T0.[ItemCode], T0.[ManSerNum] FROM [OITM] T0  INNER JOIN [OITW] T1 ON T0.[ItemCode] = T1.[ItemCode] WHERE T1.[OnHand] >'0' AND  T1.[WhsCode] =:whCode AND  T0.[ItemCode] =:itemCode"
             }
         ]
     
