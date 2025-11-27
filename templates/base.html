@@ -68,14 +68,13 @@
                     </a>
                 </li>
                 {% endif %}
-<!--                {% if current_user.has_permission('so_against_invoice') %}-->
+                {% if current_user.has_permission('so_against_invoice') %}
                 <li class="nav-item">
                     <a class="nav-link" onclick="window.location.href='/so-against-invoice/'">
                         <i data-feather="dollar-sign"></i> SO Against Invoice
                     </a>
-
                 </li>
-<!--                {% endif %}-->
+                {% endif %}
                 <!--                    {% if current_user.has_permission('inventory_transfer') %}-->
                 <!--                    <li class="nav-item">-->
                 <!--                        <a class="nav-link" href="{{ url_for('inventory_transfer') }}">-->

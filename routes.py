@@ -4146,6 +4146,50 @@ def generate_barcode_api():
 
 # Duplicate route removed - using existing update_grpo_item_field function
 
+@app.route('/api/check_username', methods=['POST'])
+@login_required
+def check_username():
+    """API endpoint to check if username already exists"""
+    if not (current_user.role == 'admin' or current_user.has_permission('user_management')):
+        return jsonify({'success': False, 'error': 'Access denied'}), 403
+    
+    data = request.get_json()
+    username = data.get('username', '').strip()
+    
+    if not username:
+        return jsonify({'success': False, 'error': 'Username is required'}), 400
+    
+    # Check if username exists
+    existing_user = User.query.filter_by(username=username).first()
+    
+    return jsonify({
+        'success': True,
+        'exists': existing_user is not None,
+        'message': 'Username already exists' if existing_user else 'Username is available'
+    })
+
+@app.route('/api/check_email', methods=['POST'])
+@login_required
+def check_email():
+    """API endpoint to check if email already exists"""
+    if not (current_user.role == 'admin' or current_user.has_permission('user_management')):
+        return jsonify({'success': False, 'error': 'Access denied'}), 403
+    
+    data = request.get_json()
+    email = data.get('email', '').strip()
+    
+    if not email:
+        return jsonify({'success': False, 'error': 'Email is required'}), 400
+    
+    # Check if email exists
+    existing_user = User.query.filter_by(email=email).first()
+    
+    return jsonify({
+        'success': True,
+        'exists': existing_user is not None,
+        'message': 'Email already exists' if existing_user else 'Email is available'
+    })
+
 @app.route('/user_management')
 @login_required
 def user_management():
@@ -4204,7 +4248,7 @@ def create_user():
     permissions = {}
     for screen in ['dashboard', 'grpo', 'inventory_transfer', 'serial_transfer', 'serial_item_transfer', 'batch_transfer', 
                    'direct_inventory_transfer', 'sales_delivery', 'pick_list', 'inventory_counting', 
-                   'bin_scanning', 'label_printing', 'user_management', 'qc_dashboard', 'multiple_grn']:
+                   'bin_scanning', 'label_printing', 'user_management', 'qc_dashboard', 'multiple_grn', 'so_against_invoice']:
         permissions[screen] = screen in request.form
     
     user.set_permissions(permissions)
@@ -4237,7 +4281,7 @@ def edit_user(user_id):
         permissions = {}
         for screen in ['dashboard', 'grpo', 'inventory_transfer', 'serial_transfer', 'serial_item_transfer', 'batch_transfer',
                        'direct_inventory_transfer', 'sales_delivery', 'pick_list', 'inventory_counting', 
-                       'bin_scanning', 'label_printing', 'user_management', 'qc_dashboard', 'multiple_grn']:
+                       'bin_scanning', 'label_printing', 'user_management', 'qc_dashboard', 'multiple_grn', 'so_against_invoice']:
             permissions[screen] = screen in request.form
         
         user.set_permissions(permissions)
