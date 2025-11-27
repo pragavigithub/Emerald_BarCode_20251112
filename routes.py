@@ -9,7 +9,7 @@ from barcode_generator import BarcodeGenerator
 from app import app, db, login_manager
 from models import User, InventoryTransfer, InventoryTransferItem, PickList, PickListItem, \
     InventoryCount, InventoryCountItem, SAPInventoryCount, SAPInventoryCountLine, BarcodeLabel, BinScanningLog, DocumentNumberSeries, QRCodeLabel, PickListLine, \
-    DirectInventoryTransfer, DirectInventoryTransferItem
+    DirectInventoryTransfer, DirectInventoryTransferItem, TransferScanState
 from modules.grpo.models import GRPODocument, GRPOItem, GRPOSerialNumber, GRPOBatchNumber, PurchaseDeliveryNote
 from modules.multi_grn_creation.models import MultiGRNBatch
 from sap_integration import SAPIntegration
@@ -1786,6 +1786,99 @@ def inventory_transfer_detail(transfer_id):
             return redirect(url_for('inventory_transfer_detail', transfer_id=transfer_id))
     
     return render_template('inventory_transfer_detail.html', transfer=transfer, available_items=available_items)
+
+@app.route('/edit_inventory_transfer/<int:transfer_id>', methods=['GET', 'POST'])
+@login_required
+def edit_inventory_transfer(transfer_id):
+    """Edit inventory transfer document (only draft status)"""
+    transfer = InventoryTransfer.query.get_or_404(transfer_id)
+    
+    # Check permissions
+    if transfer.user_id != current_user.id and current_user.role not in ['admin', 'manager']:
+        flash('Access denied - You can only edit your own transfers', 'error')
+        return redirect(url_for('inventory_transfer'))
+    
+    # Only allow editing draft transfers
+    if transfer.status != 'draft':
+        flash('Only draft transfers can be edited', 'error')
+        return redirect(url_for('inventory_transfer_detail', transfer_id=transfer_id))
+    
+    if request.method == 'POST':
+        # Get form data
+        new_request_number = request.form.get('transfer_request_number', '').strip()
+        
+        if new_request_number and new_request_number != transfer.transfer_request_number:
+            # Validate new request number in SAP B1
+            try:
+                sap_data = SAPIntegration().get_inventory_transfer_request(new_request_number)
+                
+                if not sap_data:
+                    flash(f'Transfer request {new_request_number} not found in SAP B1', 'error')
+                    return redirect(url_for('edit_inventory_transfer', transfer_id=transfer_id))
+                
+                # Check if document is open
+                doc_status = sap_data.get('DocumentStatus') or sap_data.get('DocStatus', '')
+                if doc_status != 'bost_Open':
+                    flash(f'Transfer request {new_request_number} is not open', 'error')
+                    return redirect(url_for('edit_inventory_transfer', transfer_id=transfer_id))
+                
+                # Update transfer with new data
+                transfer.transfer_request_number = new_request_number
+                transfer.from_warehouse = sap_data.get('FromWarehouse')
+                transfer.to_warehouse = sap_data.get('ToWarehouse')
+                
+            except Exception as e:
+                logging.error(f"Error validating new request number: {e}")
+                flash(f'Error validating transfer request: {str(e)}', 'error')
+                return redirect(url_for('edit_inventory_transfer', transfer_id=transfer_id))
+        
+        transfer.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        flash('Transfer updated successfully', 'success')
+        return redirect(url_for('inventory_transfer_detail', transfer_id=transfer_id))
+    
+    # GET request - render edit form
+    return render_template('edit_inventory_transfer.html', transfer=transfer)
+
+@app.route('/delete_inventory_transfer/<int:transfer_id>', methods=['POST'])
+@login_required
+def delete_inventory_transfer(transfer_id):
+    """Delete inventory transfer document (only draft status)"""
+    transfer = InventoryTransfer.query.get_or_404(transfer_id)
+    
+    # Check permissions
+    if transfer.user_id != current_user.id and current_user.role not in ['admin', 'manager']:
+        flash('Access denied - You can only delete your own transfers', 'error')
+        return redirect(url_for('inventory_transfer'))
+    
+    # Only allow deleting draft transfers
+    if transfer.status != 'draft':
+        flash('Only draft transfers can be deleted', 'error')
+        return redirect(url_for('inventory_transfer'))
+    
+    try:
+        request_number = transfer.transfer_request_number
+        
+        # Delete all associated items first
+        InventoryTransferItem.query.filter_by(inventory_transfer_id=transfer_id).delete()
+        
+        # Delete any associated scan states
+        TransferScanState.query.filter_by(transfer_id=transfer_id).delete()
+        
+        # Delete the transfer
+        db.session.delete(transfer)
+        db.session.commit()
+        
+        logging.info(f"🗑️ Deleted inventory transfer {transfer_id} (Request: {request_number}) by user {current_user.username}")
+        flash(f'Transfer for request {request_number} has been deleted', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error deleting transfer {transfer_id}: {e}")
+        flash(f'Error deleting transfer: {str(e)}', 'error')
+    
+    return redirect(url_for('inventory_transfer'))
 
 @app.route('/api/validate_transfer_request/<transfer_request_number>')
 @login_required

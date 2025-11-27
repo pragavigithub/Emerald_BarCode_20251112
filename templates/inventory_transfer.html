@@ -109,10 +109,22 @@
                             <td>{{ transfer.sap_document_number or 'N/A' }}</td>
                             <td>{{ transfer.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
                             <td>
-                                <a href="{{ url_for('inventory_transfer_detail', transfer_id=transfer.id) }}"
-                                   class="btn btn-sm btn-outline-primary">
-                                    <i data-feather="eye"></i> View
-                                </a>
+                                <div class="btn-group" role="group">
+                                    <a href="{{ url_for('inventory_transfer_detail', transfer_id=transfer.id) }}"
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i data-feather="eye"></i> View
+                                    </a>
+                                    {% if transfer.status == 'draft' %}
+                                    <a href="{{ url_for('edit_inventory_transfer', transfer_id=transfer.id) }}"
+                                       class="btn btn-sm btn-outline-warning">
+                                        <i data-feather="edit-2"></i> Edit
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                            onclick="confirmDeleteTransfer({{ transfer.id }}, '{{ transfer.transfer_request_number }}')">
+                                        <i data-feather="trash-2"></i> Delete
+                                    </button>
+                                    {% endif %}
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -256,6 +268,32 @@
                     <button type="submit" class="btn btn-primary">Create Transfer</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteTransferModal" tabindex="-1" aria-labelledby="deleteTransferModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteTransferModalLabel">
+                    <i data-feather="alert-triangle"></i> Confirm Delete
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this transfer document?</p>
+                <p class="mb-0"><strong>Request Number:</strong> <span id="deleteRequestNumber"></span></p>
+                <p class="text-muted small mt-2">This action cannot be undone. All associated items will also be deleted.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteTransferForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i data-feather="trash-2"></i> Delete Transfer
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 </div>
@@ -490,5 +528,19 @@
         document.getElementById('transfer_request_number').value = '';
         document.getElementById('doc_entry').value = '';
     });
+
+    // Delete transfer confirmation
+    function confirmDeleteTransfer(transferId, requestNumber) {
+        document.getElementById('deleteRequestNumber').textContent = requestNumber;
+        document.getElementById('deleteTransferForm').action = '/delete_inventory_transfer/' + transferId;
+        
+        const modal = new bootstrap.Modal(document.getElementById('deleteTransferModal'));
+        modal.show();
+        
+        // Re-initialize feather icons for modal
+        if (typeof feather !== 'undefined') {
+            feather.replace();
+        }
+    }
 </script>
 {% endblock %}
