@@ -758,19 +758,8 @@ function updateRoleBadge(role) {
     return badges[role] || 'bg-secondary';
 }
 
-// Auto-generate username from name
-document.getElementById('first_name').addEventListener('input', generateUsername);
-document.getElementById('last_name').addEventListener('input', generateUsername);
-
-function generateUsername() {
-    const firstName = document.getElementById('first_name').value.toLowerCase();
-    const lastName = document.getElementById('last_name').value.toLowerCase();
-    
-    if (firstName && lastName) {
-        const username = firstName.charAt(0) + lastName;
-        document.getElementById('username').value = username;
-    }
-}
+// Username is now independent - no auto-generation from name fields
+// Real-time validation is handled by the usernameInput event listener above
 
 // Password strength indicator
 document.getElementById('password').addEventListener('input', function() {
