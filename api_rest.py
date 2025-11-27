@@ -21,6 +21,7 @@ Security Decorators:
 Security Pattern Applied To:
 ✅ User Management (GET, POST, PATCH, DELETE) - Admin only, self-access for viewing
 ✅ Inventory Transfers (GET, POST, PATCH, DELETE) - Permission + ownership checks
+✅ Inventory Transfer Request Lines (GET, POST, PATCH, DELETE) - Permission + ownership checks
 ✅ Pick Lists (GET, POST, PATCH, DELETE) - Permission + ownership checks
 ✅ Inventory Counts (GET, POST, PATCH, DELETE) - Permission + ownership checks
 ✅ GRPO Documents (GET, POST, PATCH, DELETE) - Permission + ownership checks
@@ -58,7 +59,7 @@ from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 from app import app, db, login_manager
 from models import (
-    User, InventoryTransfer, InventoryTransferItem, TransferScanState,
+    User, InventoryTransfer, InventoryTransferItem, InventoryTransferRequestLine, TransferScanState,
     PickList, PickListItem, PickListLine, PickListBinAllocation,
     InventoryCount, InventoryCountItem, SAPInventoryCount, SAPInventoryCountLine,
     BarcodeLabel, BinLocation, BinItem, BinScanningLog, QRCodeLabel,
@@ -550,6 +551,338 @@ def api_delete_inventory_transfer(transfer_id):
         return jsonify({
             'success': True,
             'message': 'Inventory transfer deleted successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ================================
+# Inventory Transfer Request Lines API Endpoints
+# ================================
+
+@app.route('/api/rest/inventory-transfer-request-lines', methods=['GET'])
+@login_required
+@require_permission('inventory_transfer')
+def api_get_transfer_request_lines():
+    """
+    GET list of inventory transfer request lines
+    Query params:
+    - transfer_id: Filter by inventory transfer ID (required for non-admins)
+    - item_code: Filter by item code (optional)
+    - line_status: Filter by line status (optional)
+    """
+    try:
+        transfer_id = request.args.get('transfer_id', type=int)
+        item_code = request.args.get('item_code')
+        line_status = request.args.get('line_status')
+        
+        query = InventoryTransferRequestLine.query
+        
+        if transfer_id:
+            transfer = InventoryTransfer.query.get(transfer_id)
+            if not transfer:
+                return jsonify({'success': False, 'error': 'Transfer not found'}), 404
+            if not check_resource_ownership(transfer):
+                return jsonify({
+                    'success': False,
+                    'error': 'Access denied: You can only view lines for your own transfers'
+                }), 403
+            query = query.filter_by(inventory_transfer_id=transfer_id)
+        elif not check_admin_permission():
+            user_transfers = InventoryTransfer.query.filter_by(user_id=current_user.id).all()
+            transfer_ids = [t.id for t in user_transfers]
+            query = query.filter(InventoryTransferRequestLine.inventory_transfer_id.in_(transfer_ids))
+        
+        if item_code:
+            query = query.filter_by(item_code=item_code)
+        if line_status:
+            query = query.filter_by(line_status=line_status)
+        
+        lines = query.all()
+        
+        return jsonify({
+            'success': True,
+            'data': [serialize_model(line) for line in lines],
+            'count': len(lines)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/inventory-transfer-request-lines/<int:line_id>', methods=['GET'])
+@login_required
+@require_permission('inventory_transfer')
+def api_get_transfer_request_line(line_id):
+    """GET single inventory transfer request line by ID"""
+    try:
+        line = InventoryTransferRequestLine.query.get(line_id)
+        if not line:
+            return jsonify({'success': False, 'error': 'Transfer request line not found'}), 404
+        
+        transfer = InventoryTransfer.query.get(line.inventory_transfer_id)
+        if transfer and not check_resource_ownership(transfer):
+            return jsonify({
+                'success': False,
+                'error': 'Access denied: You can only view lines for your own transfers'
+            }), 403
+        
+        data = serialize_model(line)
+        if transfer:
+            data['transfer_request_number'] = transfer.transfer_request_number
+            data['from_warehouse'] = transfer.from_warehouse
+            data['to_warehouse'] = transfer.to_warehouse
+        
+        return jsonify({'success': True, 'data': data})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/inventory-transfers/<int:transfer_id>/request-lines', methods=['GET'])
+@login_required
+@require_permission('inventory_transfer')
+def api_get_transfer_request_lines_by_transfer(transfer_id):
+    """GET all request lines for a specific inventory transfer"""
+    try:
+        transfer = InventoryTransfer.query.get(transfer_id)
+        if not transfer:
+            return jsonify({'success': False, 'error': 'Transfer not found'}), 404
+        
+        if not check_resource_ownership(transfer):
+            return jsonify({
+                'success': False,
+                'error': 'Access denied: You can only view lines for your own transfers'
+            }), 403
+        
+        lines = InventoryTransferRequestLine.query.filter_by(
+            inventory_transfer_id=transfer_id
+        ).order_by(InventoryTransferRequestLine.line_num).all()
+        
+        transfer_data = serialize_model(transfer)
+        lines_data = [serialize_model(line) for line in lines]
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'transfer': transfer_data,
+                'request_lines': lines_data,
+                'count': len(lines_data)
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/inventory-transfer-request-lines', methods=['POST'])
+@login_required
+@require_permission('inventory_transfer')
+def api_create_transfer_request_line():
+    """POST create new inventory transfer request line"""
+    try:
+        data = get_request_data()
+        
+        transfer_id = data.get('inventory_transfer_id')
+        if not transfer_id:
+            return jsonify({'success': False, 'error': 'inventory_transfer_id is required'}), 400
+        
+        transfer = InventoryTransfer.query.get(transfer_id)
+        if not transfer:
+            return jsonify({'success': False, 'error': 'Transfer not found'}), 404
+        
+        if not check_resource_ownership(transfer):
+            return jsonify({
+                'success': False,
+                'error': 'Access denied: You can only add lines to your own transfers'
+            }), 403
+        
+        if not data.get('item_code'):
+            return jsonify({'success': False, 'error': 'item_code is required'}), 400
+        if data.get('quantity') is None:
+            return jsonify({'success': False, 'error': 'quantity is required'}), 400
+        
+        line = InventoryTransferRequestLine(
+            inventory_transfer_id=transfer_id,
+            line_num=data.get('line_num', 0),
+            sap_doc_entry=data.get('sap_doc_entry', 0),
+            item_code=data.get('item_code'),
+            item_description=data.get('item_description'),
+            quantity=data.get('quantity'),
+            warehouse_code=data.get('warehouse_code'),
+            from_warehouse_code=data.get('from_warehouse_code'),
+            remaining_open_quantity=data.get('remaining_open_quantity'),
+            line_status=data.get('line_status', 'bost_Open'),
+            uom_code=data.get('uom_code'),
+            transferred_quantity=data.get('transferred_quantity', 0),
+            wms_remaining_quantity=data.get('wms_remaining_quantity')
+        )
+        db.session.add(line)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'data': serialize_model(line),
+            'message': 'Transfer request line created successfully'
+        }), 201
+    except IntegrityError as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': 'Validation error or constraint violation'}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/inventory-transfer-request-lines/<int:line_id>', methods=['PATCH'])
+@login_required
+@require_permission('inventory_transfer')
+def api_update_transfer_request_line(line_id):
+    """PATCH update inventory transfer request line"""
+    try:
+        line = InventoryTransferRequestLine.query.get(line_id)
+        if not line:
+            return jsonify({'success': False, 'error': 'Transfer request line not found'}), 404
+        
+        transfer = InventoryTransfer.query.get(line.inventory_transfer_id)
+        if transfer and not check_resource_ownership(transfer):
+            return jsonify({
+                'success': False,
+                'error': 'Access denied: You can only update lines for your own transfers'
+            }), 403
+        
+        data = get_request_data()
+        
+        readonly_fields = ['id', 'inventory_transfer_id', 'created_at']
+        
+        for key, value in data.items():
+            if key in readonly_fields:
+                continue
+            if hasattr(line, key):
+                setattr(line, key, value)
+        
+        line.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'data': serialize_model(line),
+            'message': 'Transfer request line updated successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/inventory-transfer-request-lines/<int:line_id>', methods=['DELETE'])
+@login_required
+@require_permission('inventory_transfer')
+def api_delete_transfer_request_line(line_id):
+    """DELETE inventory transfer request line"""
+    try:
+        line = InventoryTransferRequestLine.query.get(line_id)
+        if not line:
+            return jsonify({'success': False, 'error': 'Transfer request line not found'}), 404
+        
+        transfer = InventoryTransfer.query.get(line.inventory_transfer_id)
+        if transfer and not check_resource_ownership(transfer):
+            return jsonify({
+                'success': False,
+                'error': 'Access denied: You can only delete lines for your own transfers'
+            }), 403
+        
+        db.session.delete(line)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Transfer request line deleted successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/inventory-transfers/<int:transfer_id>/request-lines', methods=['POST'])
+@login_required
+@require_permission('inventory_transfer')
+def api_create_transfer_request_lines_bulk(transfer_id):
+    """POST create multiple inventory transfer request lines for a transfer"""
+    try:
+        transfer = InventoryTransfer.query.get(transfer_id)
+        if not transfer:
+            return jsonify({'success': False, 'error': 'Transfer not found'}), 404
+        
+        if not check_resource_ownership(transfer):
+            return jsonify({
+                'success': False,
+                'error': 'Access denied: You can only add lines to your own transfers'
+            }), 403
+        
+        data = get_request_data()
+        lines_data = data.get('lines', [])
+        
+        if not lines_data:
+            return jsonify({'success': False, 'error': 'No lines provided'}), 400
+        
+        created_lines = []
+        for line_data in lines_data:
+            if not line_data.get('item_code'):
+                continue
+            
+            line = InventoryTransferRequestLine(
+                inventory_transfer_id=transfer_id,
+                line_num=line_data.get('line_num', 0),
+                sap_doc_entry=line_data.get('sap_doc_entry', 0),
+                item_code=line_data.get('item_code'),
+                item_description=line_data.get('item_description'),
+                quantity=line_data.get('quantity', 0),
+                warehouse_code=line_data.get('warehouse_code'),
+                from_warehouse_code=line_data.get('from_warehouse_code'),
+                remaining_open_quantity=line_data.get('remaining_open_quantity'),
+                line_status=line_data.get('line_status', 'bost_Open'),
+                uom_code=line_data.get('uom_code'),
+                transferred_quantity=line_data.get('transferred_quantity', 0),
+                wms_remaining_quantity=line_data.get('wms_remaining_quantity')
+            )
+            db.session.add(line)
+            created_lines.append(line)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'data': [serialize_model(line) for line in created_lines],
+            'count': len(created_lines),
+            'message': f'{len(created_lines)} transfer request lines created successfully'
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/rest/inventory-transfers/<int:transfer_id>/request-lines', methods=['DELETE'])
+@login_required
+@require_permission('inventory_transfer')
+def api_delete_transfer_request_lines_bulk(transfer_id):
+    """DELETE all inventory transfer request lines for a transfer"""
+    try:
+        transfer = InventoryTransfer.query.get(transfer_id)
+        if not transfer:
+            return jsonify({'success': False, 'error': 'Transfer not found'}), 404
+        
+        if not check_resource_ownership(transfer):
+            return jsonify({
+                'success': False,
+                'error': 'Access denied: You can only delete lines for your own transfers'
+            }), 403
+        
+        deleted_count = InventoryTransferRequestLine.query.filter_by(
+            inventory_transfer_id=transfer_id
+        ).delete()
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'{deleted_count} transfer request lines deleted successfully',
+            'deleted_count': deleted_count
         })
     except Exception as e:
         db.session.rollback()
