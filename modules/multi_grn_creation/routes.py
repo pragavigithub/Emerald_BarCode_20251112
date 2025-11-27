@@ -961,7 +961,24 @@ def qc_review_batch(batch_id):
 @multi_grn_bp.route('/api/scan-qr-code', methods=['POST'])
 @login_required
 def scan_qr_code():
-    """Scan QR code, validate pack, update child & parent status."""
+    """
+    Scan QR code, validate pack, update child & parent status.
+    
+    LOGIC:
+    1. Scan QR code → Get pack GRN (e.g., MGN-19-43-1-1)
+    2. Find child record in multi_grn_batch_details_label table
+    3. Mark child status = 'verified'
+    4. Check if ALL children for the same parent (batch_detail_id) are verified
+    5. If ALL verified → Update parent (multi_grn_batch_details) status = 'verified'
+    
+    Example:
+    - Parent: multi_grn_batch_details (id=1, grn_number=MGN-19-43-1, status=pending)
+    - Children: multi_grn_batch_details_label
+        - id=1, batch_detail_id=1, grn_number=MGN-19-43-1-1, status=verified
+        - id=2, batch_detail_id=1, grn_number=MGN-19-43-1-2, status=pending
+        - id=3, batch_detail_id=1, grn_number=MGN-19-43-1-3, status=pending
+    - When all 3 children are verified → Parent status becomes 'verified'
+    """
     try:
         # ---------------------------
         # 1. Read Request
@@ -977,7 +994,7 @@ def scan_qr_code():
         # ---------------------------
         try:
             qr_json = json.loads(qr_data)
-            grn_id = qr_json.get('id', '')        # e.g. MGN-19-43-1-1
+            grn_id = qr_json.get('id', '')        # e.g. MGN-19-43-1-1 (child/pack GRN)
             qr_qty = int(qr_json.get('qty', 0))   # quantity from QR label
         except Exception:
             return jsonify({'success': False, 'error': 'Invalid QR code format'}), 400
@@ -987,44 +1004,47 @@ def scan_qr_code():
 
         logging.info(f"🔍 QR scan received: GRN={grn_id}, Qty={qr_qty}")
 
-        # ---------------------------
-        # 3. Extract Parent + Child GRN
-        # ---------------------------
-        parts = grn_id.split("-")
-
-        # Parent example → MGN-19-43-1
-        parent_grn = "-".join(parts[:4])
-
-        # Child full pack example → MGN-19-43-1-1
-        pack_grn = "-".join(parts[:5])
-
-        logging.info(f"Parsed parent={parent_grn}, pack={pack_grn}")
-
         from modules.multi_grn_creation.models import (
             MultiGRNBatchDetails,
             MultiGRNBatchDetailsLabel
         )
 
         # ---------------------------
-        # 4. Fetch Parent & Child Records
+        # 3. Find Child Record (pack label) by GRN number
         # ---------------------------
-        parent_record = MultiGRNBatchDetails.query.filter_by(grn_number=parent_grn).first()
-        child_record = MultiGRNBatchDetailsLabel.query.filter_by(grn_number=pack_grn).first()
+        # The scanned QR contains the full pack GRN (e.g., MGN-19-43-1-1)
+        child_record = MultiGRNBatchDetailsLabel.query.filter_by(grn_number=grn_id).first()
 
         if not child_record:
+            # Try with parsed GRN if direct match fails
+            parts = grn_id.split("-")
+            if len(parts) >= 5:
+                pack_grn = "-".join(parts[:5])
+                child_record = MultiGRNBatchDetailsLabel.query.filter_by(grn_number=pack_grn).first()
+        
+        if not child_record:
+            logging.error(f"❌ Pack not found: GRN={grn_id}")
             return jsonify({
                 'success': False,
-                'error': f'Pack {pack_grn} not found in database.'
-            }), 404
-
-        if not parent_record:
-            return jsonify({
-                'success': False,
-                'error': f'Parent GRN {parent_grn} not found.'
+                'error': f'Pack {grn_id} not found in database. Please ensure you are scanning the correct QR label.'
             }), 404
 
         # ---------------------------
-        # 5. Already verified
+        # 4. Get Parent Record using batch_detail_id relationship
+        # ---------------------------
+        parent_record = MultiGRNBatchDetails.query.get(child_record.batch_detail_id)
+
+        if not parent_record:
+            logging.error(f"❌ Parent not found for batch_detail_id={child_record.batch_detail_id}")
+            return jsonify({
+                'success': False,
+                'error': f'Parent batch record not found for this pack.'
+            }), 404
+
+        logging.info(f"Found: Child GRN={child_record.grn_number}, Parent GRN={parent_record.grn_number}, Parent ID={parent_record.id}")
+
+        # ---------------------------
+        # 5. Check if Already Verified
         # ---------------------------
         if child_record.status == 'verified':
             return jsonify({
@@ -1035,7 +1055,9 @@ def scan_qr_code():
                 'item_info': {
                     'batch_number': parent_record.batch_number,
                     'quantity': float(child_record.qty_in_pack),
-                    'grn_number': child_record.grn_number
+                    'grn_number': child_record.grn_number,
+                    'parent_grn_number': parent_record.grn_number,
+                    'parent_status': parent_record.status
                 }
             })
 
@@ -1045,39 +1067,47 @@ def scan_qr_code():
         db_qty = int(float(child_record.qty_in_pack))
 
         if qr_qty != db_qty:
+            logging.error(f"❌ Quantity mismatch: QR={qr_qty}, DB={db_qty}")
             return jsonify({
                 'success': False,
-                'error': f"Quantity mismatch! QR={qr_qty}, DB={db_qty} for {pack_grn}."
+                'error': f"Quantity mismatch! QR label shows {qr_qty} but database expects {db_qty} for pack {grn_id}."
             }), 400
 
         # ---------------------------
-        # 7. Mark Child as Verified
+        # 7. Mark Child (Pack) as Verified
         # ---------------------------
         child_record.status = 'verified'
-        db.session.commit()
-        logging.info(f"Pack verified → {pack_grn}, Qty={db_qty}")
+        db.session.flush()  # Flush to ensure status is updated before counting
+        logging.info(f"✅ Pack verified: GRN={child_record.grn_number}, Qty={db_qty}")
 
         # ---------------------------
-        # 8. Check Remaining Packs for SAME parent
+        # 8. Check if ALL packs for THIS parent are verified
+        # Using batch_detail_id relationship (more reliable than LIKE query)
         # ---------------------------
-        pending_count = MultiGRNBatchDetailsLabel.query.filter(
-            MultiGRNBatchDetailsLabel.grn_number.like(f"{parent_grn}-%"),
-            MultiGRNBatchDetailsLabel.status != 'verified'
+        total_packs = MultiGRNBatchDetailsLabel.query.filter_by(
+            batch_detail_id=parent_record.id
         ).count()
 
-        logging.info(f"Pending packs for parent {parent_grn} → {pending_count}")
+        verified_packs = MultiGRNBatchDetailsLabel.query.filter_by(
+            batch_detail_id=parent_record.id,
+            status='verified'
+        ).count()
+
+        pending_count = total_packs - verified_packs
+
+        logging.info(f"📦 Pack status for parent {parent_record.grn_number}: Total={total_packs}, Verified={verified_packs}, Pending={pending_count}")
 
         # ---------------------------
-        # 9. If parent complete → Update parent status
+        # 9. If ALL packs verified → Update Parent status
         # ---------------------------
-        if pending_count == 0:
-            parent_record.status = "verified"
-            db.session.commit()
-            logging.info(f"Parent GRN {parent_grn} marked as VERIFIED")
-
-            final_message = "Pack verified. All packs completed — parent updated to VERIFIED."
+        if pending_count == 0 and total_packs > 0:
+            parent_record.status = 'verified'
+            logging.info(f"✅ All packs verified! Parent GRN {parent_record.grn_number} status updated to 'verified'")
+            final_message = f"Pack verified successfully! All {total_packs} pack(s) completed — batch status updated to VERIFIED."
         else:
-            final_message = f"Pack verified. {pending_count} pack(s) still remaining."
+            final_message = f"Pack verified successfully! {verified_packs}/{total_packs} pack(s) verified, {pending_count} remaining."
+
+        db.session.commit()
 
         # ---------------------------
         # 10. Final JSON response
@@ -1089,12 +1119,17 @@ def scan_qr_code():
             'item_info': {
                 'batch_number': parent_record.batch_number,
                 'quantity': float(child_record.qty_in_pack),
-                'grn_number': child_record.grn_number
+                'grn_number': child_record.grn_number,
+                'parent_grn_number': parent_record.grn_number,
+                'parent_status': parent_record.status,
+                'total_packs': total_packs,
+                'verified_packs': verified_packs,
+                'pending_packs': pending_count
             }
         })
 
     except Exception as e:
-        logging.error(f"❌ QR scan error → {str(e)}")
+        logging.error(f"❌ QR scan error: {str(e)}")
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
