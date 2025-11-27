@@ -958,124 +958,263 @@ def qc_review_batch(batch_id):
         logging.error(f"Error loading QC review page: {str(e)}")
         flash('Error loading QC review page', 'error')
         return redirect(url_for('qc_dashboard'))
-
 @multi_grn_bp.route('/api/scan-qr-code', methods=['POST'])
 @login_required
 def scan_qr_code():
-    """API endpoint to scan QR code and mark line item as verified - with quantity validation"""
+    """Scan QR code, validate pack, update child & parent status."""
     try:
+        # ---------------------------
+        # 1. Read Request
+        # ---------------------------
         data = request.get_json()
         qr_data = data.get('qr_data', '')
 
         if not qr_data:
             return jsonify({'success': False, 'error': 'QR code data is required'}), 400
 
+        # ---------------------------
+        # 2. Decode QR JSON
+        # ---------------------------
         try:
             qr_json = json.loads(qr_data)
-            grn_id = qr_json.get('id', '')  # Full GRN with pack number (e.g., MGN-13-22-1-1)
-            qr_qty = qr_json.get('qty', 0)  # Quantity from QR code
-        except:
+            grn_id = qr_json.get('id', '')        # e.g. MGN-19-43-1-1
+            qr_qty = int(qr_json.get('qty', 0))   # quantity from QR label
+        except Exception:
             return jsonify({'success': False, 'error': 'Invalid QR code format'}), 400
 
         if not grn_id:
-            return jsonify({'success': False, 'error': 'QR code ID is missing'}), 400
+            return jsonify({'success': False, 'error': 'QR code ID missing'}), 400
 
-        logging.info(f"🔍 QR scan received: GRN ID={grn_id}, Qty={qr_qty}")
+        logging.info(f"🔍 QR scan received: GRN={grn_id}, Qty={qr_qty}")
 
-        from modules.multi_grn_creation.models import MultiGRNBatchDetails, MultiGRNSerialDetails, \
-            MultiGRNBatchDetailsLabel
-
-        # Parse GRN number to extract header and pack identifiers
-        # Example: MGN-13-22-1-1 → header: MGN-13-22, pack: MGN-13-22-1
+        # ---------------------------
+        # 3. Extract Parent + Child GRN
+        # ---------------------------
         parts = grn_id.split("-")
-        main_grn = "-".join(parts[:5])  # Pack GRN: MGN-13-22-1
-        main_grns = "-".join(parts[:4])  # Header GRN: MGN-13-22
-        
-        logging.info(f"🔍 Searching DB for pack: {main_grn}, header: {main_grns}")
 
-        # Find the header in MultiGRNBatchDetails table
-        header_grn = MultiGRNBatchDetails.query.filter_by(grn_number=main_grns).first()
-        
-        # Find the specific pack in MultiGRNBatchDetailsLabel table
-        line_item = MultiGRNBatchDetailsLabel.query.filter_by(grn_number=main_grn).first()
-        
-        if not line_item:
-            logging.error(f"❌ Pack not found in database: GRN={grn_id}")
+        # Parent example → MGN-19-43-1
+        parent_grn = "-".join(parts[:4])
+
+        # Child full pack example → MGN-19-43-1-1
+        pack_grn = "-".join(parts[:5])
+
+        logging.info(f"Parsed parent={parent_grn}, pack={pack_grn}")
+
+        from modules.multi_grn_creation.models import (
+            MultiGRNBatchDetails,
+            MultiGRNBatchDetailsLabel
+        )
+
+        # ---------------------------
+        # 4. Fetch Parent & Child Records
+        # ---------------------------
+        parent_record = MultiGRNBatchDetails.query.filter_by(grn_number=parent_grn).first()
+        child_record = MultiGRNBatchDetailsLabel.query.filter_by(grn_number=pack_grn).first()
+
+        if not child_record:
             return jsonify({
                 'success': False,
-                'error': f'Pack {grn_id} not found in this batch. Please ensure you are scanning the correct QR label for this batch.'
-            }), 404
-        
-        if not header_grn:
-            logging.error(f"❌ Header not found in database: GRN={main_grns}")
-            return jsonify({
-                'success': False,
-                'error': f'Header {main_grns} not found in database.'
+                'error': f'Pack {pack_grn} not found in database.'
             }), 404
 
-        # Check if already verified
-        if line_item.status == 'verified':
-            logging.info(f"ℹ️ Pack already verified: GRN={grn_id}")
+        if not parent_record:
+            return jsonify({
+                'success': False,
+                'error': f'Parent GRN {parent_grn} not found.'
+            }), 404
+
+        # ---------------------------
+        # 5. Already verified
+        # ---------------------------
+        if child_record.status == 'verified':
             return jsonify({
                 'success': True,
-                'message': 'This pack was already verified',
+                'message': 'This pack is already verified.',
                 'already_verified': True,
                 'detail_type': 'batch',
                 'item_info': {
-                    'batch_number': header_grn.batch_number,
-                    'quantity': float(line_item.qty_in_pack),
-                    'grn_number': line_item.grn_number
+                    'batch_number': parent_record.batch_number,
+                    'quantity': float(child_record.qty_in_pack),
+                    'grn_number': child_record.grn_number
                 }
             })
 
-        # Validate quantity matches (QR qty should match database quantity for this pack)
-        db_pack_qty = int(float(line_item.qty_in_pack))
-        qr_pack_qty = int(qr_qty)
+        # ---------------------------
+        # 6. Validate Quantity
+        # ---------------------------
+        db_qty = int(float(child_record.qty_in_pack))
 
-        if qr_pack_qty != db_pack_qty:
-            logging.error(f"❌ Quantity mismatch: GRN={grn_id}, QR Qty={qr_pack_qty}, DB Qty={db_pack_qty}")
+        if qr_qty != db_qty:
             return jsonify({
                 'success': False,
-                'error': f'Quantity mismatch! QR label shows {qr_pack_qty} but database expects {db_pack_qty} for pack {grn_id}. Please verify the correct label.'
+                'error': f"Quantity mismatch! QR={qr_qty}, DB={db_qty} for {pack_grn}."
             }), 400
 
-        # 1. Mark this pack as verified
-        line_item.status = 'verified'
+        # ---------------------------
+        # 7. Mark Child as Verified
+        # ---------------------------
+        child_record.status = 'verified'
         db.session.commit()
-        logging.info(f"✅ Pack verified: GRN={grn_id}, Batch={header_grn.batch_number}, Qty={qr_pack_qty}")
+        logging.info(f"Pack verified → {pack_grn}, Qty={db_qty}")
 
-        # 2. Check if ALL packs for THIS specific header are verified
-        # CRITICAL FIX: Only check packs belonging to this header (main_grns)
-        pending_packs_count = MultiGRNBatchDetailsLabel.query.filter(
-            MultiGRNBatchDetailsLabel.grn_number.like(f"{main_grns}-%"),
+        # ---------------------------
+        # 8. Check Remaining Packs for SAME parent
+        # ---------------------------
+        pending_count = MultiGRNBatchDetailsLabel.query.filter(
+            MultiGRNBatchDetailsLabel.grn_number.like(f"{parent_grn}-%"),
             MultiGRNBatchDetailsLabel.status != 'verified'
         ).count()
 
-        if pending_packs_count == 0:
-            # 3. All packs verified for this header → Update header status
-            header_grn.status = 'verified'
-            db.session.commit()
-            logging.info(f"✅ All packs verified for header {main_grns} - Header status updated to verified")
-            final_status = "All packs verified – header updated"
-        else:
-            logging.info(f"📦 {pending_packs_count} packs still pending for header {main_grns}")
-            final_status = f"{pending_packs_count} packs still pending"
+        logging.info(f"Pending packs for parent {parent_grn} → {pending_count}")
 
+        # ---------------------------
+        # 9. If parent complete → Update parent status
+        # ---------------------------
+        if pending_count == 0:
+            parent_record.status = "verified"
+            db.session.commit()
+            logging.info(f"Parent GRN {parent_grn} marked as VERIFIED")
+
+            final_message = "Pack verified. All packs completed — parent updated to VERIFIED."
+        else:
+            final_message = f"Pack verified. {pending_count} pack(s) still remaining."
+
+        # ---------------------------
+        # 10. Final JSON response
+        # ---------------------------
         return jsonify({
             'success': True,
-            'message': f'Pack verified successfully! Batch: {header_grn.batch_number}, Qty: {qr_pack_qty} matched. {final_status}',
+            'message': final_message,
             'detail_type': 'batch',
             'item_info': {
-                'batch_number': header_grn.batch_number,
-                'quantity': float(line_item.qty_in_pack),
-                'grn_number': line_item.grn_number
+                'batch_number': parent_record.batch_number,
+                'quantity': float(child_record.qty_in_pack),
+                'grn_number': child_record.grn_number
             }
         })
 
     except Exception as e:
-        logging.error(f"❌ Error scanning QR code: {str(e)}")
+        logging.error(f"❌ QR scan error → {str(e)}")
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
+
+# @multi_grn_bp.route('/api/scan-qr-code', methods=['POST'])
+# @login_required
+# def scan_qr_code():
+#     """API endpoint to scan QR code and mark line item as verified - with quantity validation"""
+#     try:
+#         data = request.get_json()
+#         qr_data = data.get('qr_data', '')
+
+#         if not qr_data:
+#             return jsonify({'success': False, 'error': 'QR code data is required'}), 400
+
+#         try:
+#             qr_json = json.loads(qr_data)
+#             grn_id = qr_json.get('id', '')  # Full GRN with pack number (e.g., MGN-13-22-1-1)
+#             qr_qty = qr_json.get('qty', 0)  # Quantity from QR code
+#         except:
+#             return jsonify({'success': False, 'error': 'Invalid QR code format'}), 400
+
+#         if not grn_id:
+#             return jsonify({'success': False, 'error': 'QR code ID is missing'}), 400
+
+#         logging.info(f"🔍 QR scan received: GRN ID={grn_id}, Qty={qr_qty}")
+
+#         from modules.multi_grn_creation.models import MultiGRNBatchDetails, MultiGRNSerialDetails, \
+#             MultiGRNBatchDetailsLabel
+
+#         # Parse GRN number to extract header and pack identifiers
+#         # Example: MGN-13-22-1-1 → header: MGN-13-22, pack: MGN-13-22-1
+#         parts = grn_id.split("-")
+#         main_grn = "-".join(parts[:5])  # Pack GRN: MGN-13-22-1
+#         main_grns = "-".join(parts[:4])  # Header GRN: MGN-13-22
+        
+#         logging.info(f"🔍 Searching DB for pack: {main_grn}, header: {main_grns}")
+
+#         # Find the header in MultiGRNBatchDetails table
+#         header_grn = MultiGRNBatchDetails.query.filter_by(grn_number=main_grns).first()
+        
+#         # Find the specific pack in MultiGRNBatchDetailsLabel table
+#         line_item = MultiGRNBatchDetailsLabel.query.filter_by(grn_number=main_grn).first()
+        
+#         if not line_item:
+#             logging.error(f"❌ Pack not found in database: GRN={grn_id}")
+#             return jsonify({
+#                 'success': False,
+#                 'error': f'Pack {grn_id} not found in this batch. Please ensure you are scanning the correct QR label for this batch.'
+#             }), 404
+        
+#         if not header_grn:
+#             logging.error(f"❌ Header not found in database: GRN={main_grns}")
+#             return jsonify({
+#                 'success': False,
+#                 'error': f'Header {main_grns} not found in database.'
+#             }), 404
+
+#         # Check if already verified
+#         if line_item.status == 'verified':
+#             logging.info(f"ℹ️ Pack already verified: GRN={grn_id}")
+#             return jsonify({
+#                 'success': True,
+#                 'message': 'This pack was already verified',
+#                 'already_verified': True,
+#                 'detail_type': 'batch',
+#                 'item_info': {
+#                     'batch_number': header_grn.batch_number,
+#                     'quantity': float(line_item.qty_in_pack),
+#                     'grn_number': line_item.grn_number
+#                 }
+#             })
+
+#         # Validate quantity matches (QR qty should match database quantity for this pack)
+#         db_pack_qty = int(float(line_item.qty_in_pack))
+#         qr_pack_qty = int(qr_qty)
+
+#         if qr_pack_qty != db_pack_qty:
+#             logging.error(f"❌ Quantity mismatch: GRN={grn_id}, QR Qty={qr_pack_qty}, DB Qty={db_pack_qty}")
+#             return jsonify({
+#                 'success': False,
+#                 'error': f'Quantity mismatch! QR label shows {qr_pack_qty} but database expects {db_pack_qty} for pack {grn_id}. Please verify the correct label.'
+#             }), 400
+
+#         # 1. Mark this pack as verified
+#         line_item.status = 'verified'
+#         db.session.commit()
+#         logging.info(f"✅ Pack verified: GRN={grn_id}, Batch={header_grn.batch_number}, Qty={qr_pack_qty}")
+
+#         # 2. Check if ALL packs for THIS specific header are verified
+#         # CRITICAL FIX: Only check packs belonging to this header (main_grns)
+#         pending_packs_count = MultiGRNBatchDetailsLabel.query.filter(
+#             MultiGRNBatchDetailsLabel.grn_number.like(f"{main_grns}-%"),
+#             MultiGRNBatchDetailsLabel.status != 'verified'
+#         ).count()
+
+#         if pending_packs_count == 0:
+#             # 3. All packs verified for this header → Update header status
+#             header_grn.status = 'verified'
+#             db.session.commit()
+#             logging.info(f"✅ All packs verified for header {main_grns} - Header status updated to verified")
+#             final_status = "All packs verified – header updated"
+#         else:
+#             logging.info(f"📦 {pending_packs_count} packs still pending for header {main_grns}")
+#             final_status = f"{pending_packs_count} packs still pending"
+
+#         return jsonify({
+#             'success': True,
+#             'message': f'Pack verified successfully! Batch: {header_grn.batch_number}, Qty: {qr_pack_qty} matched. {final_status}',
+#             'detail_type': 'batch',
+#             'item_info': {
+#                 'batch_number': header_grn.batch_number,
+#                 'quantity': float(line_item.qty_in_pack),
+#                 'grn_number': line_item.grn_number
+#             }
+#         })
+
+#     except Exception as e:
+#         logging.error(f"❌ Error scanning QR code: {str(e)}")
+#         db.session.rollback()
+#         return jsonify({'success': False, 'error': str(e)}), 500
 
 @multi_grn_bp.route('/api/batch/<int:batch_id>/verification-status')
 @login_required
