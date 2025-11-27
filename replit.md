@@ -93,6 +93,48 @@ To solve the issue where entering multiple packs (e.g., 3 packs) only generated 
 - PostgreSQL: Applied to development database
 - MySQL: `migrations/mysql_multi_grn_batch_details_label_table.sql`
 
+### SAP B1 Transfer Request Persistent Storage (Added Nov 27, 2025)
+The Inventory Transfer module now permanently stores SAP B1 Transfer Request data in the local database for later posting back to SAP.
+
+**Problem Solved:**
+- Previously, the module fetched SAP data on every page load, which was slow and unreliable if SAP was unavailable
+- Now SAP data is stored once when the transfer is created and used for all subsequent operations
+
+**Database Changes:**
+- `inventory_transfers` table - Added SAP header fields:
+  - `sap_doc_entry` (INT) - SAP DocEntry identifier
+  - `sap_doc_num` (INT) - SAP document number
+  - `bpl_id` (INT) - Business Place ID
+  - `bpl_name` (VARCHAR 100) - Business Place name
+  - `sap_document_status` (VARCHAR 20) - Document status (bost_Open/bost_Close)
+  - `doc_date` (DATETIME) - Document date from SAP
+  - `due_date` (DATETIME) - Due date from SAP
+  - `sap_raw_json` (LONGTEXT) - Complete SAP response JSON for reference
+
+- `inventory_transfer_items` table - Added SAP line fields:
+  - `sap_line_num` (INT) - SAP line number
+  - `sap_doc_entry` (INT) - SAP document entry
+  - `line_status` (VARCHAR 20) - Line status
+  - `from_warehouse_code` (VARCHAR 20) - Source warehouse
+  - `to_warehouse_code` (VARCHAR 20) - Destination warehouse
+
+- NEW `inventory_transfer_request_lines` table - Stores SAP StockTransferLines exactly as received:
+  - Foreign key to `inventory_transfers`
+  - `line_num`, `sap_doc_entry`, `item_code`, `item_description`
+  - `quantity`, `warehouse_code`, `from_warehouse_code`
+  - `remaining_open_quantity`, `line_status`, `uom_code`
+  - WMS tracking: `transferred_quantity`, `wms_remaining_quantity`
+
+**Key Features:**
+- SAP data stored on transfer creation (no duplicate API calls)
+- Detail view uses stored database data first, falls back to SAP only if no records exist
+- Complete SAP JSON preserved for future SAP B1 posting operations
+- Line-level tracking of remaining quantities for accurate transfer management
+
+**Migration Files:**
+- PostgreSQL: Applied to development database via SQLAlchemy
+- MySQL: Updated in `mysql_consolidated_migration.py`
+
 ### SO Against Invoice Module (Fixed Nov 26, 2025)
 The SO Against Invoice module allows creating invoices against existing Sales Orders with SAP B1 integration.
 
