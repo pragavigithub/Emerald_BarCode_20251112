@@ -37,6 +37,66 @@ This file tracks all database schema changes chronologically. Each migration rep
 ## Future Migrations
 Add new migrations below in reverse chronological order (newest first).
 
+### 2025-11-27 - Inventory Transfer SAP B1 Persistent Storage
+- **File**: `migrations/mysql_inventory_transfer_sap_storage.py`
+- **Description**: Added permanent storage for SAP B1 Transfer Request data in the Inventory Transfer module. SAP data is now stored when transfer is created and used for all subsequent operations, eliminating redundant API calls.
+- **Type**: Schema Change + New Table
+- **Status**: ✅ Applied (PostgreSQL via SQLAlchemy)
+- **Applied By**: Replit Agent
+- **Changes**:
+  - **inventory_transfers Table** - Added SAP header fields:
+    - `sap_doc_entry` INT - SAP DocEntry identifier
+    - `sap_doc_num` INT - SAP document number
+    - `bpl_id` INT - Business Place ID
+    - `bpl_name` VARCHAR(100) - Business Place name
+    - `sap_document_status` VARCHAR(20) - Document status (bost_Open/bost_Close)
+    - `doc_date` DATETIME - Document date from SAP
+    - `due_date` DATETIME - Due date from SAP
+    - `sap_raw_json` LONGTEXT - Complete SAP response JSON
+    - Added index `idx_sap_doc_entry` on sap_doc_entry
+  - **inventory_transfer_items Table** - Added SAP line fields:
+    - `from_warehouse_code` VARCHAR(20) - Source warehouse code
+    - `to_warehouse_code` VARCHAR(20) - Destination warehouse code
+    - `sap_line_num` INT - SAP line number
+    - `sap_doc_entry` INT - SAP document entry
+    - `line_status` VARCHAR(20) - Line status (bost_Open/bost_Close)
+  - **NEW TABLE: inventory_transfer_request_lines** - Stores SAP StockTransferLines exactly as received:
+    - `id` INT PRIMARY KEY AUTO_INCREMENT
+    - `inventory_transfer_id` INT NOT NULL (FK to inventory_transfers, CASCADE DELETE)
+    - `line_num` INT NOT NULL - SAP LineNum
+    - `sap_doc_entry` INT NOT NULL - SAP DocEntry
+    - `item_code` VARCHAR(50) NOT NULL
+    - `item_description` VARCHAR(200)
+    - `quantity` DECIMAL(15,4) NOT NULL
+    - `warehouse_code` VARCHAR(20) - Destination warehouse
+    - `from_warehouse_code` VARCHAR(20) - Source warehouse
+    - `remaining_open_quantity` DECIMAL(15,4)
+    - `line_status` VARCHAR(20)
+    - `uom_code` VARCHAR(20)
+    - `transferred_quantity` DECIMAL(15,4) DEFAULT 0 - WMS tracking
+    - `wms_remaining_quantity` DECIMAL(15,4) - WMS tracking
+    - `created_at` TIMESTAMP, `updated_at` TIMESTAMP
+    - Indexes on inventory_transfer_id, item_code, sap_doc_entry, line_status
+- **Application Changes**:
+  - `models.py`: Added `InventoryTransferRequestLine` model with relationship to `InventoryTransfer`
+  - `modules/inventory_transfer/routes.py`: 
+    - Create route saves SAP header fields and stores request lines
+    - Detail route uses database data first, falls back to SAP API only if no stored records
+  - `mysql_consolidated_migration.py`: Updated with all new fields and tables
+- **Run Command**: `python migrations/mysql_inventory_transfer_sap_storage.py`
+- **Rollback Command**: `python migrations/mysql_inventory_transfer_sap_storage.py --rollback`
+- **Benefits**:
+  - No duplicate SAP API calls when viewing transfer details
+  - System works even if SAP is temporarily unavailable (for existing transfers)
+  - Complete SAP JSON preserved for future SAP B1 posting operations
+  - Line-level tracking of remaining quantities
+- **Notes**: 
+  - PostgreSQL changes applied automatically via SQLAlchemy models
+  - MySQL migration must be run manually on MySQL deployments
+  - Migration is idempotent - can be safely re-run
+
+---
+
 ### 2025-11-23 - Multi GRN QR Code Label JSON Variable Fix
 - **File**: `MULTI_GRN_QR_LABEL_JSON_FIX.md`
 - **Description**: Fixed QR code label generation failure caused by local variable 'json' being referenced before assignment
