@@ -151,11 +151,11 @@ def detail(transfer_id):
         logging.info(f"✅ Loaded {len(available_items)} items from database")
         
         # Use stored SAP raw JSON if available
-        if transfer.sap_raw_json:
-            try:
-                sap_transfer_data = json.loads(transfer.sap_raw_json)
-            except Exception as json_err:
-                logging.warning(f"Could not parse stored SAP JSON: {json_err}")
+        # if transfer.sap_raw_json:
+        #     try:
+        #         sap_transfer_data = json.loads(transfer.sap_raw_json)
+        #     except Exception as json_err:
+        #         logging.warning(f"Could not parse stored SAP JSON: {json_err}")
     else:
         # Fallback: Fetch from SAP API if no database records exist
         try:
@@ -319,7 +319,7 @@ def create():
             sap_document_status=doc_status,
             doc_date=doc_date,
             due_date=due_date,
-            sap_raw_json=json.dumps(sap_data)  # Store complete SAP response
+            #sap_raw_json=json.dumps(sap_data)  # Store complete SAP response
         )
         
         db.session.add(transfer)

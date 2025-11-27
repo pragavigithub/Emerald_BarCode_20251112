@@ -155,7 +155,7 @@ class InventoryTransfer(db.Model):
     sap_document_status = db.Column(db.String(20), nullable=True)  # SAP DocumentStatus (bost_Open, bost_Close)
     doc_date = db.Column(db.DateTime, nullable=True)  # SAP DocDate
     due_date = db.Column(db.DateTime, nullable=True)  # SAP DueDate
-    sap_raw_json = db.Column(db.Text, nullable=True)  # Store complete SAP JSON response for reference
+    #sap_raw_json = db.Column(db.Text, nullable=True)  # Store complete SAP JSON response for reference
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime,
