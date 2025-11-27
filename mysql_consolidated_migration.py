@@ -32,6 +32,10 @@ RECENT UPDATES (Nov 2025):
   * GET, POST, PATCH, DELETE operations for all models
   * JSON format support for external integrations
 - Added submitted_at field to direct_inventory_transfers table - Nov 20, 2025
+- Added SAP B1 Transfer Request storage for Inventory Transfer module - Nov 27, 2025
+  * inventory_transfers: Added sap_doc_entry, sap_doc_num, bpl_id, bpl_name, sap_document_status, doc_date, due_date, sap_raw_json
+  * inventory_transfer_items: Added from_warehouse_code, to_warehouse_code, sap_line_num, sap_doc_entry, line_status
+  * NEW TABLE: inventory_transfer_request_lines - Stores SAP StockTransferLines exactly as received for SAP B1 posting
 
 Run with: python mysql_consolidated_migration.py
 """
@@ -384,7 +388,7 @@ class MySQLConsolidatedMigration:
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             ''',
             
-            # 13. Inventory Transfers
+            # 13. Inventory Transfers (with SAP B1 Transfer Request Header Fields)
             'inventory_transfers': '''
                 CREATE TABLE IF NOT EXISTS inventory_transfers (
                     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -397,6 +401,15 @@ class MySQLConsolidatedMigration:
                     qc_notes TEXT,
                     from_warehouse VARCHAR(20),
                     to_warehouse VARCHAR(20),
+                    -- SAP B1 Transfer Request Header Fields (Nov 2025)
+                    sap_doc_entry INT,
+                    sap_doc_num INT,
+                    bpl_id INT,
+                    bpl_name VARCHAR(100),
+                    sap_document_status VARCHAR(20),
+                    doc_date DATETIME,
+                    due_date DATETIME,
+                    sap_raw_json LONGTEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                     FOREIGN KEY (user_id) REFERENCES users(id),
@@ -404,11 +417,12 @@ class MySQLConsolidatedMigration:
                     INDEX idx_transfer_request_number (transfer_request_number),
                     INDEX idx_status (status),
                     INDEX idx_user_id (user_id),
-                    INDEX idx_created_at (created_at)
+                    INDEX idx_created_at (created_at),
+                    INDEX idx_sap_doc_entry (sap_doc_entry)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             ''',
             
-            # 14. Inventory Transfer Items
+            # 14. Inventory Transfer Items (with SAP B1 Line Fields)
             'inventory_transfer_items': '''
                 CREATE TABLE IF NOT EXISTS inventory_transfer_items (
                     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -424,15 +438,50 @@ class MySQLConsolidatedMigration:
                     to_bin VARCHAR(20),
                     from_bin_location VARCHAR(50),
                     to_bin_location VARCHAR(50),
+                    from_warehouse_code VARCHAR(20),
+                    to_warehouse_code VARCHAR(20),
                     batch_number VARCHAR(50),
                     available_batches TEXT,
                     qc_status VARCHAR(20) DEFAULT 'pending',
                     qc_notes TEXT,
+                    -- SAP B1 Line Fields (Nov 2025)
+                    sap_line_num INT,
+                    sap_doc_entry INT,
+                    line_status VARCHAR(20),
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (inventory_transfer_id) REFERENCES inventory_transfers(id) ON DELETE CASCADE,
                     INDEX idx_inventory_transfer_id (inventory_transfer_id),
                     INDEX idx_item_code (item_code),
                     INDEX idx_qc_status (qc_status)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ''',
+            
+            # 14b. Inventory Transfer Request Lines (SAP B1 StockTransferLines - Nov 2025)
+            'inventory_transfer_request_lines': '''
+                CREATE TABLE IF NOT EXISTS inventory_transfer_request_lines (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    inventory_transfer_id INT NOT NULL,
+                    -- SAP B1 StockTransferLines fields (stored exactly as received)
+                    line_num INT NOT NULL,
+                    sap_doc_entry INT NOT NULL,
+                    item_code VARCHAR(50) NOT NULL,
+                    item_description VARCHAR(200),
+                    quantity DECIMAL(15,4) NOT NULL,
+                    warehouse_code VARCHAR(20),
+                    from_warehouse_code VARCHAR(20),
+                    remaining_open_quantity DECIMAL(15,4),
+                    line_status VARCHAR(20),
+                    uom_code VARCHAR(20),
+                    -- WMS tracking fields
+                    transferred_quantity DECIMAL(15,4) DEFAULT 0,
+                    wms_remaining_quantity DECIMAL(15,4),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    FOREIGN KEY (inventory_transfer_id) REFERENCES inventory_transfers(id) ON DELETE CASCADE,
+                    INDEX idx_inventory_transfer_id (inventory_transfer_id),
+                    INDEX idx_item_code (item_code),
+                    INDEX idx_sap_doc_entry (sap_doc_entry),
+                    INDEX idx_line_status (line_status)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             ''',
             

@@ -5,7 +5,7 @@ All routes related to inventory transfers between warehouses/bins
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from app import db
-from models import InventoryTransfer, InventoryTransferItem, User, SerialNumberTransfer, SerialNumberTransferItem, SerialNumberTransferSerial, TransferScanState
+from models import InventoryTransfer, InventoryTransferItem, InventoryTransferRequestLine, User, SerialNumberTransfer, SerialNumberTransferItem, SerialNumberTransferSerial, TransferScanState
 from sqlalchemy import or_
 import logging
 import random
@@ -108,77 +108,127 @@ def detail(transfer_id):
     sap_transfer_data = None
     available_items = []
     
-    try:
-        from sap_integration import SAPIntegration
-        sap_b1 = SAPIntegration()
+    # First, try to get data from the database (stored request_lines)
+    db_request_lines = transfer.request_lines
+    logging.info(f"📋 Found {len(db_request_lines)} stored request lines in database")
+    
+    if db_request_lines:
+        # Use stored database data instead of making SAP API calls
+        logging.info(f"📋 Using stored SAP request lines from database for transfer {transfer.id}")
         
-        # Always fetch SAP data to get available items (regardless of warehouse fields)
-        logging.info(f"🔍 Fetching SAP data for transfer {transfer.transfer_request_number}")
-        sap_transfer_data = sap_b1.get_inventory_transfer_request(transfer.transfer_request_number)
+        for db_line in db_request_lines:
+            # Calculate transferred quantity from WMS items
+            transferred_qty = 0
+            wms_item = InventoryTransferItem.query.filter_by(
+                inventory_transfer_id=transfer.id,
+                item_code=db_line.item_code
+            ).first()
+            
+            if wms_item:
+                transferred_qty = float(wms_item.transferred_quantity or wms_item.quantity or 0)
+            
+            # Calculate remaining quantity
+            requested_qty = float(db_line.quantity or 0)
+            remaining_qty = max(0, requested_qty - transferred_qty)
+            
+            # Determine actual line status based on remaining quantity
+            actual_line_status = 'bost_Close' if remaining_qty <= 0 else db_line.line_status
+            
+            # Create enhanced item data from database
+            enhanced_item = {
+                'ItemCode': db_line.item_code,
+                'ItemDescription': db_line.item_description or '',
+                'Quantity': requested_qty,
+                'TransferredQuantity': transferred_qty,
+                'RemainingQuantity': remaining_qty,
+                'UnitOfMeasure': db_line.uom_code or '',
+                'FromWarehouseCode': db_line.from_warehouse_code or transfer.from_warehouse,
+                'ToWarehouseCode': db_line.warehouse_code or transfer.to_warehouse,
+                'LineStatus': actual_line_status
+            }
+            available_items.append(enhanced_item)
         
-        logging.info(f"🔍 SAP response type: {type(sap_transfer_data)}")
-        if sap_transfer_data:
-            logging.info(f"🔍 SAP response keys: {sap_transfer_data.keys()}")
+        logging.info(f"✅ Loaded {len(available_items)} items from database")
         
-        if sap_transfer_data and 'StockTransferLines' in sap_transfer_data:
-            lines = sap_transfer_data['StockTransferLines']
-            logging.info(f"🔍 Found {len(lines)} stock transfer lines")
+        # Use stored SAP raw JSON if available
+        if transfer.sap_raw_json:
+            try:
+                sap_transfer_data = json.loads(transfer.sap_raw_json)
+            except Exception as json_err:
+                logging.warning(f"Could not parse stored SAP JSON: {json_err}")
+    else:
+        # Fallback: Fetch from SAP API if no database records exist
+        try:
+            from sap_integration import SAPIntegration
+            sap_b1 = SAPIntegration()
             
-            # Calculate actual remaining quantities based on WMS transfers
-            for sap_line in lines:
-                item_code = sap_line.get('ItemCode')
-                requested_qty = float(sap_line.get('Quantity', 0))
-                
-                logging.info(f"🔍 Processing line: {item_code} - Qty: {requested_qty}")
-                
-                # Calculate total transferred quantity for this item from WMS database
-                transferred_qty = 0
-                wms_item = InventoryTransferItem.query.filter_by(
-                    inventory_transfer_id=transfer.id,
-                    item_code=item_code
-                ).first()
-                
-                if wms_item:
-                    transferred_qty = float(wms_item.quantity or 0)
-                    logging.info(f"🔍 WMS item found - transferred: {transferred_qty}")
-                
-                # Calculate remaining quantity
-                remaining_qty = max(0, requested_qty - transferred_qty)
-                
-                # Determine actual line status based on remaining quantity
-                actual_line_status = 'bost_Close' if remaining_qty <= 0 else 'bost_Open'
-                
-                # Create enhanced item data with calculated values
-                # Note: SAP StockTransferRequest lines typically only have WarehouseCode (destination)
-                # Use header-level FromWarehouse for source warehouse
-                enhanced_item = {
-                    'ItemCode': item_code,
-                    'ItemDescription': sap_line.get('ItemDescription', ''),
-                    'Quantity': requested_qty,
-                    'TransferredQuantity': transferred_qty,
-                    'RemainingQuantity': remaining_qty,
-                    'UnitOfMeasure': sap_line.get('UoMCode', sap_line.get('MeasureUnit', '')),
-                    'FromWarehouseCode': sap_line.get('FromWarehouseCode') or sap_transfer_data.get('FromWarehouse'),
-                    'ToWarehouseCode': sap_line.get('WarehouseCode') or sap_transfer_data.get('ToWarehouse'),
-                    'LineStatus': actual_line_status  # Use calculated status
-                }
-                available_items.append(enhanced_item)
-                logging.info(f"🔍 Added item to available_items: {item_code}")
-                
-            logging.info(f"✅ Calculated remaining quantities for {len(available_items)} available items")
+            # Always fetch SAP data to get available items (regardless of warehouse fields)
+            logging.info(f"🔍 Fetching SAP data for transfer {transfer.transfer_request_number}")
+            sap_transfer_data = sap_b1.get_inventory_transfer_request(transfer.transfer_request_number)
             
-            # Update warehouse data if missing from database
-            if not transfer.from_warehouse or not transfer.to_warehouse:
-                from_wh = sap_transfer_data.get('FromWarehouse')
-                to_wh = sap_transfer_data.get('ToWarehouse')
-                logging.info(f"✅ Fetched SAP warehouse data for display: From={from_wh}, To={to_wh}")
-        else:
-            logging.warning(f"❌ SAP returned no transfer data or lines. Data: {sap_transfer_data}")
+            logging.info(f"🔍 SAP response type: {type(sap_transfer_data)}")
+            if sap_transfer_data:
+                logging.info(f"🔍 SAP response keys: {sap_transfer_data.keys()}")
             
-    except Exception as e:
-        logging.error(f"❌ Could not fetch SAP data: {e}")
-        import traceback
-        logging.error(traceback.format_exc())
+            if sap_transfer_data and 'StockTransferLines' in sap_transfer_data:
+                lines = sap_transfer_data['StockTransferLines']
+                logging.info(f"🔍 Found {len(lines)} stock transfer lines")
+                
+                # Calculate actual remaining quantities based on WMS transfers
+                for sap_line in lines:
+                    item_code = sap_line.get('ItemCode')
+                    requested_qty = float(sap_line.get('Quantity', 0))
+                    
+                    logging.info(f"🔍 Processing line: {item_code} - Qty: {requested_qty}")
+                    
+                    # Calculate total transferred quantity for this item from WMS database
+                    transferred_qty = 0
+                    wms_item = InventoryTransferItem.query.filter_by(
+                        inventory_transfer_id=transfer.id,
+                        item_code=item_code
+                    ).first()
+                    
+                    if wms_item:
+                        transferred_qty = float(wms_item.quantity or 0)
+                        logging.info(f"🔍 WMS item found - transferred: {transferred_qty}")
+                    
+                    # Calculate remaining quantity
+                    remaining_qty = max(0, requested_qty - transferred_qty)
+                    
+                    # Determine actual line status based on remaining quantity
+                    actual_line_status = 'bost_Close' if remaining_qty <= 0 else 'bost_Open'
+                    
+                    # Create enhanced item data with calculated values
+                    # Note: SAP StockTransferRequest lines typically only have WarehouseCode (destination)
+                    # Use header-level FromWarehouse for source warehouse
+                    enhanced_item = {
+                        'ItemCode': item_code,
+                        'ItemDescription': sap_line.get('ItemDescription', ''),
+                        'Quantity': requested_qty,
+                        'TransferredQuantity': transferred_qty,
+                        'RemainingQuantity': remaining_qty,
+                        'UnitOfMeasure': sap_line.get('UoMCode', sap_line.get('MeasureUnit', '')),
+                        'FromWarehouseCode': sap_line.get('FromWarehouseCode') or sap_transfer_data.get('FromWarehouse'),
+                        'ToWarehouseCode': sap_line.get('WarehouseCode') or sap_transfer_data.get('ToWarehouse'),
+                        'LineStatus': actual_line_status  # Use calculated status
+                    }
+                    available_items.append(enhanced_item)
+                    logging.info(f"🔍 Added item to available_items: {item_code}")
+                    
+                logging.info(f"✅ Calculated remaining quantities for {len(available_items)} available items")
+                
+                # Update warehouse data if missing from database
+                if not transfer.from_warehouse or not transfer.to_warehouse:
+                    from_wh = sap_transfer_data.get('FromWarehouse')
+                    to_wh = sap_transfer_data.get('ToWarehouse')
+                    logging.info(f"✅ Fetched SAP warehouse data for display: From={from_wh}, To={to_wh}")
+            else:
+                logging.warning(f"❌ SAP returned no transfer data or lines. Data: {sap_transfer_data}")
+                
+        except Exception as e:
+            logging.error(f"❌ Could not fetch SAP data: {e}")
+            import traceback
+            logging.error(traceback.format_exc())
     
     if not transfer.from_warehouse or not transfer.to_warehouse:
         logging.info(f"📋 Using database warehouse data: From={transfer.from_warehouse}, To={transfer.to_warehouse}")
@@ -243,17 +293,69 @@ def create():
             flash(f'Could not validate transfer request in SAP B1: {str(e)}', 'error')
             return redirect(url_for('inventory_transfer.create'))
 
-        # Create new transfer
+        # Parse SAP dates
+        doc_date = None
+        due_date = None
+        try:
+            if sap_data.get('DocDate'):
+                doc_date = datetime.fromisoformat(sap_data.get('DocDate').replace('Z', '+00:00'))
+            if sap_data.get('DueDate'):
+                due_date = datetime.fromisoformat(sap_data.get('DueDate').replace('Z', '+00:00'))
+        except Exception as date_err:
+            logging.warning(f"Could not parse SAP dates: {date_err}")
+        
+        # Create new transfer with SAP header fields
         transfer = InventoryTransfer(
             transfer_request_number=transfer_request_number,
             user_id=current_user.id,
             from_warehouse=from_warehouse,
             to_warehouse=to_warehouse,
-            status='draft'
+            status='draft',
+            # SAP B1 Header Fields
+            sap_doc_entry=sap_data.get('DocEntry'),
+            sap_doc_num=sap_data.get('DocNum'),
+            bpl_id=sap_data.get('BPLID'),
+            bpl_name=sap_data.get('BPLName'),
+            sap_document_status=doc_status,
+            doc_date=doc_date,
+            due_date=due_date,
+            sap_raw_json=json.dumps(sap_data)  # Store complete SAP response
         )
         
         db.session.add(transfer)
         db.session.commit()
+        
+        # Store SAP Transfer Request Lines permanently in database
+        if sap_data and 'StockTransferLines' in sap_data:
+            try:
+                lines = sap_data['StockTransferLines']
+                logging.info(f"📥 Storing {len(lines)} SAP transfer request lines to database")
+                
+                for sap_line in lines:
+                    # Store each line exactly as received from SAP
+                    request_line = InventoryTransferRequestLine(
+                        inventory_transfer_id=transfer.id,
+                        line_num=sap_line.get('LineNum', 0),
+                        sap_doc_entry=sap_line.get('DocEntry', sap_data.get('DocEntry')),
+                        item_code=sap_line.get('ItemCode', ''),
+                        item_description=sap_line.get('ItemDescription', ''),
+                        quantity=float(sap_line.get('Quantity', 0)),
+                        warehouse_code=sap_line.get('WarehouseCode'),
+                        from_warehouse_code=sap_line.get('FromWarehouseCode', from_warehouse),
+                        remaining_open_quantity=float(sap_line.get('RemainingOpenInventoryQuantity', 0)),
+                        line_status=sap_line.get('LineStatus', 'bost_Open'),
+                        uom_code=sap_line.get('UoMCode'),
+                        transferred_quantity=0,
+                        wms_remaining_quantity=float(sap_line.get('RemainingOpenInventoryQuantity', sap_line.get('Quantity', 0)))
+                    )
+                    db.session.add(request_line)
+                
+                db.session.commit()
+                logging.info(f"✅ Stored {len(lines)} SAP transfer request lines for transfer {transfer.id}")
+            except Exception as line_err:
+                logging.error(f"Error storing SAP transfer request lines: {line_err}")
+                import traceback
+                logging.error(traceback.format_exc())
         
         # Auto-populate items from SAP transfer request if available
         auto_populate = request.form.get('auto_populate_items') == 'on'
@@ -285,7 +387,11 @@ def create():
                         from_bin='',  # Will be filled later
                         to_bin='',    # Will be filled later  
                         batch_number='',  # Will be filled later
-                        qc_status='pending'
+                        qc_status='pending',
+                        # SAP Line Fields
+                        sap_line_num=sap_line.get('LineNum'),
+                        sap_doc_entry=sap_line.get('DocEntry', sap_data.get('DocEntry')),
+                        line_status=sap_line.get('LineStatus', 'bost_Open')
                     )
                     db.session.add(transfer_item)
                 

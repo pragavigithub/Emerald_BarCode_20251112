@@ -146,6 +146,17 @@ class InventoryTransfer(db.Model):
     qc_notes = db.Column(db.Text, nullable=True)
     from_warehouse = db.Column(db.String(20), nullable=True)
     to_warehouse = db.Column(db.String(20), nullable=True)
+    
+    # SAP B1 Transfer Request Header Fields (for exact SAP structure preservation)
+    sap_doc_entry = db.Column(db.Integer, nullable=True, index=True)  # SAP DocEntry
+    sap_doc_num = db.Column(db.Integer, nullable=True)  # SAP DocNum
+    bpl_id = db.Column(db.Integer, nullable=True)  # SAP BPLID (Branch/Business Place)
+    bpl_name = db.Column(db.String(100), nullable=True)  # SAP BPLName
+    sap_document_status = db.Column(db.String(20), nullable=True)  # SAP DocumentStatus (bost_Open, bost_Close)
+    doc_date = db.Column(db.DateTime, nullable=True)  # SAP DocDate
+    due_date = db.Column(db.DateTime, nullable=True)  # SAP DueDate
+    sap_raw_json = db.Column(db.Text, nullable=True)  # Store complete SAP JSON response for reference
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime,
                         default=datetime.utcnow,
@@ -156,6 +167,9 @@ class InventoryTransfer(db.Model):
     qc_approver = relationship('User', foreign_keys=[qc_approver_id])
     items = relationship('InventoryTransferItem',
                          back_populates='inventory_transfer')
+    request_lines = relationship('InventoryTransferRequestLine',
+                                 back_populates='inventory_transfer',
+                                 cascade='all, delete-orphan')
 
 
 class InventoryTransferItem(db.Model):
@@ -176,15 +190,63 @@ class InventoryTransferItem(db.Model):
     to_bin = db.Column(db.String(20), nullable=True)    # Made nullable for better compatibility
     from_bin_location = db.Column(db.String(50), nullable=True)  # New field for detailed bin location
     to_bin_location = db.Column(db.String(50), nullable=True)    # New field for detailed bin location
+    from_warehouse_code = db.Column(db.String(20), nullable=True)  # SAP FromWarehouseCode
+    to_warehouse_code = db.Column(db.String(20), nullable=True)  # SAP WarehouseCode (destination)
     batch_number = db.Column(db.String(50), nullable=True)
     available_batches = db.Column(db.Text, nullable=True)  # JSON list of available batches
     qc_status = db.Column(db.String(20), default='pending')  # pending, approved, rejected
     qc_notes = db.Column(db.Text, nullable=True)
+    
+    # SAP B1 Line Fields
+    sap_line_num = db.Column(db.Integer, nullable=True)  # SAP LineNum
+    sap_doc_entry = db.Column(db.Integer, nullable=True)  # SAP DocEntry reference
+    line_status = db.Column(db.String(20), nullable=True)  # SAP LineStatus (bost_Open, bost_Close)
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships
     inventory_transfer = relationship('InventoryTransfer',
                                       back_populates='items')
+
+
+class InventoryTransferRequestLine(db.Model):
+    """
+    Stores the original SAP B1 Transfer Request line items exactly as received from SAP.
+    This preserves the SAP structure for later posting back to SAP B1.
+    Linked to InventoryTransfer header via foreign key.
+    """
+    __tablename__ = 'inventory_transfer_request_lines'
+
+    id = db.Column(db.Integer, primary_key=True)
+    inventory_transfer_id = db.Column(db.Integer,
+                                      db.ForeignKey('inventory_transfers.id'),
+                                      nullable=False, index=True)
+    
+    # SAP B1 StockTransferLines fields (stored exactly as received)
+    line_num = db.Column(db.Integer, nullable=False)  # SAP LineNum
+    sap_doc_entry = db.Column(db.Integer, nullable=False)  # SAP DocEntry
+    item_code = db.Column(db.String(50), nullable=False, index=True)  # SAP ItemCode
+    item_description = db.Column(db.String(200), nullable=True)  # SAP ItemDescription
+    quantity = db.Column(db.Float, nullable=False)  # SAP Quantity
+    warehouse_code = db.Column(db.String(20), nullable=True)  # SAP WarehouseCode (destination)
+    from_warehouse_code = db.Column(db.String(20), nullable=True)  # SAP FromWarehouseCode
+    remaining_open_quantity = db.Column(db.Float, nullable=True)  # SAP RemainingOpenInventoryQuantity
+    line_status = db.Column(db.String(20), nullable=True)  # SAP LineStatus (bost_Open, bost_Close)
+    uom_code = db.Column(db.String(20), nullable=True)  # SAP UoMCode
+    
+    # WMS tracking fields
+    transferred_quantity = db.Column(db.Float, default=0)  # Quantity transferred in WMS
+    wms_remaining_quantity = db.Column(db.Float, nullable=True)  # Calculated remaining after WMS transfers
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    inventory_transfer = relationship('InventoryTransfer',
+                                      back_populates='request_lines')
+
+    def __repr__(self):
+        return f'<InventoryTransferRequestLine Line={self.line_num} Item={self.item_code}>'
 
 
 class TransferScanState(db.Model):
