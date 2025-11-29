@@ -157,12 +157,16 @@ class SAPIntegration:
             }
 
         try:
+            # # Try multiple endpoints to find the transfer request
+            # endpoints_to_try = [
+            #     f"InventoryTransferRequests?$filter=DocNum eq {doc_num}",
+            #     f"InventoryTransferRequests?$filter=DocNum eq '{doc_num}'",
+            #     f"StockTransfers?$filter=DocNum eq {doc_num}",
+            #     f"StockTransfers?$filter=DocNum eq '{doc_num}'"
+            # ]
             # Try multiple endpoints to find the transfer request
             endpoints_to_try = [
-                f"InventoryTransferRequests?$filter=DocNum eq {doc_num}",
-                f"InventoryTransferRequests?$filter=DocNum eq '{doc_num}'",
-                f"StockTransfers?$filter=DocNum eq {doc_num}",
-                f"StockTransfers?$filter=DocNum eq '{doc_num}'"
+                f"InventoryTransferRequests?$filter=DocNum eq {doc_num}"
             ]
 
             for endpoint in endpoints_to_try:

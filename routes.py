@@ -1707,34 +1707,110 @@ def create_inventory_transfer():
     flash(f'New inventory transfer created for request {transfer_request_number}! From: {from_warehouse} → To: {to_warehouse}', 'success')
     return redirect(url_for('inventory_transfer_detail', transfer_id=transfer.id))
 
+# @app.route('/inventory_transfer/<int:transfer_id>', methods=['GET', 'POST'])
+# @login_required
+# def inventory_transfer_detail(transfer_id):
+#     transfer = InventoryTransfer.query.get_or_404(transfer_id)
+#     print("DEMEO add ->>>>>>>",transfer)
+#     # Get available items from SAP transfer request (only open lines)
+#     available_items = []
+#     sap = SAPIntegration()
+#
+#     if transfer.transfer_request_number:
+#         transfer_data = sap.get_inventory_transfer_request(transfer.transfer_request_number)
+#
+#         if transfer_data and 'StockTransferLines' in transfer_data:
+#             # Simple workflow: Show all available lines as fresh request
+#             all_lines = transfer_data['StockTransferLines']
+#
+#             # Show all lines as available (no previous transfer checking)
+#             for line in all_lines:
+#                 requested_qty = float(line.get('Quantity', 0))
+#                 line['RemainingQuantity'] = requested_qty
+#                 line['TransferredQuantity'] = 0
+#                 # Ensure LineStatus is passed to template for proper closed/open display
+#                 line['LineStatus'] = line.get('LineStatus', 'bost_Open')
+#                 available_items.append(line)
+#
+#             logging.info(f"Found {len(available_items)} items available for fresh transfer request {transfer.transfer_request_number}")
+#
+#     # Handle adding items to transfer
+#     if request.method == 'POST':
+#         try:
+#             item_code = request.form.get('item_code', '').strip()
+#             item_name = request.form.get('item_name', '').strip()
+#             quantity = float(request.form.get('quantity', 0))
+#             unit_of_measure = request.form.get('unit_of_measure', '').strip()
+#             from_warehouse_code = request.form.get('from_warehouse', '').strip()
+#             to_warehouse_code = request.form.get('to_warehouse', '').strip()
+#             from_bin = request.form.get('from_bin_location') or request.form.get('from_bin', '')
+#             to_bin = request.form.get('to_bin_location') or request.form.get('to_bin', '')
+#             batch_number = request.form.get('batch_number', '').strip()
+#
+#             # Get item details from SAP B1 to ensure correct UOM
+#             sap = SAPIntegration()
+#             item_details = sap.get_item_details(item_code)
+#             if item_details:
+#                 actual_uom = item_details.get('InventoryUoM', unit_of_measure)
+#                 logging.info(f"🔍 Item {item_code} UOM from SAP: {actual_uom}")
+#             else:
+#                 actual_uom = unit_of_measure
+#                 logging.warning(f"⚠️ Could not get UOM from SAP for item {item_code}, using form value: {unit_of_measure}")
+#
+#             # Create new transfer item with enhanced bin location support
+#             transfer_item = InventoryTransferItem(
+#                 inventory_transfer_id=transfer.id,
+#                 item_code=item_code,
+#                 item_name=item_name,
+#                 quantity=quantity,
+#                 requested_quantity=quantity,
+#                 transferred_quantity=0,
+#                 remaining_quantity=quantity,
+#                 unit_of_measure=actual_uom,
+#                 from_bin=from_bin,
+#                 from_warehouse_code=from_warehouse_code,
+#                 to_warehouse_code=to_warehouse_code,
+#                 to_bin=to_bin,
+#                 from_bin_location=from_bin,  # Set new field
+#                 to_bin_location=to_bin,      # Set new field
+#                 batch_number=batch_number if batch_number else None
+#             )
+#
+#             db.session.add(transfer_item)
+#             db.session.commit()
+#
+#             flash(f'Item {item_code} added to transfer successfully!', 'success')
+#             return redirect(url_for('inventory_transfer_detail', transfer_id=transfer_id))
+#
+#         except Exception as e:
+#             logging.error(f"Error adding item to transfer: {str(e)}")
+#             flash(f'Error adding item: {str(e)}', 'error')
+#             return redirect(url_for('inventory_transfer_detail', transfer_id=transfer_id))
+#
+#     return render_template('inventory_transfer_detail.html', transfer=transfer, available_items=available_items)
 @app.route('/inventory_transfer/<int:transfer_id>', methods=['GET', 'POST'])
 @login_required
 def inventory_transfer_detail(transfer_id):
     transfer = InventoryTransfer.query.get_or_404(transfer_id)
+    print("DEMEO add ->>>>>>>", transfer)
 
-    # Get available items from SAP transfer request (only open lines)
+    # === FETCH AVAILABLE ITEMS FROM SAP ===
     available_items = []
     sap = SAPIntegration()
-    
+
     if transfer.transfer_request_number:
         transfer_data = sap.get_inventory_transfer_request(transfer.transfer_request_number)
 
         if transfer_data and 'StockTransferLines' in transfer_data:
-            # Simple workflow: Show all available lines as fresh request
             all_lines = transfer_data['StockTransferLines']
-            
-            # Show all lines as available (no previous transfer checking)
             for line in all_lines:
                 requested_qty = float(line.get('Quantity', 0))
                 line['RemainingQuantity'] = requested_qty
                 line['TransferredQuantity'] = 0
-                # Ensure LineStatus is passed to template for proper closed/open display
                 line['LineStatus'] = line.get('LineStatus', 'bost_Open')
                 available_items.append(line)
 
-            logging.info(f"Found {len(available_items)} items available for fresh transfer request {transfer.transfer_request_number}")
-    
-    # Handle adding items to transfer
+    # === HANDLE POST ADD ITEM ===
     if request.method == 'POST':
         try:
             item_code = request.form.get('item_code', '').strip()
@@ -1747,17 +1823,9 @@ def inventory_transfer_detail(transfer_id):
             to_bin = request.form.get('to_bin_location') or request.form.get('to_bin', '')
             batch_number = request.form.get('batch_number', '').strip()
 
-            # Get item details from SAP B1 to ensure correct UOM
-            sap = SAPIntegration()
             item_details = sap.get_item_details(item_code)
-            if item_details:
-                actual_uom = item_details.get('InventoryUoM', unit_of_measure)
-                logging.info(f"🔍 Item {item_code} UOM from SAP: {actual_uom}")
-            else:
-                actual_uom = unit_of_measure
-                logging.warning(f"⚠️ Could not get UOM from SAP for item {item_code}, using form value: {unit_of_measure}")
-            
-            # Create new transfer item with enhanced bin location support
+            actual_uom = item_details.get('InventoryUoM', unit_of_measure) if item_details else unit_of_measure
+
             transfer_item = InventoryTransferItem(
                 inventory_transfer_id=transfer.id,
                 item_code=item_code,
@@ -1768,24 +1836,62 @@ def inventory_transfer_detail(transfer_id):
                 remaining_quantity=quantity,
                 unit_of_measure=actual_uom,
                 from_bin=from_bin,
+                from_warehouse_code=from_warehouse_code,
+                to_warehouse_code=to_warehouse_code,
                 to_bin=to_bin,
-                from_bin_location=from_bin,  # Set new field
-                to_bin_location=to_bin,      # Set new field
+                from_bin_location=from_bin,
+                to_bin_location=to_bin,
                 batch_number=batch_number if batch_number else None
             )
 
             db.session.add(transfer_item)
             db.session.commit()
-            
+
+            # Check if user expects JSON response (Flutter / Mobile / API)
+            if request.is_json:
+                return jsonify({
+                    "success": True,
+                    "message": f"Item {item_code} added successfully",
+                    "added_item": {
+                        "item_code": item_code,
+                        "item_name": item_name,
+                        "quantity": quantity,
+                        "uom": actual_uom,
+                        "from_warehouse": from_warehouse_code,
+                        "to_warehouse": to_warehouse_code
+                    }
+                }), 200
+
+            # Otherwise return the template response
             flash(f'Item {item_code} added to transfer successfully!', 'success')
             return redirect(url_for('inventory_transfer_detail', transfer_id=transfer_id))
-            
+
         except Exception as e:
-            logging.error(f"Error adding item to transfer: {str(e)}")
+            db.session.rollback()
+
+            if request.is_json:
+                return jsonify({"success": False, "error": str(e)}), 500
+
             flash(f'Error adding item: {str(e)}', 'error')
             return redirect(url_for('inventory_transfer_detail', transfer_id=transfer_id))
-    
-    return render_template('inventory_transfer_detail.html', transfer=transfer, available_items=available_items)
+
+    # === FINAL RETURN SECTION ===
+    # If the request is JSON (API request), return JSON instead of template
+    if request.is_json:
+        return jsonify({
+            "success": True,
+            "transfer_id": transfer.id,
+            "transfer_request_number": transfer.transfer_request_number,
+            "available_items": transfer_data
+        }), 200
+
+    # Default return existing template (unchanged)
+    return render_template(
+        'inventory_transfer_detail.html',
+        transfer=transfer,
+        available_items=available_items
+    )
+
 
 @app.route('/edit_inventory_transfer/<int:transfer_id>', methods=['GET', 'POST'])
 @login_required

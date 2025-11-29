@@ -2126,10 +2126,10 @@ def api_scan_qr_label():
         if not data:
             return jsonify({'success': False, 'error': 'Invalid JSON data'}), 400
         
-        qr_data = data.get('qr_data', '').strip()
+        qr_data = data.get('qr_data', '')
         transfer_id = data.get('transfer_id')
         requested_qty = data.get('requested_qty', 0)
-        
+        print("----->",data)
         if not qr_data:
             return jsonify({'success': False, 'error': 'QR data is required'}), 400
         
@@ -2148,7 +2148,11 @@ def api_scan_qr_label():
         parsed_data = {}
         
         try:
-            parsed_json = json.loads(qr_data)
+            # parsed_json = json.loads(qr_data)
+            if isinstance(qr_data, dict):
+                parsed_json = qr_data
+            else:
+                parsed_json = json.loads(qr_data)
             
             parsed_data['id'] = parsed_json.get('id')
             parsed_data['po'] = parsed_json.get('po')
