@@ -650,19 +650,25 @@ def add_transfer_item(transfer_id):
         
         scanned_batches_json = None
         if scanned_packs:
-            batch_summary = {}
+            batch_bin_summary = {}
             for pack in scanned_packs:
                 batch = pack.batch_number or 'N/A'
-                if batch not in batch_summary:
-                    batch_summary[batch] = {
+                bin_loc = pack.bin_location or ''
+                key = f"{batch}|{bin_loc}"
+                if key not in batch_bin_summary:
+                    batch_bin_summary[key] = {
                         'batch_number': batch,
                         'quantity': 0,
-                        'bin_location': pack.bin_location or ''
+                        'bin_location': bin_loc
                     }
-                batch_summary[batch]['quantity'] += pack.qty
+                batch_bin_summary[key]['quantity'] += pack.qty
             
-            scanned_batches_json = json.dumps(list(batch_summary.values()))
-            logging.info(f"📦 Collected batch summary from scanned packs: {scanned_batches_json}")
+            total_scanned = sum(b['quantity'] for b in batch_bin_summary.values())
+            if total_scanned != quantity:
+                logging.warning(f"⚠️ Scanned quantity ({total_scanned}) differs from requested ({quantity}) for {item_code}")
+            
+            scanned_batches_json = json.dumps(list(batch_bin_summary.values()))
+            logging.info(f"📦 Collected batch/bin summary from scanned packs: {scanned_batches_json}")
             
             if not from_bin and scanned_packs[0].bin_location:
                 from_bin = scanned_packs[0].bin_location

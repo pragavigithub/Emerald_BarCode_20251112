@@ -1713,7 +1713,7 @@ class SAPIntegration:
                             if batch_num and batch_num != 'N/A' and batch_qty > 0:
                                 batch_numbers.append({
                                     "BaseLineNumber": index,
-                                    "BatchNumberProperty": batch_num,
+                                    "BatchNumber": batch_num,
                                     "Quantity": batch_qty
                                 })
                         if batch_numbers:
@@ -1724,13 +1724,13 @@ class SAPIntegration:
                     if item.batch_number:
                         line["BatchNumbers"] = [{
                             "BaseLineNumber": index,
-                            "BatchNumberProperty": item.batch_number,
+                            "BatchNumber": item.batch_number,
                             "Quantity": float(item.quantity)
                         }]
             elif item.batch_number:
                 line["BatchNumbers"] = [{
                     "BaseLineNumber": index,
-                    "BatchNumberProperty": item.batch_number,
+                    "BatchNumber": item.batch_number,
                     "Quantity": float(item.quantity)
                 }]
 
