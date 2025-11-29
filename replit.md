@@ -93,6 +93,18 @@ To solve the issue where entering multiple packs (e.g., 3 packs) only generated 
 - PostgreSQL: Applied to development database
 - MySQL: `migrations/mysql_multi_grn_batch_details_label_table.sql`
 
+### Multi-GRN QR Labels with Bin Location (Added Nov 29, 2025)
+QR code labels in the Multi-GRN module now include Bin Location information for better warehouse tracking.
+
+**QR Code JSON Structure:**
+- QR data now includes: `id`, `po`, `item`, `batch`, `qty`, `pack`, `grn_date`, `exp_date`, `bin` (new)
+- Uses existing `line_selection.bin_location` field (no new database columns required)
+
+**Updated Files:**
+- `routes.py`: 8 QR data generation points updated to include `bin` field
+- `view_batch.html`: QR label display shows "Bin: [location]" row
+- `step3_detail.html`: QR label display shows "Bin: [location]" row
+
 ### SAP B1 Transfer Request Persistent Storage (Added Nov 27, 2025)
 The Inventory Transfer module now permanently stores SAP B1 Transfer Request data in the local database for later posting back to SAP.
 
