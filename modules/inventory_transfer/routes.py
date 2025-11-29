@@ -15,6 +15,8 @@ import json
 from datetime import datetime
 from pathlib import Path
 
+from sap_integration import SAPIntegration
+
 # Use absolute path for template_folder to support PyInstaller .exe builds
 transfer_bp = Blueprint('inventory_transfer', __name__, 
                          url_prefix='/inventory_transfer',
@@ -2146,50 +2148,259 @@ def api_get_item_warehouses():
         logging.error(f"Error fetching warehouse details: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+# @transfer_bp.route('/api/scan-qr-label', methods=['POST'])
+# @login_required
+# def api_scan_qr_label():
+#     """
+#     API endpoint to scan and parse QR labels for inventory transfer with pack tracking
+#     Handles JSON QR format with quantity accumulation and duplicate prevention
+#
+#     QR JSON Format: {"id":"GRN/xxx","po":"xxx","item":"ItemCode","batch":"BatchNum","qty":10,"pack":"1 of 5",...}
+#
+#     Returns accumulated scan data with validation
+#     """
+#     try:
+#         data = request.get_json()
+#         if not data:
+#             return jsonify({'success': False, 'error': 'Invalid JSON data'}), 400
+#
+#         qr_data = data.get('qr_data', '')
+#         transfer_id = data.get('transfer_id')
+#         requested_qty = data.get('requested_qty', 0)
+#         print("----->",data)
+#         if not qr_data:
+#             return jsonify({'success': False, 'error': 'QR data is required'}), 400
+#
+#         if not transfer_id:
+#             return jsonify({'success': False, 'error': 'Transfer ID is required'}), 400
+#
+#         transfer = InventoryTransfer.query.get(transfer_id)
+#         if not transfer:
+#             return jsonify({'success': False, 'error': 'Transfer not found'}), 404
+#
+#         if transfer.user_id != current_user.id and current_user.role not in ['admin', 'manager']:
+#             return jsonify({'success': False, 'error': 'Access denied'}), 403
+#
+#         logging.info(f"📷 Scanning QR label for transfer {transfer_id}: {qr_data}")
+#
+#         parsed_data = {}
+#
+#         try:
+#             # parsed_json = json.loads(qr_data)
+#             if isinstance(qr_data, dict):
+#                 parsed_json = qr_data
+#             else:
+#                 parsed_json = json.loads(qr_data)
+#
+#             parsed_data['id'] = parsed_json.get('id')
+#             parsed_data['po'] = parsed_json.get('po')
+#             parsed_data['item_code'] = parsed_json.get('item')
+#             parsed_data['batch_number'] = parsed_json.get('batch')
+#             parsed_data['qty'] = float(parsed_json.get('qty', 0))
+#             parsed_data['pack'] = parsed_json.get('pack', '1 of 1')
+#             parsed_data['grn_date'] = parsed_json.get('grn_date')
+#             parsed_data['exp_date'] = parsed_json.get('exp_date')
+#             parsed_data['bin_location'] = parsed_json.get('bin', '')
+#
+#             logging.info(f"✅ Parsed JSON QR format: {parsed_data}")
+#
+#         except json.JSONDecodeError:
+#             logging.warning("⚠️ Not JSON format, falling back to legacy parser")
+#
+#             if qr_data.startswith('TRANSFER:'):
+#                 parts = qr_data.split('|')
+#                 first_part = parts[0].replace('TRANSFER:', '')
+#                 parsed_data['item_code'] = first_part
+#
+#                 for part in parts:
+#                     if part.startswith('FROM:'):
+#                         parsed_data['from_warehouse'] = part.replace('FROM:', '')
+#                     elif part.startswith('TO:'):
+#                         parsed_data['to_warehouse'] = part.replace('TO:', '')
+#                     elif part.startswith('BATCH:'):
+#                         parsed_data['batch_number'] = part.replace('BATCH:', '')
+#                     elif part.startswith('UNIT:'):
+#                         parsed_data['pack'] = part.replace('UNIT:', '')
+#             else:
+#                 parts = qr_data.split('|')
+#                 if len(parts) >= 1:
+#                     parsed_data['item_code'] = parts[0]
+#                 if len(parts) >= 2:
+#                     parsed_data['transfer_number'] = parts[1]
+#                 if len(parts) >= 3:
+#                     parsed_data['item_name'] = parts[2]
+#                 if len(parts) >= 4 and parts[3] and parts[3] != 'N/A':
+#                     parsed_data['batch_number'] = parts[3]
+#
+#         item_code = parsed_data.get('item_code')
+#         if not item_code:
+#             return jsonify({'success': False, 'error': 'Could not extract item code from QR data'}), 400
+#
+#         target_item_code = data.get('target_item_code', '').strip()
+#         if target_item_code and item_code != target_item_code:
+#             return jsonify({
+#                 'success': False,
+#                 'error': f'QR code is for item "{item_code}" but you are adding "{target_item_code}". Please scan the correct QR code.',
+#                 'item_mismatch': True
+#             }), 400
+#
+#         grn_id = parsed_data.get('id', '')
+#         pack_label = parsed_data.get('pack', '1 of 1')
+#         pack_key = f"{grn_id}|{pack_label}"
+#
+#         existing_pack = TransferScanState.query.filter_by(
+#             transfer_id=transfer_id,
+#             item_code=item_code,
+#             pack_key=pack_key
+#         ).first()
+#
+#         if existing_pack:
+#             return jsonify({
+#                 'success': False,
+#                 'error': f'Pack {pack_label} has already been scanned!',
+#                 'duplicate': True
+#             }), 400
+#
+#         scanned_packs = TransferScanState.query.filter_by(
+#             transfer_id=transfer_id,
+#             item_code=item_code
+#         ).all()
+#
+#         pack_qty = parsed_data.get('qty', 0)
+#         current_total = sum(pack.qty for pack in scanned_packs)
+#         new_total = current_total + pack_qty
+#
+#         effective_requested_qty = requested_qty if requested_qty > 0 else (scanned_packs[0].requested_qty if scanned_packs else 0)
+#
+#         if new_total > effective_requested_qty and effective_requested_qty > 0:
+#             return jsonify({
+#                 'success': False,
+#                 'error': f'Scanning this pack would exceed requested quantity! Current: {current_total}, Adding: {pack_qty}, Requested: {effective_requested_qty}',
+#                 'overflow': True,
+#                 'current_total': current_total,
+#                 'requested_qty': effective_requested_qty
+#             }), 400
+#
+#         new_scan = TransferScanState(
+#             transfer_id=transfer_id,
+#             item_code=item_code,
+#             user_id=current_user.id,
+#             requested_qty=effective_requested_qty if effective_requested_qty > 0 else requested_qty,
+#             pack_key=pack_key,
+#             pack_label=pack_label,
+#             batch_number=parsed_data.get('batch_number', ''),
+#             qty=pack_qty,
+#             grn_id=grn_id,
+#             grn_date=parsed_data.get('grn_date', ''),
+#             exp_date=parsed_data.get('exp_date', ''),
+#             po=parsed_data.get('po', ''),
+#             bin_location=parsed_data.get('bin_location', '')
+#         )
+#
+#         db.session.add(new_scan)
+#         db.session.commit()
+#
+#         all_scans = TransferScanState.query.filter_by(
+#             transfer_id=transfer_id,
+#             item_code=item_code
+#         ).all()
+#
+#         total_scanned_qty = sum(scan.qty for scan in all_scans)
+#         remaining_qty = max(0, new_scan.requested_qty - total_scanned_qty)
+#         is_complete = total_scanned_qty >= new_scan.requested_qty
+#
+#         scanned_packs_data = [{
+#             'pack_key': scan.pack_key,
+#             'pack_label': scan.pack_label,
+#             'batch_number': scan.batch_number,
+#             'qty': scan.qty,
+#             'grn_id': scan.grn_id,
+#             'grn_date': scan.grn_date,
+#             'exp_date': scan.exp_date,
+#             'po': scan.po,
+#             'bin_location': scan.bin_location or ''
+#         } for scan in all_scans]
+#
+#         batch_summary = {}
+#         bin_locations = set()
+#         for scan in all_scans:
+#             batch = scan.batch_number or 'N/A'
+#             if batch not in batch_summary:
+#                 batch_summary[batch] = {
+#                     'batch_number': batch,
+#                     'total_qty': 0,
+#                     'pack_count': 0,
+#                     'exp_date': scan.exp_date or ''
+#                 }
+#             batch_summary[batch]['total_qty'] += scan.qty
+#             batch_summary[batch]['pack_count'] += 1
+#             if scan.bin_location:
+#                 bin_locations.add(scan.bin_location)
+#
+#         logging.info(f"✅ Added pack {pack_label} ({pack_qty} units). Total: {total_scanned_qty}/{new_scan.requested_qty}")
+#
+#         return jsonify({
+#             'success': True,
+#             'message': f'Scanned pack {pack_label} ({pack_qty} units)',
+#             'item_code': item_code,
+#             'requested_qty': new_scan.requested_qty,
+#             'total_scanned_qty': total_scanned_qty,
+#             'remaining_qty': remaining_qty,
+#             'is_complete': is_complete,
+#             'scanned_packs': scanned_packs_data,
+#             'pack_count': len(all_scans),
+#             'batch_summary': list(batch_summary.values()),
+#             'bin_locations': list(bin_locations),
+#             'latest_bin_location': parsed_data.get('bin_location', ''),
+#             'latest_batch_number': parsed_data.get('batch_number', '')
+#         })
+#
+#     except Exception as e:
+#         logging.error(f"Error scanning QR label: {str(e)}")
+#         import traceback
+#         logging.error(traceback.format_exc())
+#         return jsonify({'success': False, 'error': str(e)}), 500
 @transfer_bp.route('/api/scan-qr-label', methods=['POST'])
 @login_required
 def api_scan_qr_label():
     """
-    API endpoint to scan and parse QR labels for inventory transfer with pack tracking
-    Handles JSON QR format with quantity accumulation and duplicate prevention
-    
-    QR JSON Format: {"id":"GRN/xxx","po":"xxx","item":"ItemCode","batch":"BatchNum","qty":10,"pack":"1 of 5",...}
-    
-    Returns accumulated scan data with validation
+    API endpoint to scan and parse QR labels for inventory transfer with pack tracking.
+    Handles JSON QR format with quantity accumulation and duplicate prevention.
     """
     try:
         data = request.get_json()
         if not data:
             return jsonify({'success': False, 'error': 'Invalid JSON data'}), 400
-        
+
         qr_data = data.get('qr_data', '')
         transfer_id = data.get('transfer_id')
         requested_qty = data.get('requested_qty', 0)
-        print("----->",data)
+
         if not qr_data:
             return jsonify({'success': False, 'error': 'QR data is required'}), 400
-        
+
         if not transfer_id:
             return jsonify({'success': False, 'error': 'Transfer ID is required'}), 400
-        
+
         transfer = InventoryTransfer.query.get(transfer_id)
         if not transfer:
             return jsonify({'success': False, 'error': 'Transfer not found'}), 404
-        
+
+        # Access restriction
         if transfer.user_id != current_user.id and current_user.role not in ['admin', 'manager']:
             return jsonify({'success': False, 'error': 'Access denied'}), 403
-        
+
         logging.info(f"📷 Scanning QR label for transfer {transfer_id}: {qr_data}")
-        
+
         parsed_data = {}
-        
+
+        # ==== STEP 1: Parse JSON QR ====
         try:
-            # parsed_json = json.loads(qr_data)
             if isinstance(qr_data, dict):
                 parsed_json = qr_data
             else:
                 parsed_json = json.loads(qr_data)
-            
+
             parsed_data['id'] = parsed_json.get('id')
             parsed_data['po'] = parsed_json.get('po')
             parsed_data['item_code'] = parsed_json.get('item')
@@ -2199,91 +2410,98 @@ def api_scan_qr_label():
             parsed_data['grn_date'] = parsed_json.get('grn_date')
             parsed_data['exp_date'] = parsed_json.get('exp_date')
             parsed_data['bin_location'] = parsed_json.get('bin', '')
-            
-            logging.info(f"✅ Parsed JSON QR format: {parsed_data}")
-            
+
+            logging.info(f"✅ Parsed QR JSON: {parsed_data}")
+
         except json.JSONDecodeError:
-            logging.warning("⚠️ Not JSON format, falling back to legacy parser")
-            
-            if qr_data.startswith('TRANSFER:'):
-                parts = qr_data.split('|')
-                first_part = parts[0].replace('TRANSFER:', '')
-                parsed_data['item_code'] = first_part
-                
-                for part in parts:
-                    if part.startswith('FROM:'):
-                        parsed_data['from_warehouse'] = part.replace('FROM:', '')
-                    elif part.startswith('TO:'):
-                        parsed_data['to_warehouse'] = part.replace('TO:', '')
-                    elif part.startswith('BATCH:'):
-                        parsed_data['batch_number'] = part.replace('BATCH:', '')
-                    elif part.startswith('UNIT:'):
-                        parsed_data['pack'] = part.replace('UNIT:', '')
-            else:
-                parts = qr_data.split('|')
-                if len(parts) >= 1:
-                    parsed_data['item_code'] = parts[0]
-                if len(parts) >= 2:
-                    parsed_data['transfer_number'] = parts[1]
-                if len(parts) >= 3:
-                    parsed_data['item_name'] = parts[2]
-                if len(parts) >= 4 and parts[3] and parts[3] != 'N/A':
-                    parsed_data['batch_number'] = parts[3]
-        
+            return jsonify({
+                'success': False,
+                'error': 'Invalid QR JSON format'
+            }), 400
+
+        # ==== STEP 2: Validate item code ====
         item_code = parsed_data.get('item_code')
         if not item_code:
-            return jsonify({'success': False, 'error': 'Could not extract item code from QR data'}), 400
-        
+            return jsonify({'success': False, 'error': 'Item code missing in QR'}), 400
+
         target_item_code = data.get('target_item_code', '').strip()
         if target_item_code and item_code != target_item_code:
             return jsonify({
                 'success': False,
-                'error': f'QR code is for item "{item_code}" but you are adding "{target_item_code}". Please scan the correct QR code.',
+                'error': f'QR code is for item "{item_code}", expected "{target_item_code}"',
                 'item_mismatch': True
             }), 400
-        
-        grn_id = parsed_data.get('id', '')
+
+        grn_id = parsed_data.get('id')
+
+        # =========================================================
+        # 🔥 NEW FEATURE: CHECK IF SAME GRN ALREADY SCANNED
+        # =========================================================
+        existing_grn = TransferScanState.query.filter_by(
+            transfer_id=transfer_id,
+            grn_id=grn_id
+        ).first()
+
+        if existing_grn:
+            return jsonify({
+                'success': False,
+                'message': f'GRN {grn_id} already scanned!',
+                'duplicate_grn': True,
+                'grn_id': grn_id
+            }), 400
+        # =========================================================
+
+        # ==== STEP 3: Prevent duplicate pack scans ====
         pack_label = parsed_data.get('pack', '1 of 1')
         pack_key = f"{grn_id}|{pack_label}"
-        
+
         existing_pack = TransferScanState.query.filter_by(
             transfer_id=transfer_id,
             item_code=item_code,
             pack_key=pack_key
         ).first()
-        
+
         if existing_pack:
             return jsonify({
                 'success': False,
-                'error': f'Pack {pack_label} has already been scanned!',
+                'error': f'Pack {pack_label} already scanned!',
                 'duplicate': True
             }), 400
-        
+
+        # ==== STEP 4: Calculate totals and validate limits ====
         scanned_packs = TransferScanState.query.filter_by(
             transfer_id=transfer_id,
             item_code=item_code
         ).all()
-        
+
         pack_qty = parsed_data.get('qty', 0)
         current_total = sum(pack.qty for pack in scanned_packs)
         new_total = current_total + pack_qty
-        
-        effective_requested_qty = requested_qty if requested_qty > 0 else (scanned_packs[0].requested_qty if scanned_packs else 0)
-        
-        if new_total > effective_requested_qty and effective_requested_qty > 0:
+
+        effective_requested_qty = (
+            requested_qty
+            if requested_qty > 0
+            else (scanned_packs[0].requested_qty if scanned_packs else 0)
+        )
+
+        if new_total > effective_requested_qty > 0:
             return jsonify({
                 'success': False,
-                'error': f'Scanning this pack would exceed requested quantity! Current: {current_total}, Adding: {pack_qty}, Requested: {effective_requested_qty}',
+                'error': (
+                    f'Scanning this pack exceeds requested quantity! '
+                    f'Current: {current_total}, Adding: {pack_qty}, Requested: {effective_requested_qty}'
+                ),
                 'overflow': True,
                 'current_total': current_total,
                 'requested_qty': effective_requested_qty
             }), 400
-        
+
+        # ==== STEP 5: Insert new scan ====
         new_scan = TransferScanState(
             transfer_id=transfer_id,
             item_code=item_code,
             user_id=current_user.id,
-            requested_qty=effective_requested_qty if effective_requested_qty > 0 else requested_qty,
+            requested_qty=effective_requested_qty or requested_qty,
             pack_key=pack_key,
             pack_label=pack_label,
             batch_number=parsed_data.get('batch_number', ''),
@@ -2294,19 +2512,71 @@ def api_scan_qr_label():
             po=parsed_data.get('po', ''),
             bin_location=parsed_data.get('bin_location', '')
         )
-        
+
         db.session.add(new_scan)
         db.session.commit()
-        
+
+
+        # if isinstance(qr_data, dict):
+        #     parsed_json = qr_data
+        # else:
+        #     parsed_json = json.loads(qr_data)
+        #     # SAP Item Lookup
+        #     sap = SAPIntegration()
+        #     item_details = sap.get_item_details(item_code)
+        #     actual_uom = item_details.get("InventoryUoM") if item_details else None
+        #     docDetails = InventoryTransfer.query.filter_by(
+        #         id=transfer_id
+        #     ).first()
+        #     # -----------------------------------------------------------
+        #     # 🔥 NEW: CHECK GRN ALREADY EXISTS IN THIS TRANSFER
+        #     # -----------------------------------------------------------
+        #     if grn_id:
+        #         exists = InventoryTransferItem.query.filter_by(
+        #             inventory_transfer_id=transfer.id,
+        #             grn_id=grn_id
+        #         ).first()
+        #
+        #         if exists:
+        #             return jsonify({
+        #                 "success": False,
+        #                 "message": f"GRN {grn_id} already exists in this transfer!",
+        #                 "duplicate_grn": True,
+        #                 "grn_id": grn_id
+        #             }), 400
+        #     # -----------------------------------------------------------
+        # new_item = InventoryTransferItem(
+        #     inventory_transfer_id=transfer.id,
+        #     item_code=item_code,
+        #     item_name=item_details.get("ItemName") or "",
+        #     quantity=pack_qty,
+        #     grn_id=grn_id,  # 🔥 Stored here
+        #     requested_quantity=requested_qty,
+        #     transferred_quantity=pack_qty,
+        #     remaining_quantity=pack_qty,
+        #     unit_of_measure=actual_uom or "Manual",
+        #     from_warehouse_code=docDetails.from_warehouse,
+        #     #to_warehouse_code=to_whs,
+        #     from_bin_location=parsed_json.get('bin', ''),
+        #     #to_bin_location=to_bin,
+        #     #to_bin=to_bin,
+        #     from_bin=parsed_json.get('bin', ''),
+        #     batch_number=parsed_json.get('batch'),
+        # )
+        #
+        # db.session.add(new_item)
+        # db.session.commit()
+
+        # ==== STEP 6: Prepare response ====
         all_scans = TransferScanState.query.filter_by(
             transfer_id=transfer_id,
             item_code=item_code
         ).all()
-        
+
         total_scanned_qty = sum(scan.qty for scan in all_scans)
         remaining_qty = max(0, new_scan.requested_qty - total_scanned_qty)
         is_complete = total_scanned_qty >= new_scan.requested_qty
-        
+
         scanned_packs_data = [{
             'pack_key': scan.pack_key,
             'pack_label': scan.pack_label,
@@ -2318,25 +2588,7 @@ def api_scan_qr_label():
             'po': scan.po,
             'bin_location': scan.bin_location or ''
         } for scan in all_scans]
-        
-        batch_summary = {}
-        bin_locations = set()
-        for scan in all_scans:
-            batch = scan.batch_number or 'N/A'
-            if batch not in batch_summary:
-                batch_summary[batch] = {
-                    'batch_number': batch,
-                    'total_qty': 0,
-                    'pack_count': 0,
-                    'exp_date': scan.exp_date or ''
-                }
-            batch_summary[batch]['total_qty'] += scan.qty
-            batch_summary[batch]['pack_count'] += 1
-            if scan.bin_location:
-                bin_locations.add(scan.bin_location)
-        
-        logging.info(f"✅ Added pack {pack_label} ({pack_qty} units). Total: {total_scanned_qty}/{new_scan.requested_qty}")
-        
+
         return jsonify({
             'success': True,
             'message': f'Scanned pack {pack_label} ({pack_qty} units)',
@@ -2346,18 +2598,13 @@ def api_scan_qr_label():
             'remaining_qty': remaining_qty,
             'is_complete': is_complete,
             'scanned_packs': scanned_packs_data,
-            'pack_count': len(all_scans),
-            'batch_summary': list(batch_summary.values()),
-            'bin_locations': list(bin_locations),
-            'latest_bin_location': parsed_data.get('bin_location', ''),
-            'latest_batch_number': parsed_data.get('batch_number', '')
+            'pack_count': len(all_scans)
         })
-        
+
     except Exception as e:
         logging.error(f"Error scanning QR label: {str(e)}")
-        import traceback
-        logging.error(traceback.format_exc())
         return jsonify({'success': False, 'error': str(e)}), 500
+
 
 @transfer_bp.route('/api/reset-scan-state', methods=['POST'])
 @login_required

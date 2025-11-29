@@ -182,6 +182,7 @@ class InventoryTransferItem(db.Model):
     item_code = db.Column(db.String(50), nullable=False)
     item_name = db.Column(db.String(200), nullable=False)
     quantity = db.Column(db.Float, nullable=False)
+    grn_id= db.Column(db.Text, nullable=True)
     requested_quantity = db.Column(db.Float, nullable=False)  # Original requested quantity
     transferred_quantity = db.Column(db.Float, default=0)  # Actually transferred quantity
     remaining_quantity = db.Column(db.Float, nullable=False)  # Remaining to transfer
