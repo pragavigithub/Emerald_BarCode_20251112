@@ -36,6 +36,11 @@ RECENT UPDATES (Nov 2025):
   * inventory_transfers: Added sap_doc_entry, sap_doc_num, bpl_id, bpl_name, sap_document_status, doc_date, due_date, sap_raw_json
   * inventory_transfer_items: Added from_warehouse_code, to_warehouse_code, sap_line_num, sap_doc_entry, line_status
   * NEW TABLE: inventory_transfer_request_lines - Stores SAP StockTransferLines exactly as received for SAP B1 posting
+- Added BinLocation to Multi-GRN QR code labels - Nov 29, 2025
+  * QR code JSON data now includes 'bin' field for bin location tracking
+  * Updated all 8 QR data generation points to include bin_location
+  * Updated view_batch.html and step3_detail.html templates to display Bin Location
+  * QR code decode now shows: id, po, item, batch, qty, pack, grn_date, exp_date, bin
 
 Run with: python mysql_consolidated_migration.py
 """

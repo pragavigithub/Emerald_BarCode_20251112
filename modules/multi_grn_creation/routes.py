@@ -1569,7 +1569,8 @@ def update_line_item():
                         'qty': pack_qty,
                         'pack': f"{pack_num} of {bags_count}",
                         'grn_date': grn_date,
-                        'exp_date': expiry_date_obj.strftime('%Y-%m-%d') if expiry_date_obj else 'N/A'
+                        'exp_date': expiry_date_obj.strftime('%Y-%m-%d') if expiry_date_obj else 'N/A',
+                        'bin': line_selection.bin_location or 'N/A'
                     }
                     qr_text = json.dumps(qr_data)
                     
@@ -1906,7 +1907,8 @@ def manage_batch_details(line_id):
                     'qty': pack_qty,
                     'pack': f"{pack_num} of {no_of_packs}",
                     'grn_date': grn_date,
-                    'exp_date': expiry_date_obj.strftime('%Y-%m-%d') if expiry_date_obj else 'N/A'
+                    'exp_date': expiry_date_obj.strftime('%Y-%m-%d') if expiry_date_obj else 'N/A',
+                    'bin': line_selection.bin_location or 'N/A'
                 }
                 qr_text = json.dumps(qr_data)
                 
@@ -2187,7 +2189,8 @@ def generate_barcode_labels_multi_grn():
                     'qty': int(qty_per_pack),
                     'pack': f"{pack_idx} of {num_packs}",
                     'grn_date': grn_date,
-                    'exp_date': ref_serial.expiry_date.strftime('%Y-%m-%d') if ref_serial.expiry_date else 'N/A'
+                    'exp_date': ref_serial.expiry_date.strftime('%Y-%m-%d') if ref_serial.expiry_date else 'N/A',
+                    'bin': line_selection.bin_location or 'N/A'
                 }
                 
                 qr_text = json.dumps(qr_data)
@@ -2208,6 +2211,7 @@ def generate_barcode_labels_multi_grn():
                     'item_code': line_selection.item_code,
                     'item_name': line_selection.item_description or '',
                     'doc_number': f"{serial_grn}-{pack_idx}",
+                    'bin_location': line_selection.bin_location or 'N/A',
                     'qr_code_image': qr_code_image,
                     'qr_data': qr_data
                 }
@@ -2275,7 +2279,8 @@ def generate_barcode_labels_multi_grn():
                         'qty': int(pack_label.qty_in_pack) if pack_label.qty_in_pack else 1,
                         'pack': f"{pack_label.pack_number} of {num_packs}",
                         'grn_date': grn_date,
-                        'exp_date': batch_detail.expiry_date.strftime('%Y-%m-%d') if batch_detail.expiry_date else 'N/A'
+                        'exp_date': batch_detail.expiry_date.strftime('%Y-%m-%d') if batch_detail.expiry_date else 'N/A',
+                        'bin': line_selection.bin_location or 'N/A'
                     }
                     # Save regenerated qr_data back to database for future use
                     pack_label.qr_data = json.dumps(qr_data_dict)
@@ -2312,6 +2317,7 @@ def generate_barcode_labels_multi_grn():
                     'item_code': line_selection.item_code,
                     'item_name': line_selection.item_description or '',
                     'doc_number': pack_label.grn_number,
+                    'bin_location': line_selection.bin_location or 'N/A',
                     'qr_code_image': qr_code_image,
                     'qr_data': qr_data_dict
                 }
@@ -2349,7 +2355,8 @@ def generate_barcode_labels_multi_grn():
                     'qty': pack_qty,
                     'pack': f"{pack_num} of {num_packs}",
                     'grn_date': grn_date,
-                    'exp_date': batch_detail.expiry_date.strftime('%Y-%m-%d') if batch_detail.expiry_date else 'N/A'
+                    'exp_date': batch_detail.expiry_date.strftime('%Y-%m-%d') if batch_detail.expiry_date else 'N/A',
+                    'bin': line_selection.bin_location or 'N/A'
                 }
                 
                 qr_text = json.dumps(qr_data)
@@ -2370,6 +2377,7 @@ def generate_barcode_labels_multi_grn():
                     'item_code': line_selection.item_code,
                     'item_name': line_selection.item_description or '',
                     'doc_number': f"{batch_grn}-{pack_num}",
+                    'bin_location': line_selection.bin_location or 'N/A',
                     'qr_code_image': qr_code_image,
                     'qr_data': qr_data
                 }
@@ -2386,7 +2394,8 @@ def generate_barcode_labels_multi_grn():
                 'qty': int(float(line_selection.selected_quantity)),
                 'pack': '1 of 1',
                 'grn_date': grn_date,
-                'exp_date': 'N/A'
+                'exp_date': 'N/A',
+                'bin': line_selection.bin_location or 'N/A'
             }
             
             qr_text = json.dumps(qr_data)
@@ -2404,6 +2413,7 @@ def generate_barcode_labels_multi_grn():
                 'item_code': line_selection.item_code,
                 'item_name': line_selection.item_description or '',
                 'doc_number': doc_number,
+                'bin_location': line_selection.bin_location or 'N/A',
                 'qr_code_image': qr_code_image,
                 'qr_data': qr_data
             }
@@ -2646,7 +2656,8 @@ def add_item_to_batch(batch_id):
                                     'qty': pack_qty,
                                     'pack': f"{pack_num} of {number_of_bags}",
                                     'grn_date': grn_date,
-                                    'exp_date': batch_expiry.strftime('%Y-%m-%d') if batch_expiry else 'N/A'
+                                    'exp_date': batch_expiry.strftime('%Y-%m-%d') if batch_expiry else 'N/A',
+                                    'bin': line_selection.bin_location or 'N/A'
                                 }
                                 qr_text = json.dumps(qr_data)
                                 
@@ -2685,7 +2696,8 @@ def add_item_to_batch(batch_id):
                                 'qty': batch_qty_int,
                                 'pack': f"1 of 1",
                                 'grn_date': grn_date,
-                                'exp_date': batch_expiry.strftime('%Y-%m-%d') if batch_expiry else 'N/A'
+                                'exp_date': batch_expiry.strftime('%Y-%m-%d') if batch_expiry else 'N/A',
+                                'bin': line_selection.bin_location or 'N/A'
                             }
                             qr_text = json.dumps(qr_data)
                             
@@ -2763,7 +2775,8 @@ def add_item_to_batch(batch_id):
                     'qty': pack_qty,
                     'pack': f"{pack_num} of {number_of_bags}",
                     'grn_date': grn_date,
-                    'exp_date': expiry_date_obj.strftime('%Y-%m-%d') if expiry_date_obj else 'N/A'
+                    'exp_date': expiry_date_obj.strftime('%Y-%m-%d') if expiry_date_obj else 'N/A',
+                    'bin': bin_location or 'N/A'
                 }
                 qr_text = json.dumps(qr_data)
                 
