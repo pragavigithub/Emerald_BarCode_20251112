@@ -469,6 +469,7 @@
                                             <th>Pack</th>
                                             <th>Batch</th>
                                             <th>Qty</th>
+                                            <th>Bin</th>
                                             <th>GRN</th>
                                             <th>Exp Date</th>
                                         </tr>
@@ -1695,6 +1696,28 @@ function populateAddItemModalFromQR(scanData) {
             availableQtyField.value = scanData.total_scanned_qty || 0;
         }
         
+        if (scanData.latest_bin_location) {
+            const fromBinSelect = document.getElementById('from_bin');
+            if (fromBinSelect) {
+                let binFound = false;
+                for (let option of fromBinSelect.options) {
+                    if (option.value === scanData.latest_bin_location) {
+                        option.selected = true;
+                        binFound = true;
+                        break;
+                    }
+                }
+                if (!binFound && fromBinSelect.options.length > 0) {
+                    const newOption = document.createElement('option');
+                    newOption.value = scanData.latest_bin_location;
+                    newOption.textContent = scanData.latest_bin_location + ' (from QR)';
+                    newOption.selected = true;
+                    fromBinSelect.appendChild(newOption);
+                }
+                console.log('✅ Auto-selected From Bin Location:', scanData.latest_bin_location);
+            }
+        }
+        
         const uniqueBatches = [...new Set(scanData.scanned_packs.map(p => p.batch_number).filter(b => b))];
         
         if (uniqueBatches.length > 0) {
@@ -1720,6 +1743,11 @@ function populateAddItemModalFromQR(scanData) {
                     batchGroup.style.display = 'block';
                 }
             }
+        }
+        
+        if (scanData.batch_summary) {
+            window.scannedBatchSummary = scanData.batch_summary;
+            console.log('✅ Stored batch summary for SAP posting:', scanData.batch_summary);
         }
     }
     
@@ -1754,6 +1782,7 @@ function renderScannedPacks(scanData) {
                 <td>${pack.pack_label || '-'}</td>
                 <td><span class="badge bg-primary">${pack.batch_number || '-'}</span></td>
                 <td><strong>${pack.qty || 0}</strong></td>
+                <td><span class="badge bg-info">${pack.bin_location || '-'}</span></td>
                 <td><small>${pack.grn_id || '-'}</small></td>
                 <td><small>${pack.exp_date || '-'}</small></td>
             `;

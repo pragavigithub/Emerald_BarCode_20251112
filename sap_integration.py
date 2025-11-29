@@ -1701,8 +1701,33 @@ class SAPIntegration:
             if uom_entry:
                 line["UoMEntry"] = uom_entry
 
-            # Add batch numbers if present
-            if item.batch_number:
+            # Add batch numbers if present - support multiple batches from QR scanning
+            if hasattr(item, 'scanned_batches') and item.scanned_batches:
+                try:
+                    batches_data = json.loads(item.scanned_batches)
+                    if batches_data and isinstance(batches_data, list):
+                        batch_numbers = []
+                        for batch_entry in batches_data:
+                            batch_num = batch_entry.get('batch_number', '')
+                            batch_qty = float(batch_entry.get('quantity', 0))
+                            if batch_num and batch_num != 'N/A' and batch_qty > 0:
+                                batch_numbers.append({
+                                    "BaseLineNumber": index,
+                                    "BatchNumberProperty": batch_num,
+                                    "Quantity": batch_qty
+                                })
+                        if batch_numbers:
+                            line["BatchNumbers"] = batch_numbers
+                            logging.info(f"📦 Added {len(batch_numbers)} batch entries for item {item.item_code}")
+                except (json.JSONDecodeError, TypeError) as e:
+                    logging.warning(f"⚠️ Failed to parse scanned_batches for {item.item_code}: {e}")
+                    if item.batch_number:
+                        line["BatchNumbers"] = [{
+                            "BaseLineNumber": index,
+                            "BatchNumberProperty": item.batch_number,
+                            "Quantity": float(item.quantity)
+                        }]
+            elif item.batch_number:
                 line["BatchNumbers"] = [{
                     "BaseLineNumber": index,
                     "BatchNumberProperty": item.batch_number,

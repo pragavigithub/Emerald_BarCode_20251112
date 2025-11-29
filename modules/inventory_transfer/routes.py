@@ -643,6 +643,30 @@ def add_transfer_item(transfer_id):
             flash(f'Item {item_code} has already been added to this inventory transfer. Each item can only be transferred once per transfer request to avoid duplication.', 'error')
             return redirect(url_for('inventory_transfer.detail', transfer_id=transfer_id))
         
+        scanned_packs = TransferScanState.query.filter_by(
+            transfer_id=transfer_id,
+            item_code=item_code
+        ).all()
+        
+        scanned_batches_json = None
+        if scanned_packs:
+            batch_summary = {}
+            for pack in scanned_packs:
+                batch = pack.batch_number or 'N/A'
+                if batch not in batch_summary:
+                    batch_summary[batch] = {
+                        'batch_number': batch,
+                        'quantity': 0,
+                        'bin_location': pack.bin_location or ''
+                    }
+                batch_summary[batch]['quantity'] += pack.qty
+            
+            scanned_batches_json = json.dumps(list(batch_summary.values()))
+            logging.info(f"📦 Collected batch summary from scanned packs: {scanned_batches_json}")
+            
+            if not from_bin and scanned_packs[0].bin_location:
+                from_bin = scanned_packs[0].bin_location
+        
         # Create new transfer item
         transfer_item = InventoryTransferItem(
             transfer_id=transfer_id,
@@ -655,13 +679,19 @@ def add_transfer_item(transfer_id):
             from_bin=from_bin,
             to_bin=to_bin,
             batch_number=batch_number,
+            scanned_batches=scanned_batches_json,
             qc_status='pending'
         )
         
         db.session.add(transfer_item)
+        
+        if scanned_packs:
+            for pack in scanned_packs:
+                db.session.delete(pack)
+        
         db.session.commit()
         
-        logging.info(f"✅ Item {item_code} added to inventory transfer {transfer_id} with duplicate prevention")
+        logging.info(f"✅ Item {item_code} added to inventory transfer {transfer_id} with {len(scanned_packs) if scanned_packs else 0} scanned packs")
         flash(f'Item {item_code} successfully added to inventory transfer', 'success')
         
     except Exception as e:
@@ -2162,6 +2192,7 @@ def api_scan_qr_label():
             parsed_data['pack'] = parsed_json.get('pack', '1 of 1')
             parsed_data['grn_date'] = parsed_json.get('grn_date')
             parsed_data['exp_date'] = parsed_json.get('exp_date')
+            parsed_data['bin_location'] = parsed_json.get('bin', '')
             
             logging.info(f"✅ Parsed JSON QR format: {parsed_data}")
             
@@ -2254,7 +2285,8 @@ def api_scan_qr_label():
             grn_id=grn_id,
             grn_date=parsed_data.get('grn_date', ''),
             exp_date=parsed_data.get('exp_date', ''),
-            po=parsed_data.get('po', '')
+            po=parsed_data.get('po', ''),
+            bin_location=parsed_data.get('bin_location', '')
         )
         
         db.session.add(new_scan)
@@ -2277,8 +2309,25 @@ def api_scan_qr_label():
             'grn_id': scan.grn_id,
             'grn_date': scan.grn_date,
             'exp_date': scan.exp_date,
-            'po': scan.po
+            'po': scan.po,
+            'bin_location': scan.bin_location or ''
         } for scan in all_scans]
+        
+        batch_summary = {}
+        bin_locations = set()
+        for scan in all_scans:
+            batch = scan.batch_number or 'N/A'
+            if batch not in batch_summary:
+                batch_summary[batch] = {
+                    'batch_number': batch,
+                    'total_qty': 0,
+                    'pack_count': 0,
+                    'exp_date': scan.exp_date or ''
+                }
+            batch_summary[batch]['total_qty'] += scan.qty
+            batch_summary[batch]['pack_count'] += 1
+            if scan.bin_location:
+                bin_locations.add(scan.bin_location)
         
         logging.info(f"✅ Added pack {pack_label} ({pack_qty} units). Total: {total_scanned_qty}/{new_scan.requested_qty}")
         
@@ -2291,7 +2340,11 @@ def api_scan_qr_label():
             'remaining_qty': remaining_qty,
             'is_complete': is_complete,
             'scanned_packs': scanned_packs_data,
-            'pack_count': len(all_scans)
+            'pack_count': len(all_scans),
+            'batch_summary': list(batch_summary.values()),
+            'bin_locations': list(bin_locations),
+            'latest_bin_location': parsed_data.get('bin_location', ''),
+            'latest_batch_number': parsed_data.get('batch_number', '')
         })
         
     except Exception as e:

@@ -41,6 +41,12 @@ RECENT UPDATES (Nov 2025):
   * Updated all 8 QR data generation points to include bin_location
   * Updated view_batch.html and step3_detail.html templates to display Bin Location
   * QR code decode now shows: id, po, item, batch, qty, pack, grn_date, exp_date, bin
+- Enhanced Inventory Transfer QR scanning for batch-managed items - Nov 29, 2025
+  * Added bin_location column to transfer_scan_states table
+  * Added scanned_batches column (JSON) to inventory_transfer_items for multi-batch SAP posting
+  * QR scan now auto-fills From Bin Location and Batch Number from decoded QR data
+  * Batch accumulation: scanning same batch adds qty up to requested limit
+  * SAP B1 POST JSON now supports BatchNumbers array with multiple batches
 
 Run with: python mysql_consolidated_migration.py
 """

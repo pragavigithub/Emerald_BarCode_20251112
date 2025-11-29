@@ -194,6 +194,7 @@ class InventoryTransferItem(db.Model):
     to_warehouse_code = db.Column(db.String(20), nullable=True)  # SAP WarehouseCode (destination)
     batch_number = db.Column(db.String(50), nullable=True)
     available_batches = db.Column(db.Text, nullable=True)  # JSON list of available batches
+    scanned_batches = db.Column(db.Text, nullable=True)  # JSON array of {batch_number, qty} for SAP BatchNumbers
     qc_status = db.Column(db.String(20), default='pending')  # pending, approved, rejected
     qc_notes = db.Column(db.Text, nullable=True)
     
@@ -270,6 +271,7 @@ class TransferScanState(db.Model):
     grn_date = db.Column(db.String(20), nullable=True)
     exp_date = db.Column(db.String(20), nullable=True)
     po = db.Column(db.String(50), nullable=True)
+    bin_location = db.Column(db.String(50), nullable=True)
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
