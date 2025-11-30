@@ -2333,6 +2333,8 @@ def inventory_transfer_detail(transfer_id):
                     to_warehouse_code=docDetails.warehouse_code,
                     from_bin_location=from_bin,
                     to_bin_location=to_bin,
+                    to_bin=to_bin,
+                    from_bin=from_bin,
                     batch_number=batch_number if batch_number else None,
                     grn_id=GRN_id
                 )
