@@ -273,6 +273,7 @@ class TransferScanState(db.Model):
     exp_date = db.Column(db.String(20), nullable=True)
     po = db.Column(db.String(50), nullable=True)
     bin_location = db.Column(db.String(50), nullable=True)
+    transfer_status=db.Column(db.String(40),nullable=True)
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     

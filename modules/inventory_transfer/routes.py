@@ -2439,13 +2439,14 @@ def api_scan_qr_label():
         # =========================================================
         existing_grn = TransferScanState.query.filter_by(
             transfer_id=transfer_id,
-            grn_id=grn_id
+            grn_id=grn_id,
+            transfer_status = 'transferred'
         ).first()
 
         if existing_grn:
             return jsonify({
                 'success': False,
-                'message': f'GRN {grn_id} already scanned!',
+                'message': f'GRN {grn_id} already transferred designation warehouse!',
                 'duplicate_grn': True,
                 'grn_id': grn_id
             }), 400
@@ -2458,7 +2459,8 @@ def api_scan_qr_label():
         existing_pack = TransferScanState.query.filter_by(
             transfer_id=transfer_id,
             item_code=item_code,
-            pack_key=pack_key
+            pack_key=pack_key,
+            transfer_status='transferred'
         ).first()
 
         if existing_pack:
@@ -2510,7 +2512,8 @@ def api_scan_qr_label():
             grn_date=parsed_data.get('grn_date', ''),
             exp_date=parsed_data.get('exp_date', ''),
             po=parsed_data.get('po', ''),
-            bin_location=parsed_data.get('bin_location', '')
+            bin_location=parsed_data.get('bin_location', ''),
+            transfer_status = ('pending')
         )
 
         db.session.add(new_scan)
