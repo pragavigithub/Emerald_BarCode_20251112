@@ -2176,9 +2176,10 @@ def inventory_transfer_detail(transfer_id):
                             transfer_id=transfer_id,
                             grn_id=GRN_id,
                             transfer_status = 'pending'
-                        ).first()
+                        ).all()
                     if updateTransScanStatus:
-                        updateTransScanStatus.transfer_status = 'transferred'
+                        for row in updateTransScanStatus:
+                            row.transfer_status = 'transferred'
                         db.session.commit()
                     
                     return jsonify({
