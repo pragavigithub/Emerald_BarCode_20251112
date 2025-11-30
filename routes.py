@@ -8,8 +8,9 @@ from barcode_generator import BarcodeGenerator
 
 from app import app, db, login_manager
 from models import User, InventoryTransfer, InventoryTransferItem, PickList, PickListItem, \
-    InventoryCount, InventoryCountItem, SAPInventoryCount, SAPInventoryCountLine, BarcodeLabel, BinScanningLog, DocumentNumberSeries, QRCodeLabel, PickListLine, \
-    DirectInventoryTransfer, DirectInventoryTransferItem, TransferScanState
+    InventoryCount, InventoryCountItem, SAPInventoryCount, SAPInventoryCountLine, BarcodeLabel, BinScanningLog, \
+    DocumentNumberSeries, QRCodeLabel, PickListLine, \
+    DirectInventoryTransfer, DirectInventoryTransferItem, TransferScanState, InventoryTransferRequestLine
 from modules.grpo.models import GRPODocument, GRPOItem, GRPOSerialNumber, GRPOBatchNumber, PurchaseDeliveryNote
 from modules.multi_grn_creation.models import MultiGRNBatch
 from sap_integration import SAPIntegration
@@ -2047,6 +2048,38 @@ def create_inventory_transfer():
 #         transfer=transfer,
 #         available_items=available_items
 #     )
+
+@app.route('/api/getBincode/<string:warehousecode>', methods=['GET'])
+@login_required
+def get_bincode(warehousecode):
+    try:
+        sap = SAPIntegration()
+        bin_result = sap.get_bin_locations_list(warehousecode)
+
+        # If SAP call failed
+        if not bin_result.get("success"):
+            return jsonify({
+                "success": False,
+                "warehouse": warehousecode,
+                "bins": [],
+                "error": bin_result.get("error", "Unknown error from SAP")
+            }), 500
+
+        # Successful return
+        return jsonify({
+            "success": True,
+            "warehouse": warehousecode,
+            "bins": bin_result.get("bins", [])
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "warehouse": warehousecode,
+            "bins": [],
+            "error": str(e)
+        }), 500
+
 @app.route('/inventory_transfer/<int:transfer_id>', methods=['GET', 'POST'])
 @login_required
 def inventory_transfer_detail(transfer_id):
@@ -2116,8 +2149,9 @@ def inventory_transfer_detail(transfer_id):
                 item_details = sap.get_item_details(item_code)
                 actual_uom = item_details.get("InventoryUoM") if item_details else None
 
-                docDetails = InventoryTransfer.query.filter_by(
-                        id=transfer_id
+                docDetails = InventoryTransferRequestLine.query.filter_by(
+                        inventory_transfer_id=transfer_id,
+                        item_code=item_code
                     ).first()
                 # Insert new record
                 new_item = InventoryTransferItem(
@@ -2126,12 +2160,12 @@ def inventory_transfer_detail(transfer_id):
                     item_name=item_name,
                     quantity=quantity,
                     grn_id=GRN_id,                     # 🔥 Stored here
-                    requested_quantity=quantity,
+                    requested_quantity=docDetails.quantity,
                     transferred_quantity=quantity,
-                    remaining_quantity=quantity,
+                    remaining_quantity=docDetails.remaining_open_quantity,
                     unit_of_measure=actual_uom or "Manual",
-                    from_warehouse_code=docDetails.from_warehouse,
-                    to_warehouse_code=docDetails.to_warehouse,
+                    from_warehouse_code=docDetails.from_warehouse_code,
+                    to_warehouse_code=docDetails.warehouse_code,
                     from_bin_location=from_bin,
                     to_bin_location=to_bin,
                     to_bin=to_bin,

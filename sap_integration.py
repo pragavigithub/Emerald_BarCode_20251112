@@ -275,9 +275,10 @@ class SAPIntegration:
             payload = {
                 "ParamList": f"whsCode='{warehouse_code}'"
             }
-            
+            headers = {"Prefer": "odata.maxpagesize=0"}
+            response = self.session.post(url, json=payload,headers=headers, timeout=30)
             logging.info(f"🔍 Fetching bin locations for warehouse: {warehouse_code}")
-            response = self.session.post(url, json=payload, timeout=30)
+
             
             if response.status_code == 200:
                 data = response.json()
