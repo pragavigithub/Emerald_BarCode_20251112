@@ -203,6 +203,13 @@ class InventoryTransferItem(db.Model):
     sap_line_num = db.Column(db.Integer, nullable=True)  # SAP LineNum
     sap_doc_entry = db.Column(db.Integer, nullable=True)  # SAP DocEntry reference
     line_status = db.Column(db.String(20), nullable=True)  # SAP LineStatus (bost_Open, bost_Close)
+
+    serial_manged=db.Column(db.String(20), nullable=True)
+    batch_manage=db.Column(db.String(20), nullable=True)
+    non_batch_non_serial=db.Column(db.String(20), nullable=True)
+
+    batch_required=db.Column(db.Boolean, default=True)
+    serial_required=db.Column(db.Boolean, default=True)
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 

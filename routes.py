@@ -2147,9 +2147,10 @@ def inventory_transfer_detail(transfer_id):
                         ).first()
                    # Insert new record
                     remaining_qqty = docDetails.remaining_open_quantity - quantity;
+                    itemType=sap.validate_item_code(item_code)
                     # print("docDetails test",docDetails.remaining_open_quantity,docDetails.from_warehouse_code,docDetails.warehouse_code,docDetails.uom_code,docDetails.uom_code)
                     # print("rememei-->",remaining_qqty )
-                    # print("fhghg---->",docDetails)
+                    #print("itemType---->",itemType)
                     new_item = InventoryTransferItem(
                         inventory_transfer_id=transfer.id,
                         item_code=item_code,
@@ -2169,7 +2170,12 @@ def inventory_transfer_detail(transfer_id):
                         batch_number=batch_number,
                         sap_line_num=docDetails.line_num,
                         sap_doc_entry=docDetails.sap_doc_entry,
-                        line_status=docDetails.line_status
+                        line_status=docDetails.line_status,
+                        serial_manged=itemType.get("serial_num"),
+                        batch_manage=itemType.get("batch_num"),
+                        non_batch_non_serial=itemType.get("manage_method"),
+                        serial_required=itemType.get("serial_required"),
+                        batch_required=itemType.get("batch_required")
                     )
                     
                     db.session.add(new_item)
@@ -2320,7 +2326,8 @@ def inventory_transfer_detail(transfer_id):
                     return redirect(url_for("inventory_transfer_detail", transfer_id=transfer_id))
 
                 remaining_qty = docDetails.remaining_open_quantity - quantity
-
+                itemType = sap.validate_item_code(item_code)
+                print("ItemType------->",itemType.serial_num)
                 # ======================================================
                 # INSERT NEW LINE ITEM INTO InventoryTransferItem
                 # ======================================================
@@ -2343,7 +2350,12 @@ def inventory_transfer_detail(transfer_id):
                     grn_id=GRN_id,
                     sap_line_num=docDetails.line_num,
                     sap_doc_entry=docDetails.sap_doc_entry,
-                    line_status=docDetails.line_status
+                    line_status=docDetails.line_status,
+                   serial_manged=itemType.get("serial_num"),
+                   batch_manage=itemType.get("batch_num"),
+                   non_batch_non_serial=itemType.get("manage_method"),
+                   serial_required=itemType.get("serial_required"),
+                   batch_required=itemType.get("batch_required")
                 )
 
                 db.session.add(new_item)
