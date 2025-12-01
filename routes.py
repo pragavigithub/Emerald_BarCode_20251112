@@ -2167,6 +2167,9 @@ def inventory_transfer_detail(transfer_id):
                         to_bin=to_bin,
                         from_bin=from_bin,
                         batch_number=batch_number,
+                        sap_line_num=docDetails.line_num,
+                        sap_doc_entry=docDetails.sap_doc_entry,
+                        line_status=docDetails.line_status
                     )
                     
                     db.session.add(new_item)
