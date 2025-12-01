@@ -1736,22 +1736,24 @@ class SAPIntegration:
                 }]
 
             # Add bin allocation if bins are specified
-            # if item.from_bin or item.to_bin:
-            #     line["BinAllocation"] = []
-            #
-            #     if item.from_bin:
-            #         line["BinAllocation"].append({
-            #             "BinActionType": "batFromWarehouse",
-            #             "BinAbsEntry": self.get_bin_abs_entry(item.from_bin, transfer_document.from_warehouse),
-            #             "Quantity": float(item.quantity)
-            #         })
-            #
-            #     if item.to_bin:
-            #         line["BinAllocation"].append({
-            #             "BinActionType": "batToWarehouse",
-            #             "BinAbsEntry": self.get_bin_abs_entry(item.to_bin, transfer_document.to_warehouse),
-            #             "Quantity": float(item.quantity)
-            #         })
+            if item.from_bin or item.to_bin:
+                line["StockTransferLinesBinAllocations"] = []
+
+                if item.from_bin:
+                    line["StockTransferLinesBinAllocations"].append({
+                        "BinActionType": "batFromWarehouse",
+                        "BinAbsEntry": self.get_bin_abs_entry(item.from_bin, transfer_document.from_warehouse),
+                        "Quantity": float(item.quantity),
+                        "SerialAndBatchNumbersBaseLine": 0
+                    })
+
+                if item.to_bin:
+                    line["StockTransferLinesBinAllocations"].append({
+                        "BinActionType": "batToWarehouse",
+                        "BinAbsEntry": self.get_bin_abs_entry(item.to_bin, transfer_document.to_warehouse),
+                        "Quantity": float(item.quantity),
+                        "SerialAndBatchNumbersBaseLine": 0
+                    })
 
             stock_transfer_lines.append(line)
 

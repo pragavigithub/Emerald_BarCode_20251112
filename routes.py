@@ -2340,7 +2340,10 @@ def inventory_transfer_detail(transfer_id):
                     to_bin=to_bin,
                     from_bin=from_bin,
                     batch_number=batch_number if batch_number else None,
-                    grn_id=GRN_id
+                    grn_id=GRN_id,
+                    sap_line_num=docDetails.line_num,
+                    sap_doc_entry=docDetails.sap_doc_entry,
+                    line_status=docDetails.line_status
                 )
 
                 db.session.add(new_item)
