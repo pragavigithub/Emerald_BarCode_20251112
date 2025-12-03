@@ -13,6 +13,8 @@ from pathlib import Path
 import json
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
+from sap_integration import SAPIntegration
+
 # Use absolute path for template_folder to support PyInstaller .exe builds
 multi_grn_bp = Blueprint('multi_grn', __name__, 
                               template_folder=str(Path(__file__).resolve().parent / 'templates'),
@@ -1496,10 +1498,17 @@ def update_line_item():
         
         # Handle expiration date (supports both field names for compatibility)
         expiry_date_obj = None
+        sap = SAPIntegration()
+        itemType = sap.validate_item_code(line_selection.item_code)
         if expiration_date:
             try:
                 from datetime import datetime
-                expiry_date_obj = datetime.strptime(expiration_date, '%Y-%m-%d').date()
+                if itemType.get("serial_num") == 'Y':
+                    expiry_date_obj = datetime.strptime(expiration_date, '%Y-%m-%d').date()
+                elif itemType.get("batch_num") == 'Y':
+                    expiry_date_obj = datetime.strptime(expiration_date, '%Y-%m-%d').date()
+                else:
+                    expiry_date_obj = ''
             except ValueError:
                 return jsonify({'success': False, 'error': 'Invalid expiration date format'}), 400
         
@@ -1524,12 +1533,20 @@ def update_line_item():
                 batch_id = line_selection.po_link.batch_id
             else:
                 batch_id = line_selection_id
-            
+
+
             # Auto-generate batch number using date and item code (YYYYMMDD-ITEMCODE-1)
             today_str = datetime.now().strftime('%Y%m%d')
             item_code_short = line_selection.item_code[:10] if line_selection.item_code else "ITEM"
-            batch_number = f"{today_str}-{item_code_short}-1"
-            
+           # batch_number = f"{today_str}-{item_code_short}-1"
+            if itemType.get("serial_num") == 'Y':
+             #batch_number = f"{today_str}"
+             batch_number = f"{today_str}-{line_selection.item_code}"
+            elif itemType.get("batch_num") == 'Y' :
+                batch_number = f"{today_str}-{line_selection.item_code}"
+            else:
+                batch_number = ''
+
             # Calculate quantity distribution across packs (INTEGER ONLY)
             if line_selection.selected_quantity:
                 total_qty_original = Decimal(str(line_selection.selected_quantity))
@@ -2279,7 +2296,7 @@ def generate_barcode_labels_multi_grn():
                         'qty': int(pack_label.qty_in_pack) if pack_label.qty_in_pack else 1,
                         'pack': f"{pack_label.pack_number} of {num_packs}",
                         'grn_date': grn_date,
-                        'exp_date': batch_detail.expiry_date.strftime('%Y-%m-%d') if batch_detail.expiry_date else 'N/A',
+                        'exp_date': batch_detail.expiry_date or 'N/A',
                         'bin': line_selection.bin_location or 'N/A'
                     }
                     # Save regenerated qr_data back to database for future use
@@ -2313,7 +2330,8 @@ def generate_barcode_labels_multi_grn():
                     'no_of_packs': num_packs,
                     'grn_date': grn_date,
                     'grn_number': pack_label.grn_number,
-                    'expiration_date': batch_detail.expiry_date.strftime('%Y-%m-%d') if batch_detail.expiry_date else 'N/A',
+                    #'expiration_date': batch_detail.expiry_date.strftime('%Y-%m-%d') if batch_detail.expiry_date else 'N/A',
+                    'expiration_date':  batch_detail.expiry_date or 'N/A',
                     'item_code': line_selection.item_code,
                     'item_name': line_selection.item_description or '',
                     'doc_number': pack_label.grn_number,
@@ -2355,7 +2373,7 @@ def generate_barcode_labels_multi_grn():
                     'qty': pack_qty,
                     'pack': f"{pack_num} of {num_packs}",
                     'grn_date': grn_date,
-                    'exp_date': batch_detail.expiry_date.strftime('%Y-%m-%d') if batch_detail.expiry_date else 'N/A',
+                    'exp_date': batch_detail.expiry_date or 'N/A',
                     'bin': line_selection.bin_location or 'N/A'
                 }
                 
@@ -2373,7 +2391,7 @@ def generate_barcode_labels_multi_grn():
                     'no_of_packs': num_packs,
                     'grn_date': grn_date,
                     'grn_number': f"{batch_grn}-{pack_num}",
-                    'expiration_date': batch_detail.expiry_date.strftime('%Y-%m-%d') if batch_detail.expiry_date else 'N/A',
+                    'expiration_date': batch_detail.expiry_date or 'N/A',
                     'item_code': line_selection.item_code,
                     'item_name': line_selection.item_description or '',
                     'doc_number': f"{batch_grn}-{pack_num}",

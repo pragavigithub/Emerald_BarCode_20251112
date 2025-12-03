@@ -2576,7 +2576,7 @@ def qc_approve_transfer(transfer_id):
     """QC approve inventory transfer and post to SAP B1"""
     try:
         transfer = InventoryTransfer.query.get_or_404(transfer_id)
-        
+        transfers = InventoryTransferItem.query.get_or_404(transfer_id)
         # Check if user has QC permissions
         if not current_user.has_permission('qc_dashboard') and current_user.role not in ['admin', 'manager']:
             return jsonify({'success': False, 'error': 'Access denied - QC permissions required'}), 403

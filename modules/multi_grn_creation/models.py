@@ -130,7 +130,7 @@ class MultiGRNBatchDetails(db.Model):
     quantity = db.Column(db.Numeric(15, 3), nullable=False)
     manufacturer_serial_number = db.Column(db.String(100))
     internal_serial_number = db.Column(db.String(100))
-    expiry_date = db.Column(db.Date)
+    expiry_date = db.Column(db.String(100))
     barcode = db.Column(db.String(200))
     grn_number = db.Column(db.String(50))
     qty_per_pack = db.Column(db.Numeric(15, 3))

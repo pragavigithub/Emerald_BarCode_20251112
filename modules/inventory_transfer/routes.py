@@ -247,30 +247,30 @@ def create():
     if not current_user.has_permission('inventory_transfer'):
         flash('Access denied - Inventory Transfer permissions required', 'error')
         return redirect(url_for('dashboard'))
-    
+
     if request.method == 'POST':
         transfer_request_number = request.form.get('transfer_request_number')
         from_warehouse = request.form.get('from_warehouse')
         to_warehouse = request.form.get('to_warehouse')
-        
+
         if not transfer_request_number:
             flash('Transfer request number is required', 'error')
             return redirect(url_for('inventory_transfer.create'))
-        
+
         # Check if transfer already exists - but allow multiple transfers until SAP request is closed
         # We'll validate SAP status first, then decide if new transfer creation is allowed
-        
+
         # Validate SAP B1 transfer request and fetch warehouse data
         sap_data = None
         try:
             from sap_integration import SAPIntegration
             sap_b1 = SAPIntegration()
             sap_data = sap_b1.get_inventory_transfer_request(transfer_request_number)
-            
+
             if not sap_data:
                 flash(f'Transfer request {transfer_request_number} not found in SAP B1', 'error')
                 return redirect(url_for('inventory_transfer.create'))
-            
+
             # Check if transfer request is open (available for processing)
             doc_status = sap_data.get('DocumentStatus') or sap_data.get('DocStatus', '')
             if doc_status != 'bost_Open':
@@ -279,17 +279,17 @@ def create():
                 else:
                     flash(f'Transfer request {transfer_request_number} has invalid status ({doc_status}). Only open requests (bost_Open) can be processed.', 'error')
                 return redirect(url_for('inventory_transfer.create'))
-            
+
             # Allow multiple transfers to be created until SAP document status becomes "bost_Close"
             # No duplicate checking - multiple users can create transfers for the same request
-            
+
             # Extract warehouse data from SAP
             from_warehouse = from_warehouse or sap_data.get('FromWarehouse')
             to_warehouse = to_warehouse or sap_data.get('ToWarehouse')
-            
+
             logging.info(f"✅ SAP B1 validation passed - DocNum: {transfer_request_number}, Status: {doc_status}")
             logging.info(f"✅ Warehouses from SAP: From={from_warehouse}, To={to_warehouse}")
-            
+
         except Exception as e:
             logging.warning(f"SAP B1 validation failed: {e}")
             flash(f'Could not validate transfer request in SAP B1: {str(e)}', 'error')
@@ -305,7 +305,7 @@ def create():
                 due_date = datetime.fromisoformat(sap_data.get('DueDate').replace('Z', '+00:00'))
         except Exception as date_err:
             logging.warning(f"Could not parse SAP dates: {date_err}")
-        
+
         # Create new transfer with SAP header fields
         transfer = InventoryTransfer(
             transfer_request_number=transfer_request_number,
@@ -323,16 +323,16 @@ def create():
             due_date=due_date,
             #sap_raw_json=json.dumps(sap_data)  # Store complete SAP response
         )
-        
+
         db.session.add(transfer)
         db.session.commit()
-        
-        # Store SAP Transfer Request Lines permanently in database
+
+        #Store SAP Transfer Request Lines permanently in database
         if sap_data and 'StockTransferLines' in sap_data:
             try:
                 lines = sap_data['StockTransferLines']
                 logging.info(f"📥 Storing {len(lines)} SAP transfer request lines to database")
-                
+
                 for sap_line in lines:
                     # Store each line exactly as received from SAP
                     request_line = InventoryTransferRequestLine(
@@ -351,14 +351,14 @@ def create():
                         wms_remaining_quantity=float(sap_line.get('RemainingOpenInventoryQuantity', sap_line.get('Quantity', 0)))
                     )
                     db.session.add(request_line)
-                
+
                 db.session.commit()
                 logging.info(f"✅ Stored {len(lines)} SAP transfer request lines for transfer {transfer.id}")
             except Exception as line_err:
                 logging.error(f"Error storing SAP transfer request lines: {line_err}")
                 import traceback
                 logging.error(traceback.format_exc())
-        
+
         # Auto-populate items from SAP transfer request if available
         auto_populate = request.form.get('auto_populate_items') == 'on'
         if auto_populate and sap_data and 'StockTransferLines' in sap_data:
@@ -366,15 +366,15 @@ def create():
                 lines = sap_data['StockTransferLines']
                 # Only add open lines (not closed)
                 open_lines = [line for line in lines if line.get('LineStatus', '') != 'bost_Close']
-                
+
                 for sap_line in open_lines:
                     # Create transfer item from SAP line with correct field mapping
                     item_code = sap_line.get('ItemCode', '')
                     quantity = float(sap_line.get('Quantity', 0))
-                    
+
                     # Debug logging for quantities
                     logging.info(f"📦 Auto-populating item {item_code}: SAP Quantity={quantity}, LineStatus={sap_line.get('LineStatus', 'Unknown')}")
-                    
+
                     transfer_item = InventoryTransferItem(
                         inventory_transfer_id=transfer.id,  # Fixed: use correct foreign key field
                         item_code=item_code,
@@ -387,7 +387,7 @@ def create():
                         from_warehouse_code=sap_line.get('FromWarehouseCode', from_warehouse),
                         to_warehouse_code=sap_line.get('WarehouseCode', to_warehouse),
                         from_bin='',  # Will be filled later
-                        to_bin='',    # Will be filled later  
+                        to_bin='',    # Will be filled later
                         batch_number='',  # Will be filled later
                         qc_status='pending',
                         # SAP Line Fields
@@ -396,7 +396,7 @@ def create():
                         line_status=sap_line.get('LineStatus', 'bost_Open')
                     )
                     db.session.add(transfer_item)
-                
+
                 db.session.commit()
                 logging.info(f"✅ Auto-populated {len(open_lines)} items from SAP transfer request {transfer_request_number}")
                 flash(f'Inventory Transfer created with {len(open_lines)} auto-populated items from request {transfer_request_number}', 'success')
@@ -405,13 +405,13 @@ def create():
                 flash(f'Transfer created but could not auto-populate items: {str(e)}', 'warning')
         else:
             flash(f'Inventory Transfer created for request {transfer_request_number}', 'success')
-        
+
         # Log status change
         log_status_change(transfer.id, None, 'draft', current_user.id, 'Transfer created')
-        
+
         logging.info(f"✅ Inventory Transfer created for request {transfer_request_number} by user {current_user.username}")
         return redirect(url_for('inventory_transfer.detail', transfer_id=transfer.id))
-    
+
     return render_template('inventory_transfer.html')
 
 @transfer_bp.route('/<int:transfer_id>/submit', methods=['POST'])
@@ -2295,6 +2295,7 @@ def api_get_item_warehouses():
 #             exp_date=parsed_data.get('exp_date', ''),
 #             po=parsed_data.get('po', ''),
 #             bin_location=parsed_data.get('bin_location', '')
+#             transfer_status = ('pending')
 #         )
 #
 #         db.session.add(new_scan)
@@ -2371,7 +2372,7 @@ def api_scan_qr_label():
         data = request.get_json()
         if not data:
             return jsonify({'success': False, 'error': 'Invalid JSON data'}), 400
-
+        print("datadatadatadata-->",data)
         qr_data = data.get('qr_data', '')
         transfer_id = data.get('transfer_id')
         requested_qty = data.get('requested_qty', 0)
@@ -2400,7 +2401,7 @@ def api_scan_qr_label():
                 parsed_json = qr_data
             else:
                 parsed_json = json.loads(qr_data)
-
+            print ("parsed_json---->",parsed_json)
             parsed_data['id'] = parsed_json.get('id')
             parsed_data['po'] = parsed_json.get('po')
             parsed_data['item_code'] = parsed_json.get('item')
@@ -2442,7 +2443,7 @@ def api_scan_qr_label():
             grn_id=grn_id,
             transfer_status = 'transferred'
         ).first()
-
+        print("existing_grn-1-->",existing_grn)
         if existing_grn:
             return jsonify({
                 'success': False,
@@ -2462,7 +2463,7 @@ def api_scan_qr_label():
             pack_key=pack_key,
             transfer_status='transferred'
         ).first()
-
+        print("existing_pack 2-->",existing_pack)
         if existing_pack:
             return jsonify({
                 'success': False,
@@ -2475,7 +2476,7 @@ def api_scan_qr_label():
             transfer_id=transfer_id,
             item_code=item_code
         ).all()
-
+        print("scanned_packs-->"+scanned_packs)
         pack_qty = parsed_data.get('qty', 0)
         current_total = sum(pack.qty for pack in scanned_packs)
         new_total = current_total + pack_qty
