@@ -42,6 +42,14 @@ The system is built on a Flask web application backend, utilizing Jinja2 for ser
 *   **Quality Control Dashboard:** Provides a unified oversight for quality approval workflows across Multi GRN, Direct Transfer, and Sales Delivery modules, with SAP B1 posting integration upon approval.
 *   **SO Against Invoice Module:** Allows creating invoices against existing Sales Orders with SAP B1 integration, including SO series selection, SO number validation, and item validation.
 
+## Recent Changes (December 5, 2025)
+*   **Multi GRN CSRF Token Fix:** Removed `{{ csrf_token() }}` from `modules/multi_grn_creation/templates/multi_grn/index.html` - CSRF protection is disabled globally in this application, and all modules are consistent in not requiring CSRF tokens.
+
+## Technical Notes
+*   **CSRF Protection:** CSRF protection is intentionally disabled globally across all modules. Do not add `{{ csrf_token() }}` to templates unless Flask-WTF CSRFProtect is initialized in `app.py`.
+*   **MySQL Warnings:** MySQL connection warnings are expected in Replit environment - the app operates in PostgreSQL-only mode.
+*   **Credential Fallback:** The app gracefully falls back to environment variables when `credential.json` is not found.
+
 ## External Dependencies
 *   **SAP B1 Service Layer API**: For all core inventory and document management functionalities (GRPO, pick lists, inventory transfers, serial numbers, business partners, inventory counts).
 *   **PostgreSQL**: Primary relational database for production environments.
