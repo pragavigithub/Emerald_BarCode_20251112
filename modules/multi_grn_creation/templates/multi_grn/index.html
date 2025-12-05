@@ -344,11 +344,13 @@
                 </div>
                 
                 <!-- Hidden form fields -->
-                <form id="createGrnForm" method="POST" action="{{ url_for('multi_grn.create_step1_customer') }}">
+                <form id="createGrnForm" method="POST" action="{{ url_for('multi_grn.create_grn_from_modal') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="series_id" id="hiddenSeriesId">
                     <input type="hidden" name="series_name" id="hiddenSeriesName">
                     <input type="hidden" name="customer_code" id="hiddenCustomerCode">
                     <input type="hidden" name="customer_name" id="hiddenCustomerName">
+                    <input type="hidden" name="selected_po_entries" id="hiddenSelectedPOs">
                 </form>
             </div>
             <div class="modal-footer">
@@ -726,12 +728,12 @@ function proceedToStep2() {
         return;
     }
     
+    // Populate hidden field with full PO summaries (not just DocEntries)
+    // This allows backend to hydrate PO links without extra SAP calls
+    document.getElementById('hiddenSelectedPOs').value = JSON.stringify(selectedPOs);
+    
     // Submit the form to create batch and go to step 2
     const form = document.getElementById('createGrnForm');
-    
-    // Store selected POs in session storage for step 2
-    sessionStorage.setItem('selectedPOs', JSON.stringify(selectedPOs));
-    
     form.submit();
 }
 
