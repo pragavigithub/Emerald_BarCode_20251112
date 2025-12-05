@@ -1,0 +1,113 @@
+{
+    "odata.metadata": "https://192.168.0.137:50000/b1s/v1/$metadata#PurchaseOrders",
+    "value": [
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "DocEntry": 3642,
+            "DocNum": 252630003,
+            "DocDate": "2025-10-15T00:00:00Z",
+            "DocDueDate": "2025-10-15T00:00:00Z",
+            "CardCode": "3D SPL",
+            "CardName": "3D SEALS PRIVATE LIMITED",
+            "DocTotal": 2598.36,
+            "Series": 232,
+            "DocumentStatus": "bost_Open"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "DocEntry": 3659,
+            "DocNum": 252630020,
+            "DocDate": "2025-11-04T00:00:00Z",
+            "DocDueDate": "2025-11-04T00:00:00Z",
+            "CardCode": "3D SPL",
+            "CardName": "3D SEALS PRIVATE LIMITED",
+            "DocTotal": 520.0,
+            "Series": 232,
+            "DocumentStatus": "bost_Open"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "DocEntry": 3660,
+            "DocNum": 252630021,
+            "DocDate": "2025-11-07T00:00:00Z",
+            "DocDueDate": "2025-11-07T00:00:00Z",
+            "CardCode": "3D SPL",
+            "CardName": "3D SEALS PRIVATE LIMITED",
+            "DocTotal": 520.0,
+            "Series": 232,
+            "DocumentStatus": "bost_Open"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "DocEntry": 3661,
+            "DocNum": 252630022,
+            "DocDate": "2025-11-08T00:00:00Z",
+            "DocDueDate": "2025-11-08T00:00:00Z",
+            "CardCode": "3D SPL",
+            "CardName": "3D SEALS PRIVATE LIMITED",
+            "DocTotal": 520.0,
+            "Series": 232,
+            "DocumentStatus": "bost_Open"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "DocEntry": 3662,
+            "DocNum": 252630023,
+            "DocDate": "2025-11-08T00:00:00Z",
+            "DocDueDate": "2025-11-08T00:00:00Z",
+            "CardCode": "3D SPL",
+            "CardName": "3D SEALS PRIVATE LIMITED",
+            "DocTotal": 520.0,
+            "Series": 232,
+            "DocumentStatus": "bost_Open"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "DocEntry": 3663,
+            "DocNum": 252630024,
+            "DocDate": "2025-11-10T00:00:00Z",
+            "DocDueDate": "2025-11-10T00:00:00Z",
+            "CardCode": "3D SPL",
+            "CardName": "3D SEALS PRIVATE LIMITED",
+            "DocTotal": 21000.0,
+            "Series": 232,
+            "DocumentStatus": "bost_Open"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "DocEntry": 3664,
+            "DocNum": 252630025,
+            "DocDate": "2025-11-10T00:00:00Z",
+            "DocDueDate": "2025-11-10T00:00:00Z",
+            "CardCode": "3D SPL",
+            "CardName": "3D SEALS PRIVATE LIMITED",
+            "DocTotal": 13030.0,
+            "Series": 232,
+            "DocumentStatus": "bost_Open"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "DocEntry": 3667,
+            "DocNum": 252630028,
+            "DocDate": "2025-11-12T00:00:00Z",
+            "DocDueDate": "2025-11-12T00:00:00Z",
+            "CardCode": "3D SPL",
+            "CardName": "3D SEALS PRIVATE LIMITED",
+            "DocTotal": 2810.0,
+            "Series": 232,
+            "DocumentStatus": "bost_Open"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "DocEntry": 3682,
+            "DocNum": 252630043,
+            "DocDate": "2025-11-22T00:00:00Z",
+            "DocDueDate": "2025-11-22T00:00:00Z",
+            "CardCode": "3D SPL",
+            "CardName": "3D SEALS PRIVATE LIMITED",
+            "DocTotal": 20310.0,
+            "Series": 232,
+            "DocumentStatus": "bost_Open"
+        }
+    ]
+}
