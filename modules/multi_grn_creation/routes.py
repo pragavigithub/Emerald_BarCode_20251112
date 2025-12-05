@@ -1664,6 +1664,42 @@ def api_cardcode_by_series(series_id):
     
     return jsonify({'success': True, 'cardcodes': result.get('cardcodes', [])})
 
+@multi_grn_bp.route('/api/customers-from-open-pos')
+@login_required
+def api_customers_from_open_pos():
+    """API endpoint to fetch unique CardCode/CardName from open Purchase Orders"""
+    sap_service = SAPMultiGRNService()
+    result = sap_service.fetch_customers_from_open_pos()
+    
+    if not result['success']:
+        return jsonify({'success': False, 'error': result.get('error')}), 500
+    
+    return jsonify({'success': True, 'customers': result.get('customers', [])})
+
+@multi_grn_bp.route('/api/pos-by-cardcode/<card_code>')
+@login_required
+def api_pos_by_cardcode(card_code):
+    """API endpoint to fetch open Purchase Orders filtered by CardCode"""
+    sap_service = SAPMultiGRNService()
+    result = sap_service.fetch_pos_by_cardcode(card_code)
+    
+    if not result['success']:
+        return jsonify({'success': False, 'error': result.get('error')}), 500
+    
+    return jsonify({'success': True, 'purchase_orders': result.get('purchase_orders', [])})
+
+@multi_grn_bp.route('/api/po-lines/<int:doc_entry>')
+@login_required
+def api_po_lines(doc_entry):
+    """API endpoint to fetch PO line items by DocEntry"""
+    sap_service = SAPMultiGRNService()
+    result = sap_service.fetch_po_lines_by_docentry(doc_entry)
+    
+    if not result['success']:
+        return jsonify({'success': False, 'error': result.get('error')}), 500
+    
+    return jsonify({'success': True, 'purchase_order': result.get('purchase_order', {})})
+
 @multi_grn_bp.route('/api/pos-by-series-and-card')
 @login_required
 def api_pos_by_series_and_card():

@@ -623,3 +623,143 @@ class SAPMultiGRNService:
         except Exception as e:
             logging.error(f"❌ Error fetching POs for series {series_id} and card {card_code}: {str(e)}")
             return {'success': False, 'error': str(e)}
+
+    def fetch_customers_from_open_pos(self):
+        """
+        Fetch unique CardCode/CardName from all open Purchase Orders
+        URL: /b1s/v1/PurchaseOrders?$filter=DocumentStatus eq 'bost_Open'&$select=CardCode,CardName
+        Returns unique customers who have open POs
+        """
+        if not self.ensure_logged_in():
+            logging.warning("⚠️ SAP login failed - cannot fetch customers from open POs")
+            return {'success': False, 'error': 'SAP login failed'}
+        
+        try:
+            url = f"{self.base_url}/b1s/v1/PurchaseOrders"
+            params = {
+                '$filter': "DocumentStatus eq 'bost_Open'",
+                '$select': 'CardCode,CardName'
+            }
+            headers = {"Prefer": "odata.maxpagesize=0"}
+            
+            logging.info("🔍 Fetching unique customers from open Purchase Orders")
+            response = self.session.get(url, params=params, headers=headers, timeout=30)
+            
+            if response.status_code == 200:
+                data = response.json()
+                all_customers = data.get('value', [])
+                
+                unique_customers = {}
+                for customer in all_customers:
+                    card_code = customer.get('CardCode')
+                    card_name = customer.get('CardName')
+                    if card_code and card_code not in unique_customers:
+                        unique_customers[card_code] = {
+                            'CardCode': card_code,
+                            'CardName': card_name
+                        }
+                
+                customers_list = list(unique_customers.values())
+                customers_list.sort(key=lambda x: x.get('CardName', ''))
+                
+                logging.info(f"✅ Fetched {len(customers_list)} unique customers from open POs")
+                return {'success': True, 'customers': customers_list}
+            elif response.status_code == 401:
+                self.session_id = None
+                if self.login():
+                    return self.fetch_customers_from_open_pos()
+                return {'success': False, 'error': 'Authentication failed'}
+            else:
+                error_msg = response.text
+                logging.error(f"❌ Failed to fetch customers from open POs: {error_msg}")
+                return {'success': False, 'error': error_msg}
+                
+        except Exception as e:
+            logging.error(f"❌ Error fetching customers from open POs: {str(e)}")
+            return {'success': False, 'error': str(e)}
+
+    def fetch_pos_by_cardcode(self, card_code):
+        """
+        Fetch open Purchase Orders filtered by CardCode only
+        URL: /b1s/v1/PurchaseOrders?$select=CardCode,CardName,DocumentStatus,DocNum,Series,DocDate,DocDueDate,DocTotal,DocEntry&$filter=CardCode eq 'XXX' and DocumentStatus eq 'bost_Open'
+        Returns POs with all details needed for selection screen
+        """
+        if not self.ensure_logged_in():
+            logging.warning(f"⚠️ SAP login failed - cannot fetch POs for CardCode {card_code}")
+            return {'success': False, 'error': 'SAP login failed'}
+        
+        try:
+            url = f"{self.base_url}/b1s/v1/PurchaseOrders"
+            params = {
+                '$filter': f"CardCode eq '{card_code}' and DocumentStatus eq 'bost_Open'",
+                '$select': 'CardCode,CardName,DocumentStatus,DocNum,Series,DocDate,DocDueDate,DocTotal,DocEntry'
+            }
+            headers = {"Prefer": "odata.maxpagesize=0"}
+            
+            logging.info(f"🔍 Fetching open POs for CardCode: {card_code}")
+            response = self.session.get(url, params=params, headers=headers, timeout=30)
+            
+            if response.status_code == 200:
+                data = response.json()
+                pos = data.get('value', [])
+                logging.info(f"✅ Fetched {len(pos)} open POs for CardCode {card_code}")
+                return {'success': True, 'purchase_orders': pos}
+            elif response.status_code == 401:
+                self.session_id = None
+                if self.login():
+                    return self.fetch_pos_by_cardcode(card_code)
+                return {'success': False, 'error': 'Authentication failed'}
+            else:
+                error_msg = response.text
+                logging.error(f"❌ Failed to fetch POs for CardCode {card_code}: {error_msg}")
+                return {'success': False, 'error': error_msg}
+                
+        except Exception as e:
+            logging.error(f"❌ Error fetching POs for CardCode {card_code}: {str(e)}")
+            return {'success': False, 'error': str(e)}
+
+    def fetch_po_lines_by_docentry(self, doc_entry):
+        """
+        Fetch Purchase Order details including line items by DocEntry
+        URL: /b1s/v1/PurchaseOrders?$filter=DocEntry eq X
+        Returns full PO details with DocumentLines
+        """
+        if not self.ensure_logged_in():
+            logging.warning(f"⚠️ SAP login failed - cannot fetch PO lines for DocEntry {doc_entry}")
+            return {'success': False, 'error': 'SAP login failed'}
+        
+        try:
+            url = f"{self.base_url}/b1s/v1/PurchaseOrders({doc_entry})"
+            
+            logging.info(f"🔍 Fetching PO details for DocEntry: {doc_entry}")
+            response = self.session.get(url, timeout=30)
+            
+            if response.status_code == 200:
+                po_data = response.json()
+                
+                document_lines = po_data.get('DocumentLines', [])
+                open_lines = [
+                    line for line in document_lines
+                    if line.get('LineStatus') == 'bost_Open' and line.get('Quantity', 0) > 0
+                ]
+                
+                po_data['OpenLines'] = open_lines
+                po_data['TotalOpenLines'] = len(open_lines)
+                
+                logging.info(f"✅ Fetched PO {doc_entry} with {len(open_lines)} open lines")
+                return {'success': True, 'purchase_order': po_data}
+            elif response.status_code == 401:
+                self.session_id = None
+                if self.login():
+                    return self.fetch_po_lines_by_docentry(doc_entry)
+                return {'success': False, 'error': 'Authentication failed'}
+            elif response.status_code == 404:
+                return {'success': False, 'error': f'Purchase Order with DocEntry {doc_entry} not found'}
+            else:
+                error_msg = response.text
+                logging.error(f"❌ Failed to fetch PO lines for DocEntry {doc_entry}: {error_msg}")
+                return {'success': False, 'error': error_msg}
+                
+        except Exception as e:
+            logging.error(f"❌ Error fetching PO lines for DocEntry {doc_entry}: {str(e)}")
+            return {'success': False, 'error': str(e)}
