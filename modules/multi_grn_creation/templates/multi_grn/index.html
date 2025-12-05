@@ -345,7 +345,6 @@
                 
                 <!-- Hidden form fields -->
                 <form id="createGrnForm" method="POST" action="{{ url_for('multi_grn.create_grn_from_modal') }}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="series_id" id="hiddenSeriesId">
                     <input type="hidden" name="series_name" id="hiddenSeriesName">
                     <input type="hidden" name="customer_code" id="hiddenCustomerCode">
