@@ -19,7 +19,8 @@
                 <div class="col-md-6">
                     <p><strong>Customer:</strong> {{ batch.customer_name }} ({{ batch.customer_code }})</p>
                     <p><strong>Created By:</strong> {{ batch.user.username }}</p>
-                    <p><strong>Created At:</strong> {{ batch.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                    <p><strong>Created At:</strong>{% if batch.created_at and batch.created_at.strftime %} {{ batch.created_at.strftime('%Y-%m-%d %H:%M') }} {% else %} {{ batch.created_at }} {% endif %}</p>
+
                 </div>
                 <div class="col-md-6">
                     <p><strong>Status:</strong> 
@@ -85,14 +86,14 @@
                                 </small>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label class="form-label">&nbsp;</label>
-                                <button type="button" class="btn btn-primary btn-lg w-100" onclick="manualScan()">
-                                    <i class="fas fa-check-circle"></i> Scan & Verify
-                                </button>
-                            </div>
-                        </div>
+<!--                        <div class="col-md-3">-->
+<!--                            <div class="form-group">-->
+<!--                                <label class="form-label">&nbsp;</label>-->
+<!--                                <button type="button" class="btn btn-primary btn-lg w-100" onclick="manualScan()">-->
+<!--                                    <i class="fas fa-check-circle"></i> Scan & Verify-->
+<!--                                </button>-->
+<!--                            </div>-->
+<!--                        </div>-->
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label class="form-label">&nbsp;</label>
@@ -141,7 +142,7 @@
                                             <td><code>{{ detail.grn_number }}</code></td>
                                             <td>{{ detail.batch_number }}</td>
                                             <td>{{ detail.quantity }}</td>
-                                            <td>{{ detail.expiry_date.strftime('%Y-%m-%d') if detail.expiry_date else 'N/A' }}</td>
+                                            <td>{% if detail.expiry_date and detail.expiry_date.strftime %} {{ detail.expiry_date.strftime('%Y-%m-%d') }} {% else %} {{ detail.expiry_date or 'N/A' }} {% endif %}</td>
                                             <td>
                                                 <span class="status-badge badge {% if detail.status == 'verified' %}bg-success{% else %}bg-warning{% endif %}">
                                                     {% if detail.status == 'verified' %}

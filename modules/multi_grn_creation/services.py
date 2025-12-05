@@ -243,7 +243,7 @@ class SAPMultiGRNService:
         
         if not self.ensure_logged_in():
             return {'success': False, 'error': 'SAP login failed - GRN not created'}
-        
+        print(grn_data)
         try:
             url = f"{self.base_url}/b1s/v1/PurchaseDeliveryNotes"
             print(grn_data)

@@ -640,6 +640,7 @@ def submit_batch(batch_id):
 @login_required
 def approve_batch(batch_id):
     """QC approve Multi GRN batch and post consolidated GRN to SAP B1"""
+    from datetime import datetime
     try:
         batch = MultiGRNBatch.query.get_or_404(batch_id)
         
@@ -727,7 +728,7 @@ def approve_batch(batch_id):
                     'LineNum': line_number,
                     'ItemCode': line.item_code,
                     'Quantity': float(line.selected_quantity),
-                    'WarehouseCode': line.warehouse_code or '7000-FG'
+                    'WarehouseCode': line.warehouse_code
                 }
             else:
                 doc_line = {
@@ -737,7 +738,7 @@ def approve_batch(batch_id):
                     'BaseLine': line.po_line_num,
                     'ItemCode': line.item_code,
                     'Quantity': float(line.selected_quantity),
-                    'WarehouseCode': line.warehouse_code or '7000-FG'
+                    'WarehouseCode': line.warehouse_code
                 }
             
             if line.bin_location:
@@ -759,7 +760,11 @@ def approve_batch(batch_id):
                         'Quantity': float(line.selected_quantity),
                         'SerialAndBatchNumbersBaseLine': 0
                     }]
-            
+
+            def safe_isoformat(value):
+                if isinstance(value, datetime):
+                    return value.isoformat()
+                return value
             if line.batch_details and (line.batch_required == 'Y' or line.manage_method == 'R'):
                 batch_numbers = []
                 for batch_detail in line.batch_details:
@@ -768,7 +773,7 @@ def approve_batch(batch_id):
                         'Quantity': float(batch_detail.quantity)
                     }
                     if batch_detail.expiry_date:
-                        batch_entry['ExpiryDate'] = batch_detail.expiry_date.isoformat()
+                        batch_entry['ExpiryDate'] = batch_detail.expiry_date
                     if batch_detail.manufacturer_serial_number:
                         batch_entry['ManufacturerSerialNumber'] = batch_detail.manufacturer_serial_number
                     if batch_detail.internal_serial_number:
@@ -814,11 +819,15 @@ def approve_batch(batch_id):
             return jsonify({'success': False, 'error': error_msg}), 400
         
         po_nums = ', '.join([po_link.po_doc_num for po_link in batch.po_links])
-        
+
+          # already a string
+
+        datevalue = safe_isoformat(date.today().isoformat())
+        print("datevaluedatevalue----->",datevalue)
         grn_data = {
             'CardCode': card_code,
-            'DocDate': date.today().isoformat(),
-            'DocDueDate': date.today().isoformat(),
+            'DocDate': datevalue,
+            'DocDueDate': datevalue,
             'Comments': f'QC Approved - Batch {batch.batch_number}. POs: {po_nums}',
             'NumAtCard': f'{batch.batch_number}',
             'BPL_IDAssignedToInvoice': 5,
@@ -827,7 +836,7 @@ def approve_batch(batch_id):
         
         logging.info(f"📦 Consolidated GRN payload: {len(consolidated_document_lines)} lines from {len(batch.po_links)} POs")
         logging.debug(f"   GRN JSON: {json.dumps(grn_data, indent=2)}")
-        
+        print(grn_data)
         result = sap_service.create_purchase_delivery_note(grn_data)
         
         if result['success']:
@@ -916,42 +925,40 @@ def qc_review_batch(batch_id):
     """QC Review page for line-by-line verification"""
     try:
         batch = MultiGRNBatch.query.get_or_404(batch_id)
-        
+
         if not current_user.has_permission('qc_dashboard') and current_user.role not in ['admin', 'manager']:
             flash('Access denied - QC permissions required', 'error')
             return redirect(url_for('dashboard'))
-        
-        if batch.status not in ['submitted', 'qc_approved']:
+
+        if batch.status not in ['submitted', 'qc_approved','posted']:
             flash('Only submitted batches can be reviewed', 'error')
             return redirect(url_for('qc_dashboard'))
-        
+
         from modules.multi_grn_creation.models import MultiGRNBatchDetails, MultiGRNSerialDetails
-        
+
         total_line_items = 0
         verified_line_items = 0
         all_verified = False
-        
+
         for po_link in batch.po_links:
             for line in po_link.line_selections:
                 batch_details_count = MultiGRNBatchDetails.query.filter_by(line_selection_id=line.id).count()
                 serial_details_count = MultiGRNSerialDetails.query.filter_by(line_selection_id=line.id).count()
-                
                 total_line_items += batch_details_count + serial_details_count
-                
                 verified_batch = MultiGRNBatchDetails.query.filter_by(
-                    line_selection_id=line.id, 
+                    line_selection_id=line.id,
                     status='verified'
                 ).count()
                 verified_serial = MultiGRNSerialDetails.query.filter_by(
-                    line_selection_id=line.id, 
+                    line_selection_id=line.id,
                     status='verified'
                 ).count()
-                
+
                 verified_line_items += verified_batch + verified_serial
-        
+
         all_verified = total_line_items > 0 and verified_line_items == total_line_items
-        
-        return render_template('multi_grn/qc_review.html', 
+
+        return render_template('multi_grn/qc_review.html',
                              batch=batch,
                              total_line_items=total_line_items,
                              verified_line_items=verified_line_items,
@@ -960,6 +967,312 @@ def qc_review_batch(batch_id):
         logging.error(f"Error loading QC review page: {str(e)}")
         flash('Error loading QC review page', 'error')
         return redirect(url_for('qc_dashboard'))
+# @multi_grn_bp.route('/batch/<int:batch_id>/qc-reviews')
+# @login_required
+# def qc_review_batchs(batch_id):
+#     """QC Review page for line-by-line verification or JSON API"""
+#     try:
+#         batch = MultiGRNBatch.query.get_or_404(batch_id)
+#
+#         # Permission check
+#         if not current_user.has_permission('qc_dashboard') and current_user.role not in ['admin', 'manager']:
+#             return _return_error("Access denied - QC permissions required", 403)
+#
+#         # Status check
+#         if batch.status not in ['submitted', 'qc_approved']:
+#             return _return_error("Only submitted batches can be reviewed")
+#
+#         # Import models
+#         from modules.multi_grn_creation.models import MultiGRNBatchDetails, MultiGRNSerialDetails
+#
+#         total_line_items = 0
+#         verified_line_items = 0
+#
+#         # Count line items
+#         for po_link in batch.po_links:
+#             for line in po_link.line_selections:
+#                 batch_count = MultiGRNBatchDetails.query.filter_by(line_selection_id=line.id).count()
+#                 serial_count = MultiGRNSerialDetails.query.filter_by(line_selection_id=line.id).count()
+#
+#                 verified_batch = MultiGRNBatchDetails.query.filter_by(
+#                     line_selection_id=line.id,
+#                     status='verified'
+#                 ).count()
+#
+#                 verified_serial = MultiGRNSerialDetails.query.filter_by(
+#                     line_selection_id=line.id,
+#                     status='verified'
+#                 ).count()
+#
+#                 total_line_items += batch_count + serial_count
+#                 verified_line_items += verified_batch + verified_serial
+#
+#         all_verified = (total_line_items > 0 and verified_line_items == total_line_items)
+#
+#         # ----------------------------------------
+#         # 🔥 RETURN JSON WHEN API REQUEST
+#         # ----------------------------------------
+#         if request.accept_mimetypes['application/json']:
+#             return jsonify({
+#                 "success": True,
+#                 "batch": {
+#                     "id": batch.id,
+#                     "batch_number": batch.batch_number,
+#                     "customer_name": batch.customer_name,
+#                     "customer_code": batch.customer_code,
+#                     "created_by": batch.user.username,
+#                     "created_at": str(batch.created_at),  # safe for JSON
+#                     "status": batch.status,
+#                     "total_pos": batch.total_pos,
+#                 },
+#                 "total_line_items": total_line_items,
+#                 "verified_line_items": verified_line_items,
+#                 "all_verified": all_verified
+#             })
+#
+#         # ----------------------------------------
+#         # 🔥 OTHERWISE RETURN HTML TEMPLATE AS USUAL
+#         # ----------------------------------------
+#         return render_template(
+#             'multi_grn/qc_review.html',
+#             batch=batch,
+#             total_line_items=total_line_items,
+#             verified_line_items=verified_line_items,
+#             all_verified=all_verified
+#         )
+#
+#     except Exception as e:
+#         logging.error(f"Error loading QC review page: {str(e)}")
+#         return _return_error("Error loading QC review page")
+#
+#
+# # Helper to return JSON on error
+# def _return_error(msg, code=400):
+#     if request.accept_mimetypes['application/json']:
+#         return jsonify({"success": False, "error": msg}), code
+#     flash(msg, "error")
+#     return redirect(url_for('qc_dashboard'))
+from flask import request, jsonify
+
+
+@multi_grn_bp.route('/batch/<int:batch_id>/qc-reviews')
+@login_required
+def qc_review_batchs(batch_id):
+    """QC Review page for line-by-line verification OR JSON API response"""
+    try:
+        batch = MultiGRNBatch.query.get_or_404(batch_id)
+
+        # --- Permission check ---
+        if not current_user.has_permission('qc_dashboard') and current_user.role not in ['admin', 'manager']:
+            msg = 'Access denied - QC permissions required'
+            # If API request => JSON error, else redirect with flash
+            if _wants_json():
+                return jsonify({"success": False, "error": msg}), 403
+            flash(msg, 'error')
+            return redirect(url_for('dashboard'))
+
+        # --- Status check ---
+        if batch.status not in ['submitted', 'qc_approved','posted']:
+            msg = 'Only submitted batches can be reviewed'
+            if _wants_json():
+                return jsonify({"success": False, "error": msg}), 400
+            flash(msg, 'error')
+            return redirect(url_for('qc_dashboard'))
+
+        from modules.multi_grn_creation.models import MultiGRNBatchDetails, MultiGRNSerialDetails
+
+        total_line_items = 0
+        verified_line_items = 0
+
+        # ---- Count totals & verified from Details tables ----
+        for po_link in batch.po_links:
+            for line in po_link.line_selections:
+                batch_details_count = MultiGRNBatchDetails.query.filter_by(
+                    line_selection_id=line.id
+                ).count()
+                serial_details_count = MultiGRNSerialDetails.query.filter_by(
+                    line_selection_id=line.id
+                ).count()
+
+                total_line_items += batch_details_count + serial_details_count
+
+                verified_batch = MultiGRNBatchDetails.query.filter_by(
+                    line_selection_id=line.id,
+                    status='verified'
+                ).count()
+                verified_serial = MultiGRNSerialDetails.query.filter_by(
+                    line_selection_id=line.id,
+                    status='verified'
+                ).count()
+
+                verified_line_items += verified_batch + verified_serial
+
+        all_verified = total_line_items > 0 and verified_line_items == total_line_items
+
+        # =====================================================================
+        # 🔥 JSON API RESPONSE (for mobile/React/Flutter)
+        # Triggered when:
+        #   - Accept: application/json   OR
+        #   - Content-Type: application/json (like you mentioned)
+        # =====================================================================
+        if _wants_json():
+            po_links_json = []
+            # ------------------------------
+            # If NO PO LINKS → return empty response
+            # ------------------------------
+            if not batch.po_links or len(batch.po_links) == 0:
+                batch_header = {
+                    "id": batch.id,
+                    "batch_number": batch.batch_number,
+                    "customer_code": batch.customer_code,
+                    "customer_name": batch.customer_name,
+                    "status": batch.status,
+                    "total_pos": 0,
+                    "total_grns_created": batch.total_grns_created,
+                    "created_at": batch.created_at.isoformat() if batch.created_at else None,
+                    "submitted_at": batch.submitted_at.isoformat() if batch.submitted_at else None,
+                    "posted_at": batch.posted_at.isoformat() if batch.posted_at else None,
+                    "completed_at": batch.completed_at.isoformat() if batch.completed_at else None,
+                }
+
+                return jsonify({
+                    "success": True,
+                    "batch": batch_header,
+                    "stats": {
+                        "total_line_items": 0,
+                        "verified_line_items": 0,
+                        "all_verified": False,
+                        "percentage": 0,
+                    },
+                    "po_links": [],
+                    "message": "GRN line items not generated for this batch."
+                })
+            for po_link in batch.po_links:
+
+                lines_json = []
+                for line in po_link.line_selections:
+                    # Batch details for this line
+                    batch_details_json = []
+                    for d in getattr(line, 'batch_details', []):
+                        batch_details_json.append({
+                            "id": d.id,
+                            "line_selection_id": d.line_selection_id,
+                            "batch_number": d.batch_number,
+                            "quantity": float(d.quantity or 0),
+                            "manufacturer_serial_number": d.manufacturer_serial_number,
+                            "internal_serial_number": d.internal_serial_number,
+                            "expiry_date": d.expiry_date,  # string as stored
+                            "barcode": d.barcode,
+                            "grn_number": d.grn_number,
+                            "qty_per_pack": float(d.qty_per_pack or 0) if d.qty_per_pack is not None else None,
+                            "no_of_packs": d.no_of_packs,
+                            "status": d.status,
+                            "created_at": d.created_at.isoformat() if d.created_at else None,
+                        })
+
+                    # Serial details (if your model has similar fields)
+                    serial_details_json = []
+                    for s in getattr(line, 'serial_details', []):
+                        serial_details_json.append({
+                            "id": s.id,
+                            "line_selection_id": s.line_selection_id,
+                            "serial_number": getattr(s, 'serial_number', None),
+                            "expiry_date": s.expiry_date.isoformat() if getattr(s, 'expiry_date', None) else None,
+                            "status": s.status,
+                            "grn_number": getattr(s, 'grn_number', None),
+                            "created_at": s.created_at.isoformat() if getattr(s, 'created_at', None) else None,
+                        })
+
+                    lines_json.append({
+                        "id": line.id,
+                        "item_code": line.item_code,
+                        "item_description": line.item_description,
+                        "selected_quantity": float(getattr(line, 'selected_quantity', 0) or 0),
+                        "uom_code": getattr(line, 'uom_code', None),
+                        "warehouse_code": getattr(line, 'warehouse_code', None),
+                        "batch_details": batch_details_json,
+                        "serial_details": serial_details_json,
+                    })
+
+                po_links_json.append({
+                    "id": po_link.id,
+                    "po_doc_entry": getattr(po_link, 'po_doc_entry', None),
+                    "po_doc_num": getattr(po_link, 'po_doc_num', None),
+                    "po_card_code": getattr(po_link, 'po_card_code', None),
+                    "po_card_name": getattr(po_link, 'po_card_name', None),
+                    "line_selections": lines_json,
+                })
+
+            batch_header = {
+                "id": batch.id,
+                "batch_number": batch.batch_number,
+                "user_id": batch.user_id,
+                "series_id": batch.series_id,
+                "series_name": batch.series_name,
+                "customer_code": batch.customer_code,
+                "customer_name": batch.customer_name,
+                "status": batch.status,
+                "total_pos": batch.total_pos,
+                "total_grns_created": batch.total_grns_created,
+                "sap_session_metadata": batch.sap_session_metadata,
+                "error_log": batch.error_log,
+                "created_at": batch.created_at.isoformat() if batch.created_at else None,
+                "posted_at": batch.posted_at.isoformat() if batch.posted_at else None,
+                "completed_at": batch.completed_at.isoformat() if batch.completed_at else None,
+                "submitted_at": batch.submitted_at.isoformat() if batch.submitted_at else None,
+                "qc_approver_id": batch.qc_approver_id,
+                "qc_approved_at": batch.qc_approved_at.isoformat() if batch.qc_approved_at else None,
+                "qc_notes": batch.qc_notes,
+                "created_by_username": batch.user.username if batch.user else None,
+                "qc_approver_username": batch.qc_approver.username if batch.qc_approver else None,
+            }
+
+            return jsonify({
+                "success": True,
+                "batch": batch_header,
+                "stats": {
+                    "total_line_items": total_line_items,
+                    "verified_line_items": verified_line_items,
+                    "all_verified": all_verified,
+                    "percentage": (verified_line_items / total_line_items * 100) if total_line_items > 0 else 0,
+                },
+                "po_links": po_links_json,
+            })
+
+        # =====================================================================
+        # 🌐 NORMAL HTML RESPONSE (template unchanged)
+        # =====================================================================
+        return render_template(
+            'multi_grn/qc_review.html',
+            batch=batch,
+            total_line_items=total_line_items,
+            verified_line_items=verified_line_items,
+            all_verified=all_verified
+        )
+
+    except Exception as e:
+        logging.error(f"Error loading QC review page: {str(e)}")
+        if _wants_json():
+            return jsonify({"success": False, "error": str(e)}), 500
+        flash('Error loading QC review page', 'error')
+        return redirect(url_for('qc_dashboard'))
+
+
+def _wants_json():
+    """
+    Detect if client expects JSON.
+    You said you send header Content-Type: application/json,
+    so we also check that (even though it's non-standard for GET).
+    """
+    ct = (request.headers.get('Content-Type') or '').lower()
+    accept = (request.headers.get('Accept') or '').lower()
+    return (
+            'application/json' in accept
+            or 'application/json' in ct
+            or request.args.get('format') == 'json'
+    )
+
+
 @multi_grn_bp.route('/api/scan-qr-code', methods=['POST'])
 @login_required
 def scan_qr_code():
