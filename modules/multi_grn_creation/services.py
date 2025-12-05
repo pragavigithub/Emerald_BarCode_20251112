@@ -438,10 +438,15 @@ class SAPMultiGRNService:
 
         try:
             # Build OData GET URL (no post required)
+            # url = (
+            #     f"{self.base_url}/b1s/v1/PurchaseOrders"
+            #     f"?$filter=Series eq {series_id} and DocumentStatus eq 'bost_Open'"
+            #     f"&$select=CardCode,CardName"
+            # )
             url = (
                 f"{self.base_url}/b1s/v1/PurchaseOrders"
-                f"?$filter=Series eq {series_id} and DocumentStatus eq 'bost_Open'"
-                f"&$select=CardCode,CardName"
+                f"?$filter=DocumentStatus eq 'bost_Open'"
+                f"&$select=CardCode,CardName,DocumentStatus,DocNum,Series,DocDate,DocDueDate,DocTotal,DocEntry"
             )
 
             headers = {"Prefer": "odata.maxpagesize=0"}
