@@ -381,15 +381,19 @@ def create_step2_select_pos(batch_id):
                 logging.error(f"❌ Error adding PO {doc_entry}: {str(e)}")
         
         if added_count > 0:
+            # Compute total_pos before commit (from current state + new additions)
+            current_link_count = len([l for l in batch.po_links])  # Force evaluation
+            
             # Commit the changes
             db.session.commit()
             
-            # Refresh the batch to ensure po_links relationship is up to date for template
-            db.session.refresh(batch)
-            
-            # Recompute total_pos from actual relationship count after commit
-            batch.total_pos = len(batch.po_links)
+            # Update total_pos using the count we computed before commit
+            batch.total_pos = current_link_count
             db.session.commit()
+            
+            # Reload the batch with eager loading to ensure po_links is populated for template
+            from sqlalchemy.orm import selectinload
+            batch = MultiGRNBatch.query.options(selectinload(MultiGRNBatch.po_links)).get(batch_id)
             
             if failed_count > 0:
                 flash(f'Added {added_count} Purchase Order(s). Failed to add {failed_count} PO(s).', 'warning')
@@ -489,6 +493,11 @@ def create_step2_select_pos(batch_id):
     
     purchase_orders = result.get('purchase_orders', [])
     logging.info(f"📊 Found {len(purchase_orders)} open POs for customer {batch.customer_name} ({batch.customer_code})")
+    
+    # Ensure batch is freshly loaded with po_links for template rendering
+    from sqlalchemy.orm import selectinload
+    batch = MultiGRNBatch.query.options(selectinload(MultiGRNBatch.po_links)).get(batch_id)
+    
     return render_template('multi_grn/step2_select_pos.html', batch=batch, purchase_orders=purchase_orders)
 
 @multi_grn_bp.route('/create/step3/<int:batch_id>', methods=['GET', 'POST'])
