@@ -183,7 +183,7 @@ def edit_batch(batch_id):
         
         # Set edit mode in session
         session['editing_batch_id'] = batch_id
-        
+
         logging.info(f"✏️ User {current_user.username} editing draft batch {batch.batch_number}")
         flash(f'Editing batch {batch.batch_number} - You can modify PO selection, line items, and QR labels', 'info')
         
@@ -1829,9 +1829,10 @@ def create_grn_from_modal():
     try:
         # Cast series_id to int or None to match model's expected type
         series_id_int = int(series_id) if series_id and series_id.isdigit() else None
-        
+        from datetime import datetime
+        batch_number = f"MGRN-{datetime.now().strftime('%Y%m%d%H%M%S')}"
         new_batch = MultiGRNBatch(
-            batch_number=generate_batch_number(),
+            batch_number=batch_number,
             series_id=series_id_int,
             series_name=series_name if series_name else None,
             customer_code=customer_code,
