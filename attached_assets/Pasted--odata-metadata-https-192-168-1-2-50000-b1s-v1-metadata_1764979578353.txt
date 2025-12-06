@@ -1,0 +1,2675 @@
+{
+    "odata.metadata": "https://192.168.1.2:50000/b1s/v1/$metadata#PurchaseOrders",
+    "value": [
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TTTISPL",
+            "CardName": "TII TECHNO TESTING SERVICES PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "JEE",
+            "CardName": "JEENA & COMPANY"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SPSI",
+            "CardName": "SHRI PARMANAND STEEL INDUSTRIES PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BPCL",
+            "CardName": "BHARAT PETROLEUM CORPORATION LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ARUN ENGG",
+            "CardName": "ARUN ENGINEERING"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HLT",
+            "CardName": "Hydraulic Lift Tech"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "Computype US",
+            "CardName": "COMPUTYPE"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "KE.",
+            "CardName": "KRONOS ENGINEERING"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "AR",
+            "CardName": "AARTHI RUBBER"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SVEB",
+            "CardName": "SRI VENKATESHWARA ENGINEERING"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NOM",
+            "CardName": "National Office Mart"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NOM",
+            "CardName": "National Office Mart"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MMWC",
+            "CardName": "Moon Mineral Water Company"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "Imperial",
+            "CardName": "Imperial Fasteners Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ARE",
+            "CardName": "ARVIND ENGINEERS UNIT II"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MECPLCH",
+            "CardName": "MAXOP ENGINEERING CO.PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "AACL",
+            "CardName": "Aspinwall and Company limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NSP",
+            "CardName": "NSP ENGG PRODUCTS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "PMD",
+            "CardName": "PANDIAN MOULDS & DIES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SRI ENT",
+            "CardName": "SRI ENTERPRISES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ARE",
+            "CardName": "ARVIND ENGINEERS UNIT II"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SESPL",
+            "CardName": "SVAN ELASTOMER SOLUTIONS PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "Praxair",
+            "CardName": "Praxair India Private limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "EA",
+            "CardName": "EMERGING ALLIANCE"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "IP",
+            "CardName": "INNOTEK PLASTICS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ARE",
+            "CardName": "ARVIND ENGINEERS UNIT II"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "UMS",
+            "CardName": "UNIQUE MEASUREMENT SERVICE"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTGR",
+            "CardName": "Hutchinson Antivibration Systems  INC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SSF",
+            "CardName": "SS Forge"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TTTISPL",
+            "CardName": "TII TECHNO TESTING SERVICES PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "VEAPL",
+            "CardName": "VIKAS ELASTOCHEM AGENCIES PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "IP",
+            "CardName": "INNOTEK PLASTICS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MECPLCH",
+            "CardName": "MAXOP ENGINEERING CO.PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ARE",
+            "CardName": "ARVIND ENGINEERS UNIT II"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "GSA",
+            "CardName": "G.S Automation"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HMIPL",
+            "CardName": "Hwaseung Materials (India) Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "UMS",
+            "CardName": "UNIQUE MEASUREMENT SERVICE"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SSAS",
+            "CardName": "SANGFROID SUPPLIES AND SOLUTIONS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BAP",
+            "CardName": "Beckhoff Automation Pvt.ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ARE",
+            "CardName": "ARVIND ENGINEERS UNIT II"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BPCL",
+            "CardName": "BHARAT PETROLEUM CORPORATION LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TES",
+            "CardName": "Transpower Engineering services"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTBDP",
+            "CardName": "Hutchinson Borrachas de Portugal"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SRI ENT",
+            "CardName": "SRI ENTERPRISES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "AFC",
+            "CardName": "Akshya Fuel Center"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MMWC",
+            "CardName": "Moon Mineral Water Company"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TTTISPL",
+            "CardName": "TII TECHNO TESTING SERVICES PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "LJF - France",
+            "CardName": "LE JOINT FRANCAIS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ARE",
+            "CardName": "ARVIND ENGINEERS UNIT II"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BPCL",
+            "CardName": "BHARAT PETROLEUM CORPORATION LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SKR",
+            "CardName": "SRI KALPANA ROADWAYS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NOM",
+            "CardName": "National Office Mart"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NOM",
+            "CardName": "National Office Mart"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SPSI",
+            "CardName": "SHRI PARMANAND STEEL INDUSTRIES PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "RKP",
+            "CardName": "R K Polymer"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SRI ENT",
+            "CardName": "SRI ENTERPRISES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SKL",
+            "CardName": "SREE KRISHNA LABELS & SOLUTIONS PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NOM",
+            "CardName": "National Office Mart"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NOM",
+            "CardName": "National Office Mart"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "N&T",
+            "CardName": "N&T Engineering"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BPCL",
+            "CardName": "BHARAT PETROLEUM CORPORATION LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NOM",
+            "CardName": "National Office Mart"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "CA",
+            "CardName": "Cyborg Automation"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MACPL",
+            "CardName": "Maxwell Auto Components P Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "VTL",
+            "CardName": "VARSHA TECHNOLOGIES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "N&T",
+            "CardName": "N&T Engineering"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "N&T",
+            "CardName": "N&T Engineering"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "VTL",
+            "CardName": "VARSHA TECHNOLOGIES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "kmc",
+            "CardName": "K.M.C Aluminium Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SRI ENT",
+            "CardName": "SRI ENTERPRISES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "VEAPL",
+            "CardName": "VIKAS ELASTOCHEM AGENCIES PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SRI ENT",
+            "CardName": "SRI ENTERPRISES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "PIOP",
+            "CardName": "PORKODI OFFSET PRINTERS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SRI ENT",
+            "CardName": "SRI ENTERPRISES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NOM",
+            "CardName": "National Office Mart"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NOM",
+            "CardName": "National Office Mart"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "AFC",
+            "CardName": "Akshya Fuel Center"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SILPL",
+            "CardName": "Sampark India Logistics Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SRI ENT",
+            "CardName": "SRI ENTERPRISES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTCHAT",
+            "CardName": "Hutchinson - Paulstra SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NOM",
+            "CardName": "National Office Mart"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ARE",
+            "CardName": "ARVIND ENGINEERS UNIT II"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MECPLCH",
+            "CardName": "MAXOP ENGINEERING CO.PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "OSE",
+            "CardName": "Oshin Engineering Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "OSE",
+            "CardName": "Oshin Engineering Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NOM",
+            "CardName": "National Office Mart"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "OTI",
+            "CardName": "OMEGA TECHNIKS INDIA PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NOM",
+            "CardName": "National Office Mart"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "VTL",
+            "CardName": "VARSHA TECHNOLOGIES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "OSE",
+            "CardName": "Oshin Engineering Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "VTL",
+            "CardName": "VARSHA TECHNOLOGIES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "N&T",
+            "CardName": "N&T Engineering"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "PROSOL",
+            "CardName": "PROSOL"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "KCPL",
+            "CardName": "KIRLOSKAR CHILLERS PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ET",
+            "CardName": "Euphoria Technologies"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MMWC",
+            "CardName": "Moon Mineral Water Company"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BPCL",
+            "CardName": "BHARAT PETROLEUM CORPORATION LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SRI ENT",
+            "CardName": "SRI ENTERPRISES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "UNIBIZ",
+            "CardName": "UNIBIZ"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MTS",
+            "CardName": "MTS TESTING SOLUTIONS PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SILPL",
+            "CardName": "Sampark India Logistics Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "Jai Safety",
+            "CardName": "JAI SAFETY SERVICE"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "EA",
+            "CardName": "EMERGING ALLIANCE"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "VTL",
+            "CardName": "VARSHA TECHNOLOGIES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NOM",
+            "CardName": "National Office Mart"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BPCL",
+            "CardName": "BHARAT PETROLEUM CORPORATION LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "VEAPL",
+            "CardName": "VIKAS ELASTOCHEM AGENCIES PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "PMD",
+            "CardName": "PANDIAN MOULDS & DIES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "OSE",
+            "CardName": "Oshin Engineering Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NOM",
+            "CardName": "National Office Mart"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TVSE",
+            "CardName": "TVS ENGINEERING LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SRI ENT",
+            "CardName": "SRI ENTERPRISES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "PIOP",
+            "CardName": "PORKODI OFFSET PRINTERS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NOM",
+            "CardName": "National Office Mart"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "IP",
+            "CardName": "INNOTEK PLASTICS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "DISIPL",
+            "CardName": "DELL INTERNATIONAL SERVICES INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTJLT",
+            "CardName": "Hutchinson SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "kmc",
+            "CardName": "K.M.C Aluminium Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NN ENTERPRISES",
+            "CardName": "NN ENTERPRISES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MECPLCH",
+            "CardName": "MAXOP ENGINEERING CO.PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "JET",
+            "CardName": "JETSPEED LOGISTICS PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "AI",
+            "CardName": "ARVIND INTERNATIONAL"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "KILPF",
+            "CardName": "Kores(India) Limited, Pefco Foundry Division"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "KILPF",
+            "CardName": "Kores(India) Limited, Pefco Foundry Division"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "UNIBIZ",
+            "CardName": "UNIBIZ"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "UNIBIZ",
+            "CardName": "UNIBIZ"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "AFC",
+            "CardName": "Akshya Fuel Center"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SILPL",
+            "CardName": "Sampark India Logistics Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SRIKAM PRINT",
+            "CardName": "SRIKAM PRINT PACK PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ATC",
+            "CardName": "ASHA TRADING COMPNAY"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "EA",
+            "CardName": "EMERGING ALLIANCE"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MECPLCH",
+            "CardName": "MAXOP ENGINEERING CO.PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SPSI",
+            "CardName": "SHRI PARMANAND STEEL INDUSTRIES PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MGPT",
+            "CardName": "M.G.P. Transport & Travels"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MGPT",
+            "CardName": "M.G.P. Transport & Travels"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BTSPL",
+            "CardName": "BULLET TRANS SOLUTIONS PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "EA",
+            "CardName": "EMERGING ALLIANCE"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "IP",
+            "CardName": "INNOTEK PLASTICS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HMIPL",
+            "CardName": "Hwaseung Materials (India) Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SSS",
+            "CardName": "SARATHA STAMPING SOLUTION PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HSC",
+            "CardName": "Hutchinson Industrial Rubber Products Suzhou co. Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "IP",
+            "CardName": "INNOTEK PLASTICS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NOM",
+            "CardName": "National Office Mart"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "FCPL",
+            "CardName": "Freight Consolidators (Madras) Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HMIPL",
+            "CardName": "Hwaseung Materials (India) Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NSP",
+            "CardName": "NSP ENGG PRODUCTS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SPEE",
+            "CardName": "Sri Padmavathi Engineering And Enterprises"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BRS",
+            "CardName": "BRIVAS PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SBI",
+            "CardName": "SHREE BALAJI INDUSTRIES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BPCL",
+            "CardName": "BHARAT PETROLEUM CORPORATION LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTCHAT",
+            "CardName": "Hutchinson - Paulstra SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "AFC",
+            "CardName": "Akshya Fuel Center"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SILPL",
+            "CardName": "Sampark India Logistics Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TAUW",
+            "CardName": "TAUW France"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SCp",
+            "CardName": "SILCARE CHEMICAL PRODUCTS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MCL",
+            "CardName": "Microlab"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "N&T",
+            "CardName": "N&T Engineering"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "EBASCO",
+            "CardName": "EBASCO MARKETING"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SILPL",
+            "CardName": "Sampark India Logistics Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "AFC",
+            "CardName": "Akshya Fuel Center"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MMWC",
+            "CardName": "Moon Mineral Water Company"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "KDMPLG",
+            "CardName": "Kloeckner Desma Machinery Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SILPL",
+            "CardName": "Sampark India Logistics Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "JET",
+            "CardName": "JETSPEED LOGISTICS PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BPCL",
+            "CardName": "BHARAT PETROLEUM CORPORATION LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SRI ENT",
+            "CardName": "SRI ENTERPRISES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "OSE",
+            "CardName": "Oshin Engineering Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "RF",
+            "CardName": "Raghavendra Fabricators"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "OSE",
+            "CardName": "Oshin Engineering Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "JET",
+            "CardName": "JETSPEED LOGISTICS PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SILPL",
+            "CardName": "Sampark India Logistics Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTJLT",
+            "CardName": "Hutchinson SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTJLT",
+            "CardName": "Hutchinson SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ARE",
+            "CardName": "ARVIND ENGINEERS UNIT II"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "OSE",
+            "CardName": "Oshin Engineering Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HMIPL",
+            "CardName": "Hwaseung Materials (India) Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MCL",
+            "CardName": "Microlab"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTJLT",
+            "CardName": "Hutchinson SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TTTISPL",
+            "CardName": "TII TECHNO TESTING SERVICES PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTBRA",
+            "CardName": "HUTCHINSON BRASIL AUTOMOTIVE"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "OSE",
+            "CardName": "Oshin Engineering Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TTTISPL",
+            "CardName": "TII TECHNO TESTING SERVICES PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BRS",
+            "CardName": "BRIVAS PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "Forbes Marshall",
+            "CardName": "Forbes Marshall Pvt. Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TVSE",
+            "CardName": "TVS ENGINEERING LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "GSA",
+            "CardName": "G.S Automation"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TEW",
+            "CardName": "TEENA ENGINEERING WORK"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SPSI",
+            "CardName": "SHRI PARMANAND STEEL INDUSTRIES PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "OSE",
+            "CardName": "Oshin Engineering Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "EA",
+            "CardName": "EMERGING ALLIANCE"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MMWC",
+            "CardName": "Moon Mineral Water Company"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BPCL",
+            "CardName": "BHARAT PETROLEUM CORPORATION LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "IP",
+            "CardName": "INNOTEK PLASTICS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ATC",
+            "CardName": "ASHA TRADING COMPNAY"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "VEAPL",
+            "CardName": "VIKAS ELASTOCHEM AGENCIES PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NOM",
+            "CardName": "National Office Mart"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "RF",
+            "CardName": "Raghavendra Fabricators"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "AFC",
+            "CardName": "Akshya Fuel Center"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SRI ENT",
+            "CardName": "SRI ENTERPRISES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "kmc",
+            "CardName": "K.M.C Aluminium Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "CTSC",
+            "CardName": "CONSYS TECHNOLOGY SERVICES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "OSE",
+            "CardName": "Oshin Engineering Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SPSI",
+            "CardName": "SHRI PARMANAND STEEL INDUSTRIES PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BPCL",
+            "CardName": "BHARAT PETROLEUM CORPORATION LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "IP",
+            "CardName": "INNOTEK PLASTICS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "N&T",
+            "CardName": "N&T Engineering"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SILPL",
+            "CardName": "Sampark India Logistics Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "IP",
+            "CardName": "INNOTEK PLASTICS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MECPLCH",
+            "CardName": "MAXOP ENGINEERING CO.PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "JMV",
+            "CardName": "JMV Enterprises"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "N&T",
+            "CardName": "N&T Engineering"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "RKP",
+            "CardName": "R K Polymer"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TVSE",
+            "CardName": "TVS ENGINEERING LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "UMS",
+            "CardName": "UNIQUE MEASUREMENT SERVICE"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TEW",
+            "CardName": "TEENA ENGINEERING WORK"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SCp",
+            "CardName": "SILCARE CHEMICAL PRODUCTS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MLAPL",
+            "CardName": "McLUBE ASIA PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "KCPL",
+            "CardName": "KIRLOSKAR CHILLERS PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BPCL",
+            "CardName": "BHARAT PETROLEUM CORPORATION LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HMIPL",
+            "CardName": "Hwaseung Materials (India) Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HMIPL",
+            "CardName": "Hwaseung Materials (India) Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "IP",
+            "CardName": "INNOTEK PLASTICS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SPSI",
+            "CardName": "SHRI PARMANAND STEEL INDUSTRIES PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "CIPL",
+            "CardName": "CHEP India Pvt. Ltd."
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SFSI",
+            "CardName": "SEASKY FREIGHT SYSTEMS INDIA PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SRI ENT",
+            "CardName": "SRI ENTERPRISES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "RF",
+            "CardName": "Raghavendra Fabricators"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ARE",
+            "CardName": "ARVIND ENGINEERS UNIT II"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TEW",
+            "CardName": "TEENA ENGINEERING WORK"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TEW",
+            "CardName": "TEENA ENGINEERING WORK"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HSC",
+            "CardName": "Hutchinson Industrial Rubber Products Suzhou co. Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "PCPL",
+            "CardName": "PRO CONSOLIDATORS PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "kmc",
+            "CardName": "K.M.C Aluminium Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SRI ENT",
+            "CardName": "SRI ENTERPRISES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SILPL",
+            "CardName": "Sampark India Logistics Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTBDP",
+            "CardName": "Hutchinson Borrachas de Portugal"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTCHAT",
+            "CardName": "Hutchinson - Paulstra SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BPCL",
+            "CardName": "BHARAT PETROLEUM CORPORATION LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SILPL",
+            "CardName": "Sampark India Logistics Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SILPL",
+            "CardName": "Sampark India Logistics Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BIP",
+            "CardName": "Babji Industrial Products"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TEW",
+            "CardName": "TEENA ENGINEERING WORK"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTJLT",
+            "CardName": "Hutchinson SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "GSA",
+            "CardName": "G.S Automation"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MACPL",
+            "CardName": "Maxwell Auto Components P Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "JET",
+            "CardName": "JETSPEED LOGISTICS PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MECPLCH",
+            "CardName": "MAXOP ENGINEERING CO.PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "OSE",
+            "CardName": "Oshin Engineering Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SPSI",
+            "CardName": "SHRI PARMANAND STEEL INDUSTRIES PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BPCL",
+            "CardName": "BHARAT PETROLEUM CORPORATION LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BVIPL",
+            "CardName": "BUSCH  VACUUM INDIA PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HMIPL",
+            "CardName": "Hwaseung Materials (India) Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "S E C",
+            "CardName": "SUGAM ELECTRIC CORPORATION"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "kmc",
+            "CardName": "K.M.C Aluminium Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ATC",
+            "CardName": "ASHA TRADING COMPNAY"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SRI ENT",
+            "CardName": "SRI ENTERPRISES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TVSE",
+            "CardName": "TVS ENGINEERING LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TTTISPL",
+            "CardName": "TII TECHNO TESTING SERVICES PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "RF",
+            "CardName": "Raghavendra Fabricators"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ARE",
+            "CardName": "ARVIND ENGINEERS UNIT II"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HMIPL",
+            "CardName": "Hwaseung Materials (India) Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SILPL",
+            "CardName": "Sampark India Logistics Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ARE",
+            "CardName": "ARVIND ENGINEERS UNIT II"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "Praxair",
+            "CardName": "Praxair India Private limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "PCCEN",
+            "CardName": "PERFECT CALIBRATION CENTRE PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BRS",
+            "CardName": "BRIVAS PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BPCL",
+            "CardName": "BHARAT PETROLEUM CORPORATION LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "RF",
+            "CardName": "Raghavendra Fabricators"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "PIOP",
+            "CardName": "PORKODI OFFSET PRINTERS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SPSI",
+            "CardName": "SHRI PARMANAND STEEL INDUSTRIES PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HMIPL",
+            "CardName": "Hwaseung Materials (India) Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "OSE",
+            "CardName": "Oshin Engineering Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ARE",
+            "CardName": "ARVIND ENGINEERS UNIT II"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "kmc",
+            "CardName": "K.M.C Aluminium Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TEW",
+            "CardName": "TEENA ENGINEERING WORK"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "GARC",
+            "CardName": "GLOBAL AUTOMOTIVE RESEARCH CENTRE"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NOM",
+            "CardName": "National Office Mart"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ETPE",
+            "CardName": "ELECTRO TECH POWER ENGINEERS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTJLT",
+            "CardName": "Hutchinson SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "AI",
+            "CardName": "ARVIND INTERNATIONAL"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TVSE",
+            "CardName": "TVS ENGINEERING LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MACPL",
+            "CardName": "Maxwell Auto Components P Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SILPL",
+            "CardName": "Sampark India Logistics Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SILPL",
+            "CardName": "Sampark India Logistics Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "LSG",
+            "CardName": "LUMINAZ SAFETY GLASS PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TTTISPL",
+            "CardName": "TII TECHNO TESTING SERVICES PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TTTISPL",
+            "CardName": "TII TECHNO TESTING SERVICES PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "APW",
+            "CardName": "ABSOLUTE PRECISION WORKS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "AI",
+            "CardName": "ARVIND INTERNATIONAL"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BPCL",
+            "CardName": "BHARAT PETROLEUM CORPORATION LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NOM",
+            "CardName": "National Office Mart"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "PIOP",
+            "CardName": "PORKODI OFFSET PRINTERS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "GSA",
+            "CardName": "G.S Automation"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SILPL",
+            "CardName": "Sampark India Logistics Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SRI ENT",
+            "CardName": "SRI ENTERPRISES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "AFC",
+            "CardName": "Akshya Fuel Center"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTJLT",
+            "CardName": "Hutchinson SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "PIOP",
+            "CardName": "PORKODI OFFSET PRINTERS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NOM",
+            "CardName": "National Office Mart"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "KDMPLG",
+            "CardName": "Kloeckner Desma Machinery Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "KDMPLG",
+            "CardName": "Kloeckner Desma Machinery Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "PIOP",
+            "CardName": "PORKODI OFFSET PRINTERS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTJLT",
+            "CardName": "Hutchinson SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NSP",
+            "CardName": "NSP ENGG PRODUCTS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTBDP",
+            "CardName": "Hutchinson Borrachas de Portugal"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BPCL",
+            "CardName": "BHARAT PETROLEUM CORPORATION LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "OSE",
+            "CardName": "Oshin Engineering Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "AFC",
+            "CardName": "Akshya Fuel Center"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTBRA",
+            "CardName": "HUTCHINSON BRASIL AUTOMOTIVE"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MMWC",
+            "CardName": "Moon Mineral Water Company"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NOM",
+            "CardName": "National Office Mart"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTJLT",
+            "CardName": "Hutchinson SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MACPL",
+            "CardName": "Maxwell Auto Components P Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TVSE",
+            "CardName": "TVS ENGINEERING LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HMIPL",
+            "CardName": "Hwaseung Materials (India) Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SPSI",
+            "CardName": "SHRI PARMANAND STEEL INDUSTRIES PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "IP",
+            "CardName": "INNOTEK PLASTICS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "OSE",
+            "CardName": "Oshin Engineering Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "RF",
+            "CardName": "Raghavendra Fabricators"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "KILPF",
+            "CardName": "Kores(India) Limited, Pefco Foundry Division"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ARE",
+            "CardName": "ARVIND ENGINEERS UNIT II"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "AI",
+            "CardName": "ARVIND INTERNATIONAL"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MECPLCH",
+            "CardName": "MAXOP ENGINEERING CO.PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MECPLCH",
+            "CardName": "MAXOP ENGINEERING CO.PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SILPL",
+            "CardName": "Sampark India Logistics Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MECPLCH",
+            "CardName": "MAXOP ENGINEERING CO.PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SRI ENT",
+            "CardName": "SRI ENTERPRISES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BPCL",
+            "CardName": "BHARAT PETROLEUM CORPORATION LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MECPLCH",
+            "CardName": "MAXOP ENGINEERING CO.PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ABSI",
+            "CardName": "ABS Instruments Pvt ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "RF",
+            "CardName": "Raghavendra Fabricators"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "IP",
+            "CardName": "INNOTEK PLASTICS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SAM",
+            "CardName": "SAMPADA INDUSTRIES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TTTISPL",
+            "CardName": "TII TECHNO TESTING SERVICES PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "PMD",
+            "CardName": "PANDIAN MOULDS & DIES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MAFAC",
+            "CardName": "MAFAC GmbH"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTBDP",
+            "CardName": "Hutchinson Borrachas de Portugal"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "Electrolux",
+            "CardName": "Electrolux Professional AB"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTBDP",
+            "CardName": "Hutchinson Borrachas de Portugal"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTBDP",
+            "CardName": "Hutchinson Borrachas de Portugal"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BIP",
+            "CardName": "Babji Industrial Products"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ETPE",
+            "CardName": "ELECTRO TECH POWER ENGINEERS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "AI",
+            "CardName": "ARVIND INTERNATIONAL"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MECPLCH",
+            "CardName": "MAXOP ENGINEERING CO.PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MACPL",
+            "CardName": "Maxwell Auto Components P Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TVSE",
+            "CardName": "TVS ENGINEERING LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "RF",
+            "CardName": "Raghavendra Fabricators"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ARE",
+            "CardName": "ARVIND ENGINEERS UNIT II"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "kmc",
+            "CardName": "K.M.C Aluminium Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "OSE",
+            "CardName": "Oshin Engineering Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HMIPL",
+            "CardName": "Hwaseung Materials (India) Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HMIPL",
+            "CardName": "Hwaseung Materials (India) Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "Polymeric Label",
+            "CardName": "Polymeric Labels Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ETPL-",
+            "CardName": "Edizi Tools Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BPCL",
+            "CardName": "BHARAT PETROLEUM CORPORATION LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HMIPL",
+            "CardName": "Hwaseung Materials (India) Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SAM",
+            "CardName": "SAMPADA INDUSTRIES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HMIPL",
+            "CardName": "Hwaseung Materials (India) Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MMWC",
+            "CardName": "Moon Mineral Water Company"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ETPE",
+            "CardName": "ELECTRO TECH POWER ENGINEERS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ETPE",
+            "CardName": "ELECTRO TECH POWER ENGINEERS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ETPE",
+            "CardName": "ELECTRO TECH POWER ENGINEERS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ETPE",
+            "CardName": "ELECTRO TECH POWER ENGINEERS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ETPE",
+            "CardName": "ELECTRO TECH POWER ENGINEERS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ETPE",
+            "CardName": "ELECTRO TECH POWER ENGINEERS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ETPE",
+            "CardName": "ELECTRO TECH POWER ENGINEERS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ETPE",
+            "CardName": "ELECTRO TECH POWER ENGINEERS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "FESTO",
+            "CardName": "FESTO INDIA PVT. LTD."
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ETPE",
+            "CardName": "ELECTRO TECH POWER ENGINEERS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ETPE",
+            "CardName": "ELECTRO TECH POWER ENGINEERS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ARAPS",
+            "CardName": "ASHVEERA PNEUMATIC SERVICES (CHENNAI) PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "N&T",
+            "CardName": "N&T Engineering"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "AFIPL",
+            "CardName": "Acme Fabcon India Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "S E C",
+            "CardName": "SUGAM ELECTRIC CORPORATION"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "VEAPL",
+            "CardName": "VIKAS ELASTOCHEM AGENCIES PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SRM",
+            "CardName": "SRI RAM ENTERPRISES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HMIPL",
+            "CardName": "Hwaseung Materials (India) Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MDCPL",
+            "CardName": "Mahavir Die Casters Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MDCPL",
+            "CardName": "Mahavir Die Casters Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NSP",
+            "CardName": "NSP ENGG PRODUCTS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SED",
+            "CardName": "SEW EURO DRIVE"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SIPL",
+            "CardName": "SONEPAR INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ARE",
+            "CardName": "ARVIND ENGINEERS UNIT II"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "UMS",
+            "CardName": "UNIQUE MEASUREMENT SERVICE"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TEW",
+            "CardName": "TEENA ENGINEERING WORK"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "NEU-JKF",
+            "CardName": "DELTA NEU EXPORT"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BPCL",
+            "CardName": "BHARAT PETROLEUM CORPORATION LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "AEW",
+            "CardName": "ANAND ENGINEERING WORKS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "PIOP",
+            "CardName": "PORKODI OFFSET PRINTERS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "CTPL",
+            "CardName": "CODENTRIX TECHNOLOGIES PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SVEB",
+            "CardName": "SRI VENKATESHWARA ENGINEERING"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "IP",
+            "CardName": "INNOTEK PLASTICS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "AMH",
+            "CardName": "AM HARDWARE"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SRI ENT",
+            "CardName": "SRI ENTERPRISES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SAM",
+            "CardName": "SAMPADA INDUSTRIES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "PFG",
+            "CardName": "PATODIA FORGINGS & GEARS LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "kmc",
+            "CardName": "K.M.C Aluminium Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "CLL",
+            "CardName": "CHETAK LOGISTICS LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SRI ENT",
+            "CardName": "SRI ENTERPRISES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "CIPL",
+            "CardName": "CHEP India Pvt. Ltd."
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SGIPLCH",
+            "CardName": "S R I GOTEC INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TUV",
+            "CardName": "TUV SUD South Asia Pvt. Ltd."
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "STP",
+            "CardName": "SARGO TOOLS PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTJLT",
+            "CardName": "Hutchinson SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "OSE",
+            "CardName": "Oshin Engineering Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "kmc",
+            "CardName": "K.M.C Aluminium Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "ARE",
+            "CardName": "ARVIND ENGINEERS UNIT II"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "AI",
+            "CardName": "ARVIND INTERNATIONAL"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "AI",
+            "CardName": "ARVIND INTERNATIONAL"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MECPLCH",
+            "CardName": "MAXOP ENGINEERING CO.PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MACPL",
+            "CardName": "Maxwell Auto Components P Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SPSI",
+            "CardName": "SHRI PARMANAND STEEL INDUSTRIES PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "TVSE",
+            "CardName": "TVS ENGINEERING LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTJLT",
+            "CardName": "Hutchinson SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "RF",
+            "CardName": "Raghavendra Fabricators"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "OSE",
+            "CardName": "Oshin Engineering Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "M&B",
+            "CardName": "M&B Technologies"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HMIPL",
+            "CardName": "Hwaseung Materials (India) Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "Eco Friendly",
+            "CardName": "Eco Friendly Enterprises"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "PCCEN",
+            "CardName": "PERFECT CALIBRATION CENTRE PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SRI ENT",
+            "CardName": "SRI ENTERPRISES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BPCL",
+            "CardName": "BHARAT PETROLEUM CORPORATION LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MPE",
+            "CardName": "M.P. ENGINEERING"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "KILPF",
+            "CardName": "Kores(India) Limited, Pefco Foundry Division"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "AMH",
+            "CardName": "AM HARDWARE"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTLJF",
+            "CardName": "LE JOINT FRANCAIS SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "JET",
+            "CardName": "JETSPEED LOGISTICS PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "CTS",
+            "CardName": "CANAN TESTING SERVICES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SFSI",
+            "CardName": "SEASKY FREIGHT SYSTEMS INDIA PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SIPL",
+            "CardName": "SONEPAR INDIA PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SILPL",
+            "CardName": "Sampark India Logistics Private Limited"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MPE",
+            "CardName": "M.P. ENGINEERING"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "BAAPL",
+            "CardName": "BRY AIR ASIA PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MECPLCH",
+            "CardName": "MAXOP ENGINEERING CO.PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "OSE",
+            "CardName": "Oshin Engineering Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "AI",
+            "CardName": "ARVIND INTERNATIONAL"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "RF",
+            "CardName": "Raghavendra Fabricators"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "SAM",
+            "CardName": "SAMPADA INDUSTRIES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "OSE",
+            "CardName": "Oshin Engineering Pvt Ltd"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "AI",
+            "CardName": "ARVIND INTERNATIONAL"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "HUTJLT",
+            "CardName": "Hutchinson SNC"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MECPLCH",
+            "CardName": "MAXOP ENGINEERING CO.PVT LTD"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "RF",
+            "CardName": "Raghavendra Fabricators"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "FA",
+            "CardName": "FOURS ASSOCIATES"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "MSC",
+            "CardName": "MTS SYSTEMS CORPORATION"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "AEW",
+            "CardName": "ANAND ENGINEERING WORKS"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "3D SPL",
+            "CardName": "3D SEALS PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "3D SPL",
+            "CardName": "3D SEALS PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "3D SPL",
+            "CardName": "3D SEALS PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "3D SPL",
+            "CardName": "3D SEALS PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "3D SPL",
+            "CardName": "3D SEALS PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "3D SPL",
+            "CardName": "3D SEALS PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "3D SPL",
+            "CardName": "3D SEALS PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "3D SPL",
+            "CardName": "3D SEALS PRIVATE LIMITED"
+        },
+        {
+            "odata.etag": "W/\"356A192B7913B04C54574D18C28D46E6395428AB\"",
+            "CardCode": "3D SPL",
+            "CardName": "3D SEALS PRIVATE LIMITED"
+        }
+    ]
+}
