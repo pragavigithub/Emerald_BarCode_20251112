@@ -42,6 +42,14 @@ The system is built on a Flask web application backend, utilizing Jinja2 for ser
 *   **Quality Control Dashboard:** Provides a unified oversight for quality approval workflows across Multi GRN, Direct Transfer, and Sales Delivery modules, with SAP B1 posting integration upon approval.
 *   **SO Against Invoice Module:** Allows creating invoices against existing Sales Orders with SAP B1 integration, including SO series selection, SO number validation, and item validation.
 
+## Recent Changes (December 6, 2025)
+*   **Multi GRN CardCode Dropdown Fix:** Enhanced SAP B1 data fetching methods with mock data fallback for offline testing:
+    - `fetch_customers_from_open_pos()` - Now uses mock data when SAP is unavailable
+    - `fetch_cardcode_by_series()` - Added Series filter, deduplication by CardCode, and mock data fallback
+    - `fetch_pos_by_cardcode()` - Added mock data fallback
+    - `fetch_po_lines_by_docentry()` - Updated to use SAP B1 $crossjoin URL format with mock data fallback
+*   **$crossjoin URL Implementation:** PO line items are now fetched using the SAP B1 $crossjoin endpoint format for better data retrieval
+
 ## Recent Changes (December 5, 2025)
 *   **Multi GRN CSRF Token Fix:** Removed `{{ csrf_token() }}` from `modules/multi_grn_creation/templates/multi_grn/index.html` - CSRF protection is disabled globally in this application, and all modules are consistent in not requiring CSRF tokens.
 
